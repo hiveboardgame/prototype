@@ -33,20 +33,23 @@ interface NavBarProps extends NavProps {
 
 const NavBar = (props: NavBarProps) => {
   const { hideFinishProfile, ...rest } = props;
+  const { user } = usePlayer();
   return (
     <Nav {...rest}>
       <div className='flex items-center flex-grow'>
         <Link href='/' passHref>
           <HiveLogoLink />
         </Link>
-        <>
-          <Link href='/games' passHref>
-            <NavLink>Games</NavLink>
-          </Link>
-          <Link href='/community' passHref>
-            <NavLink>Community</NavLink>
-          </Link>
-        </>
+        {user && (
+          <>
+            <Link href='/games' passHref>
+              <NavLink>Games</NavLink>
+            </Link>
+            <Link href='/community' passHref>
+              <NavLink>Community</NavLink>
+            </Link>
+          </>
+        )}
       </div>
       <NavBarUsername />
     </Nav>
