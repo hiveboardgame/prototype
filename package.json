@@ -1,5 +1,5 @@
 {
-  "name": "turborepo-basic-shared",
+  "name": "lihive",
   "version": "0.0.0",
   "private": true,
   "workspaces": [
@@ -10,7 +10,7 @@
     "build": "turbo run build",
     "dev": "turbo run dev --parallel",
     "lint": "turbo run lint",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\""
+    "test": "turbo run test"
   },
   "devDependencies": {
     "prettier": "^2.5.1",
@@ -32,11 +32,18 @@
       },
       "dev": {
         "cache": false
+      },
+      "test": {
+        "dependsOn": [],
+        "outputs": [
+          "coverage/**"
+        ]
       }
     }
   },
   "engines": {
     "npm": ">=7.0.0",
     "node": ">=14.0.0"
-  }
+  },
+  "license": "AGPL-3.0-or-later"
 }
