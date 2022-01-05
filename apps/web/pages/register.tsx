@@ -1,9 +1,9 @@
 import { usePlayer } from 'hive-db';
+import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { SignUpForm } from '../components/forms/SignUpForm';
 import { NavBar } from '../components/nav/NavBar';
 import { useTitle } from '../hooks/useTitle';
-import Head from 'next/head';
 
 const Register = () => {
   const { uid, incompleteProfile } = usePlayer();

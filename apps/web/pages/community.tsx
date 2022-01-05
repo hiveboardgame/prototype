@@ -1,12 +1,12 @@
+import { getUsersExcept, usePlayer, UserData } from 'hive-db';
+import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
-import { getUsersExcept, usePlayer, UserData } from 'hive-db';
 import { Body } from '../components/common/Body';
 import { Footer } from '../components/common/Footer';
 import { ListPublicGames } from '../components/lists/ListPublicGames';
 import { ListUsers } from '../components/lists/ListUsers';
 import { NavBar } from '../components/nav/NavBar';
-import Head from 'next/head';
 import { useTitle } from '../hooks/useTitle';
 
 const Community = () => {

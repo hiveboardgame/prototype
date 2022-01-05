@@ -1,7 +1,7 @@
 import { usePlayer } from 'hive-db';
+import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { useEffect } from 'react';
-import Head from 'next/head';
 import { Body } from '../components/common/Body';
 import { Footer } from '../components/common/Footer';
 import { ListPlayerCompleted } from '../components/lists/ListPlayerCompleted';

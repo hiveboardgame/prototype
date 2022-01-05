@@ -9,6 +9,7 @@ import {
   Tabs
 } from '@chakra-ui/react';
 import { usePlayer } from 'hive-db';
+import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { FaGamepad, FaPlus } from 'react-icons/fa';
 import { Body } from '../components/common/Body';
@@ -17,7 +18,6 @@ import { ListLobbyGames } from '../components/lists/ListLobbyGames';
 import { ListPlayerGames } from '../components/lists/ListPlayerGames';
 import { ListPublicGames } from '../components/lists/ListPublicGames';
 import { NavBar } from '../components/nav/NavBar';
-import Head from 'next/head';
 import { useHasMounted } from '../hooks/useHasMounted';
 import { useTitle } from '../hooks/useTitle';
 

@@ -1,10 +1,10 @@
 import { usePlayer } from 'hive-db';
+import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { useEffect } from 'react';
-import { useTitle } from '../hooks/useTitle';
-import { NavBar } from '../components/nav/NavBar';
 import { FinishProfileForm } from '../components/forms/FinishProfileForm';
-import Head from 'next/head';
+import { NavBar } from '../components/nav/NavBar';
+import { useTitle } from '../hooks/useTitle';
 
 const Profile = () => {
   const { uid, incompleteProfile } = usePlayer();
