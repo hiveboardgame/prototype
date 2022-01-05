@@ -5,6 +5,7 @@ import { ChakraProvider } from '@chakra-ui/react';
 import { Global, css } from '@emotion/react';
 import { AppProps } from 'next/app';
 import { PlayerProvider } from 'hive-db';
+import { NotificationProvider } from '../contexts/notifications/NotificationProvider';
 import { theme } from '../styles/theme';
 
 const GlobalStyle = () => {
@@ -31,8 +32,10 @@ function App({ Component, pageProps }: AppProps) {
   return (
     <ChakraProvider theme={theme}>
       <PlayerProvider>
-        <GlobalStyle />
-        <Component {...pageProps} />
+        <NotificationProvider>
+          <GlobalStyle />
+          <Component {...pageProps} />
+        </NotificationProvider>
       </PlayerProvider>
     </ChakraProvider>
   );

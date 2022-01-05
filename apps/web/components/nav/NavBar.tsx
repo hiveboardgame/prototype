@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { NavLink } from '../common/NavLink';
 import { FinishProfileLinks } from './FinishProfileLinks';
 import { HiveLogoLink } from './HiveLogoLink';
+import { NotificationsBell } from './NotificationsBell';
 import { SignInLink } from './SignInLink';
 import { Spinner } from './Spinner';
 import { Username } from './Username';
@@ -51,6 +52,7 @@ const NavBar = (props: NavBarProps) => {
           </>
         )}
       </div>
+      {user && <NotificationsBell />}
       <NavBarUsername />
     </Nav>
   );

@@ -8,6 +8,7 @@ import { ListPlayerCompleted } from '../components/lists/ListPlayerCompleted';
 import { ListPlayerGames } from '../components/lists/ListPlayerGames';
 import { ListPlayerInvitations } from '../components/lists/ListPlayerInvitations';
 import { NavBar } from '../components/nav/NavBar';
+import { useTitle } from '../hooks/useTitle';
 
 const None = () => {
   return <div className='px-8 py-4 prose'>None yet.</div>;
@@ -16,6 +17,7 @@ const None = () => {
 const Games = () => {
   const { uid, incompleteProfile, activeGames, completedGames, invitations } =
     usePlayer();
+  const title = useTitle();
   const router = useRouter();
 
   useEffect(() => {
@@ -29,7 +31,7 @@ const Games = () => {
   return (
     <>
       <Head>
-        <title>lihive.org • Free Online Hive</title>
+        <title>{title}</title>
       </Head>
       <NavBar />
       <Body className='my-12'>
