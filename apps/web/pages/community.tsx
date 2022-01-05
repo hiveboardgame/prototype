@@ -7,10 +7,12 @@ import { ListPublicGames } from '../components/lists/ListPublicGames';
 import { ListUsers } from '../components/lists/ListUsers';
 import { NavBar } from '../components/nav/NavBar';
 import Head from 'next/head';
+import { useTitle } from '../hooks/useTitle';
 
 const Community = () => {
   const { uid, incompleteProfile } = usePlayer();
   const [users, setUsers] = useState<UserData[]>([]);
+  const title = useTitle();
   const router = useRouter();
 
   useEffect(() => {
@@ -21,7 +23,7 @@ const Community = () => {
   return (
     <>
       <Head>
-        <title>lihive.org • Free Online Hive</title>
+        <title>{title}</title>
       </Head>
       <NavBar />
       <Body className='my-12'>

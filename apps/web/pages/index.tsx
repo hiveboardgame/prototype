@@ -18,6 +18,8 @@ import { ListPlayerGames } from '../components/lists/ListPlayerGames';
 import { ListPublicGames } from '../components/lists/ListPublicGames';
 import { NavBar } from '../components/nav/NavBar';
 import Head from 'next/head';
+import { useHasMounted } from '../hooks/useHasMounted';
+import { useTitle } from '../hooks/useTitle';
 
 const IndexTabs = () => {
   const { uid, incompleteProfile, activeGames } = usePlayer();
@@ -54,12 +56,14 @@ const IndexTabs = () => {
 
 const Index = () => {
   const { uid, incompleteProfile } = usePlayer();
+  const title = useTitle();
   const router = useRouter();
-  const loggedIn = !!uid && !incompleteProfile;
+  const mounted = useHasMounted();
+  const loggedIn = mounted && !!uid && !incompleteProfile;
   return (
     <>
       <Head>
-        <title>lihive.org • Free Online Hive</title>
+        <title>{title}</title>
       </Head>
       <NavBar />
       <div className='bg-slate-50 mb-16'>
@@ -105,14 +109,6 @@ const Index = () => {
               >
                 Create New Game
               </Button>
-              {/*<Button*/}
-              {/*  leftIcon={<Icon as={FaDiscord} w={5} h={5} />}*/}
-              {/*  iconSpacing={3}*/}
-              {/*  colorScheme='teal'*/}
-              {/*  size='md'*/}
-              {/*>*/}
-              {/*  Chat With Friends*/}
-              {/*</Button>*/}
               <Button
                 leftIcon={<Icon as={FaGamepad} w={5} h={5} />}
                 iconSpacing={3}
