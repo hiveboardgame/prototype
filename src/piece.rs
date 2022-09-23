@@ -24,6 +24,6 @@ impl fmt::Display for Piece {
 
 impl fmt::Debug for Piece {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}{}", self.bug, self.order)
+        write!(f, "{}{}{}", self.color, self.bug, self.order)
     }
 }

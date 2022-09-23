@@ -1,6 +1,9 @@
 use std::collections::HashMap;
 use std::fmt;
 
+use crate::board::{self, Board};
+use crate::position::Position;
+
 // https://entomology.gitlab.io/notation.html
 // Each piece used during a game has a unique name. This name is made of one lowercase letter for
 // the color (w for white or b for black) followed by one uppercase letter for the bug type (A for
@@ -33,6 +36,23 @@ impl Bug {
         bugs.insert(Bug::Queen, 1);
         bugs.insert(Bug::Spider, 3);
         return bugs;
+    }
+
+    pub fn available_moves(bug: Bug, board: &Board) -> Vec<Position> {
+        return match bug {
+            Bug::Ant => unimplemented!(),
+            Bug::Beetle => unimplemented!(),
+            Bug::Grasshopper => unimplemented!(),
+            Bug::Ladybug => unimplemented!(),
+            Bug::Mosquito => unimplemented!(),
+            Bug::Pillbug => unimplemented!(),
+            Bug::Queen => Bug::queen_moves(board),
+            Bug::Spider => unimplemented!(),
+        }
+    }
+
+    fn queen_moves(board: &Board) -> Vec<Position> {
+        unimplemented!();
     }
 }
 

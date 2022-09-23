@@ -6,6 +6,7 @@ use crate::state::State;
 use crate::position::Position;
 use crate::bug::Bug;
 use crate::color::Color;
+use crate::piece::Piece;
 
 mod state;
 mod position;
@@ -19,33 +20,15 @@ fn main() {
     let mut state = State::new();
     state
         .board
-        .spawn(&Position(0, 0), Bug::Queen, Color::Black, 1);
+        .spawn(&Position(0, 0), Piece::new(Bug::Queen, Color::Black, 1));
     println!("{}", state.board);
     for (i, pos) in state
         .board
-        .neighbor_positions(&Position(0, 0))
+        .positions_around(&Position(0, 0))
         .iter()
         .enumerate()
     {
-        state.board.spawn(pos, Bug::Ant, Color::Black, i as i8);
+        state.board.spawn(pos, Piece::new(Bug::Ant, Color::Black, i as i8));
         println!("{}", state.board);
     }
 }
-
-//#[cfg(test)]
-//mod tests {
-//    use crate::Bug;
-//    use crate::Color;
-//    use crate::Position;
-//    use crate::State;
-//
-//    #[test]
-//    fn spawn() {
-//        let mut state = State::new();
-//        state
-//            .board
-//            .spawn(&Position(0, 0), Bug::Ant, Color::Black, 1);
-//        let result = state.board.spawnable(Color::White, &Position(1, 0));
-//        assert!(!result);
-//    }
-//}
