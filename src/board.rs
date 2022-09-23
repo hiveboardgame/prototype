@@ -94,11 +94,36 @@ impl Board {
             .any(|p| p.contains(&Piece::new(Bug::Queen, color, 1)));
     }
 
+    fn walk_board(
+        &self,
+        position: Position,
+        excluded_position: &Position,
+        mut visited: HashSet<Position>,
+    ) -> HashSet<Position> {
+        visited.insert(position);
+        for pos in self.positions_taken_around(&position).iter() {
+            if pos != excluded_position && !visited.contains(pos) {
+                visited.extend(&self.walk_board(*pos, excluded_position, visited.clone()));
+            }
+        }
+        return visited;
+    }
+
     pub fn move_splits_hive(&self, position: &Position) -> bool {
-        let keys = self.board.keys().filter(|pos| *pos != position);
-        //TODO: call positions_taken_around on a random key and then recursively, make sure you can
-        //still iter all the whole hive
-        return false;
+        let len = self.board.keys().len();
+        let mut visited = HashSet::new();
+        match self
+            .board
+            .keys()
+            .filter(|p| *p != position)
+            .cloned()
+            .collect::<Vec<Position>>()
+            .pop()
+        {
+            Some(start) => visited = self.walk_board(start.clone(), position, visited.clone()),
+            None => return false,
+        }
+        return visited.len() < (len - 1);
     }
 
     pub fn top_layer_neighbors(&self, position: &Position) -> Vec<Piece> {
@@ -183,5 +208,61 @@ mod tests {
         let mut positions = board.positions_around(&Position(0, 0));
         let mut negative_space = board.negative_space();
         assert_eq!(negative_space.sort(), positions.sort());
+    }
+
+    #[test]
+    fn tests_walk_board() {
+        let mut board = Board::new();
+        board.spawn(&Position(0, 0), Piece::new(Bug::Queen, Color::Black, 1));
+        board.spawn(&Position(1, 0), Piece::new(Bug::Ant, Color::Black, 1));
+        board.spawn(&Position(2, 0), Piece::new(Bug::Ant, Color::Black, 2));
+        board.spawn(&Position(3, 0), Piece::new(Bug::Ant, Color::Black, 3));
+        let excluded = Position(5, 0);
+        let visited = board.walk_board(Position(0, 0), &excluded, HashSet::new());
+        assert_eq!(visited.len(), 4);
+        let excluded = Position(2, 0);
+        let visited = board.walk_board(Position(0, 0), &excluded, HashSet::new());
+        assert_eq!(visited.len(), 2);
+        let visited = board.walk_board(Position(0, 0), &excluded, HashSet::new());
+        assert_eq!(visited.len(), 2);
+        let visited = board.walk_board(Position(1, 0), &excluded, HashSet::new());
+        assert_eq!(visited.len(), 2);
+        let visited = board.walk_board(Position(3, 0), &excluded, HashSet::new());
+        assert_eq!(visited.len(), 1);
+
+        for pos in board.positions_around(&Position(0, 0)).iter() {
+            board.spawn(pos, Piece::new(Bug::Ant, Color::Black, 5));
+        }
+        for pos in board.positions_around(&Position(0, 0)).iter() {
+            let visited = board.walk_board(Position(3, 0), pos, HashSet::new());
+            if pos == &Position(1,0) {
+                assert_eq!(visited.len(), 2);
+            } else {
+                assert_eq!(visited.len(), 8);
+            }
+        }
+    }
+
+    #[test]
+    fn tests_move_splits_hive() {
+        let mut board = Board::new();
+        board.spawn(&Position(0, 0), Piece::new(Bug::Queen, Color::Black, 1));
+        board.spawn(&Position(1, 0), Piece::new(Bug::Ant, Color::Black, 1));
+        board.spawn(&Position(2, 0), Piece::new(Bug::Ant, Color::Black, 2));
+        board.spawn(&Position(3, 0), Piece::new(Bug::Ant, Color::Black, 3));
+        assert!(!board.move_splits_hive(&Position(0, 0)));
+        assert!(board.move_splits_hive(&Position(1, 0)));
+        assert!(board.move_splits_hive(&Position(2, 0)));
+        assert!(!board.move_splits_hive(&Position(3, 0)));
+        for pos in board.positions_around(&Position(0, 0)).iter() {
+            board.spawn(pos, Piece::new(Bug::Ant, Color::Black, 5));
+        }
+        for pos in board.positions_around(&Position(0, 0)).iter() {
+            if pos == &Position(1, 0) {
+                assert!(board.move_splits_hive(pos));
+            } else {
+                assert!(!board.move_splits_hive(pos));
+            };
+        }
     }
 }
