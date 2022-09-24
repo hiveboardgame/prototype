@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::fmt;
 
-use crate::board::{self, Board};
+use crate::board::{Board};
 use crate::position::Position;
 
 // https://entomology.gitlab.io/notation.html
@@ -35,11 +35,11 @@ impl Bug {
         bugs.insert(Bug::Pillbug, 1);
         bugs.insert(Bug::Queen, 1);
         bugs.insert(Bug::Spider, 3);
-        return bugs;
+        bugs
     }
 
     pub fn available_moves(bug: Bug, board: &Board) -> Vec<Position> {
-        return match bug {
+        match bug {
             Bug::Ant => unimplemented!(),
             Bug::Beetle => unimplemented!(),
             Bug::Grasshopper => unimplemented!(),
@@ -51,7 +51,7 @@ impl Bug {
         }
     }
 
-    fn queen_moves(board: &Board) -> Vec<Position> {
+    fn queen_moves(_board: &Board) -> Vec<Position> {
         unimplemented!();
     }
 }

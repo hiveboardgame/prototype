@@ -5,7 +5,7 @@ use std::fmt::Write;
 use crate::bug::Bug;
 use crate::color::Color;
 use crate::piece::Piece;
-use crate::position::Position;
+use crate::position::{self, Position};
 
 pub struct Board {
     board: HashMap<Position, Vec<Piece>>,
@@ -38,15 +38,15 @@ impl fmt::Display for Board {
         let mut s = "".to_string();
         for y in min_y..=max_y {
             if y.rem_euclid(2) == 1 {
-                write!(s, "{}", "  ")?;
+                write!(s, "  ")?;
             }
             for x in min_x..=max_x {
                 match self.board.get(&Position(x, y)) {
                     Some(piece) => write!(s, "{} ", piece.last().unwrap())?,
-                    None => write!(s, "{}", "    ")?,
+                    None => write!(s, "    ")?,
                 };
             }
-            write!(s, "{}", "\n")?;
+            writeln!(s)?;
         }
         write!(f, "{}", s)
     }
@@ -60,29 +60,37 @@ impl Board {
     }
 
     pub fn positions_around(&self, position: &Position) -> Vec<Position> {
-        return vec![
-            Position(position.0 - 1, position.1 - 1), // North West
-            Position(position.0, position.1 - 1),     // North East
-            Position(position.0 + 1, position.1),     // East
-            Position(position.0, position.1 + 1),     // South East
+        vec![
+            Position(position.0 + 0 , position.1 - 1), // North West
+            Position(position.0 + 1, position.1 - 1),     // North East
+            Position(position.0 + 1, position.1 + 0),     // East
+            Position(position.0 + 0, position.1 + 1),     // South East
             Position(position.0 - 1, position.1 + 1), // South West
-            Position(position.0 - 1, position.1),     // West
-        ];
+            Position(position.0 - 1, position.1 + 0),     // West
+        ]
     }
 
     pub fn positions_taken_around(&self, position: &Position) -> Vec<Position> {
-        return self
-            .positions_around(position)
+        self.positions_around(position)
             .into_iter()
             .filter(|pos| self.board.contains_key(pos))
-            .collect();
+            .collect()
     }
 
     pub fn neighbors(&self, position: &Position) -> Vec<Vec<Piece>> {
         return self
-            .positions_around(&position)
+            .positions_around(position)
             .iter()
-            .filter_map(|pos| self.board.get(&pos))
+            .filter_map(|pos| self.board.get(pos))
+            .cloned()
+            .collect();
+    }
+
+    pub fn spawnable_positions(&self, color: Color) -> Vec<Position> {
+        return self
+            .negative_space()
+            .iter()
+            .filter(|pos| self.spawnable(color, pos))
             .cloned()
             .collect();
     }
@@ -106,7 +114,7 @@ impl Board {
                 visited.extend(&self.walk_board(*pos, excluded_position, visited.clone()));
             }
         }
-        return visited;
+        visited
     }
 
     pub fn move_splits_hive(&self, position: &Position) -> bool {
@@ -120,17 +128,17 @@ impl Board {
             .collect::<Vec<Position>>()
             .pop()
         {
-            Some(start) => visited = self.walk_board(start.clone(), position, visited.clone()),
+            Some(start) => visited = self.walk_board(start, position, visited.clone()),
             None => return false,
         }
-        return visited.len() < (len - 1);
+        visited.len() < (len - 1)
     }
 
     pub fn top_layer_neighbors(&self, position: &Position) -> Vec<Piece> {
         return self
-            .positions_around(&position)
+            .positions_around(position)
             .iter()
-            .filter_map(|pos| self.board.get(&pos).and_then(|v| v.last()))
+            .filter_map(|pos| self.board.get(pos).and_then(|v| v.last()))
             .cloned()
             .collect();
     }
@@ -150,21 +158,23 @@ impl Board {
             .collect()
     }
 
+    /// Checks whether a piece of color can be spawned at position
     pub fn spawnable(&self, color: Color, position: &Position) -> bool {
+        if self.board.contains_key(position) {
+            return false;
+        }
         if self.board.keys().len() < 2 {
             return true;
         }
         !self
             .top_layer_neighbors(position)
             .iter()
-            .map(|piece| piece.color)
-            .collect::<Vec<Color>>()
-            .contains(&color.opposite())
+            .any(|piece| color == piece.color.opposite())
     }
 
     pub fn spawn(&mut self, position: &Position, piece: Piece) {
         self.board
-            .entry(position.clone())
+            .entry(*position)
             .and_modify(|v| v.push(piece))
             .or_insert(vec![piece]);
     }
@@ -173,6 +183,23 @@ impl Board {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn tests_positions_around() {
+        let board = Board::new();
+        let positions_0_0 = board
+            .positions_around(&Position(0, 0))
+            .into_iter()
+            .collect::<HashSet<Position>>();
+        for pos in positions_0_0.iter() {
+            let other = board
+                .positions_around(pos)
+                .into_iter()
+                .collect::<HashSet<Position>>();
+            assert_eq!(positions_0_0.intersection(&other).count(), 2);
+        }
+    }
+
     #[test]
     fn tests_positions_taken_around() {
         let mut board = Board::new();
@@ -187,12 +214,12 @@ mod tests {
         let mut board = Board::new();
         board.spawn(&Position(0, 0), Piece::new(Bug::Queen, Color::Black, 1));
         let mut pieces = vec![Piece::new(Bug::Ant, Color::Black, 1)];
-        board.spawn(&Position(1, 0), pieces.last().unwrap().clone());
+        board.spawn(&Position(1, 0), *pieces.last().unwrap());
         let neighbors = board.neighbors(&Position(0, 0));
         assert_eq!(neighbors, vec![pieces.clone()]);
 
         pieces.push(Piece::new(Bug::Beetle, Color::Black, 1));
-        board.spawn(&Position(1, 0), pieces.last().unwrap().clone());
+        board.spawn(&Position(1, 0), *pieces.last().unwrap());
         let neighbors = board.neighbors(&Position(0, 0));
         assert_eq!(neighbors, vec![pieces.clone()]);
 
@@ -202,12 +229,29 @@ mod tests {
     }
 
     #[test]
+    fn tests_top_layer_neighbors() {
+        let mut board = Board::new();
+        board.spawn(&Position(0, 0), Piece::new(Bug::Queen, Color::Black, 1));
+        board.spawn(&Position(1, 0), Piece::new(Bug::Ant, Color::Black, 1));
+        board.spawn(&Position(2, 0), Piece::new(Bug::Ant, Color::Black, 2));
+        board.spawn(&Position(3, 0), Piece::new(Bug::Ant, Color::Black, 3));
+        board.spawn(&Position(4, 0), Piece::new(Bug::Ant, Color::Black, 3));
+        board.spawn(&Position(3, 1), Piece::new(Bug::Ant, Color::Black, 3));
+        assert_eq!(board.top_layer_neighbors(&Position(0, 0)).len(), 1);
+        assert_eq!(board.top_layer_neighbors(&Position(1, 0)).len(), 2);
+        assert_eq!(board.top_layer_neighbors(&Position(2, 0)).len(), 2);
+        assert_eq!(board.top_layer_neighbors(&Position(3, 0)).len(), 3);
+    }
+
+    #[test]
     fn tests_negative_space() {
         let mut board = Board::new();
         board.spawn(&Position(0, 0), Piece::new(Bug::Queen, Color::Black, 1));
         let mut positions = board.positions_around(&Position(0, 0));
         let mut negative_space = board.negative_space();
         assert_eq!(negative_space.sort(), positions.sort());
+        board.spawn(&Position(0, 1), Piece::new(Bug::Queen, Color::Black, 1));
+        assert_eq!(board.negative_space().len(), 8);
     }
 
     #[test]
@@ -235,12 +279,52 @@ mod tests {
         }
         for pos in board.positions_around(&Position(0, 0)).iter() {
             let visited = board.walk_board(Position(3, 0), pos, HashSet::new());
-            if pos == &Position(1,0) {
+            if pos == &Position(1, 0) {
                 assert_eq!(visited.len(), 2);
             } else {
                 assert_eq!(visited.len(), 8);
             }
         }
+    }
+
+    #[test]
+    fn tests_spawnable_positions() {
+        let mut board = Board::new();
+        board.spawn(&Position(0, 0), Piece::new(Bug::Queen, Color::White, 1));
+        board.spawn(&Position(1, 0), Piece::new(Bug::Ant, Color::Black, 1));
+        let positions = board.spawnable_positions(Color::Black);
+        assert_eq!(positions.len(), 3);
+        let positions = board.spawnable_positions(Color::White);
+        assert_eq!(positions.len(), 3);
+        board.spawn(&Position(2, 0), Piece::new(Bug::Ant, Color::Black, 1));
+        let positions = board.spawnable_positions(Color::White);
+        assert_eq!(positions.len(), 0);
+    }
+
+    #[test]
+    fn tests_spawnable() {
+        let mut board = Board::new();
+        // if board is empty you can spawn
+        assert!(board.spawnable(Color::White, &Position(0, 0)));
+        board.spawn(&Position(0, 0), Piece::new(Bug::Ant, Color::White, 1));
+
+        // if position is already occupied, a bug can't be spawned there
+        assert!(!board.spawnable(Color::White, &Position(0, 0)));
+
+        // the second bug can always be played
+        assert!(board.spawnable(Color::Black, &Position(1, 0)));
+        board.spawn(&Position(1, 0), Piece::new(Bug::Ant, Color::Black, 1));
+
+        // now no other black bug can be spawned around the white one
+        for pos in board.positions_around(&Position(0, 0)).iter() {
+            assert!(!board.spawnable(Color::Black, pos));
+        }
+
+        // a white bug can be added adjacent to a white, but not a black bug
+        assert!(!board.spawnable(Color::White, &Position(2, 0)));
+        assert!(board.spawnable(Color::White, &Position(-1, 0)));
+        assert!(board.spawnable(Color::Black, &Position(2, 0)));
+        assert!(!board.spawnable(Color::Black, &Position(-1, 0)));
     }
 
     #[test]

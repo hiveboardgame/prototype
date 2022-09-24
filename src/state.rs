@@ -10,10 +10,10 @@ pub struct State {
 
 impl State {
     pub fn new() -> State {
-        return State {
+        State {
             board: Board::new(),
             player: (Player::new(Color::Black), Player::new(Color::White)),
             history: Vec::new(),
-        };
+        }
     }
 }

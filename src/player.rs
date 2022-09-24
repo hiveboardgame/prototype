@@ -9,10 +9,10 @@ pub struct Player {
 
 impl Player {
     pub fn new(color: Color) -> Player {
-        return Player {
-            color: color.clone(),
+        Player {
+            color,
             bugs: Bug::all(),
-        };
+        }
     }
 
     fn use_bug(&mut self, bug: &Bug) {
