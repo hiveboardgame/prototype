@@ -58,7 +58,7 @@ impl Position {
     // this implements "odd-r horizontal" which offsets odd rows to the right
     pub fn direction(&self, to: &Position) -> Direction {
         // even rows
-        if to.1.rem_euclid(2) == 0 {
+        if self.1.rem_euclid(2) == 0 {
             return match (to.0 - self.0, to.1 - self.1) {
                 (-1, -1) => Direction::NW,
                 (0, -1) => Direction::NE,
@@ -66,7 +66,10 @@ impl Position {
                 (0, 1) => Direction::SE,
                 (-1, 1) => Direction::SW,
                 (-1, 0) => Direction::W,
-                (_, _) => panic!("Direction of movement unknown, from: {} to: {}", self, to),
+                (x, y) => panic!(
+                    "(even) Direction of movement unknown, from: {} to: {} ({x},{y})",
+                    self, to
+                ),
             };
         }
         // odd rows
@@ -74,10 +77,13 @@ impl Position {
             (0, -1) => Direction::NW,
             (1, -1) => Direction::NE,
             (1, 0) => Direction::E,
-            (-1, -1) => Direction::SE,
+            (1, 1) => Direction::SE,
             (0, 1) => Direction::SW,
             (-1, 0) => Direction::W,
-            (_, _) => panic!("Direction of movement unknown, from: {} to: {}", self, to),
+            (x, y) => panic!(
+                "(odd) Direction of movement unknown, from: {} to: {} ({x},{y})",
+                self, to
+            ),
         };
     }
 
@@ -116,16 +122,13 @@ mod tests {
 
     #[test]
     fn tests_direction_and_to() {
-        for direction in Direction::all() {
-            let position = Position(0, 0);
-            println!("direction: {direction}");
-            let new_position = position.to(&direction);
-            println!("new_position: {new_position}");
-            let opposite_direction = new_position.direction(&position);
-            println!("opposite_direction: {opposite_direction}");
-            let inital_position = new_position.to(&opposite_direction);
-            println!("got to: {inital_position}");
-            assert_eq!(position, inital_position);
+        for position in [Position(0, 0), Position(0, 1)] {
+            for direction in Direction::all() {
+                let new_position = position.to(&direction);
+                let opposite_direction = new_position.direction(&position);
+                let inital_position = new_position.to(&opposite_direction);
+                assert_eq!(position, inital_position);
+            }
         }
     }
 }

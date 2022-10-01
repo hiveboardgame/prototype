@@ -148,38 +148,57 @@ impl Bug {
             .collect()
     }
 
+    fn climb(position: &Position, board: &Board) -> Vec<Position> {
+        board
+            .positions_taken_around(position)
+            .iter()
+            .filter(|pos| {
+                let level = board.board.get(pos).unwrap().len() + 1;
+                !board.gated(level, position, pos)
+            })
+            .cloned()
+            .collect()
+    }
+
+    fn descend(position: &Position, board: &Board) -> Vec<Position> {
+        board
+            .positions_available_around(position)
+            .iter()
+            .filter(|pos| {
+                let level = board.board.get(position).unwrap().len();
+                !board.gated(level, position, pos)
+            })
+            .cloned()
+            .collect()
+    }
+
     fn ladybug_moves(position: &Position, board: &Board) -> Vec<Position> {
         // find all adjacent bugs to climb on
-        let climb = board.positions_taken_around(position);
-        // get all bugs around the
-        let climb_crawl = climb
+        let first = Bug::climb(position, board);
+        println!("{:?}", first);
+        let second: HashSet<Position> = first
             .iter()
-            .flat_map(|pos| board.positions_taken_around(pos))
-            .filter(|pos| pos != position)
-            .collect::<HashSet<Position>>();
-        let crawl = climb_crawl
-            .iter()
-            .flat_map(|from| {
-                board
-                    .positions_available_around(&from)
+            .flat_map(|first_pos| {
+                Bug::climb(first_pos, &board)
                     .iter()
-                    .filter(|to| {
-                        board.gated(
-                            board
-                                .board
-                                .get(&from)
-                                .expect("Failed to get bug to compute level height")
-                                .len(),
-                            from,
-                            to,
-                        )
-                    })
+                    .filter(|pos| *pos != position && *pos != first_pos)
                     .cloned()
-                    .collect::<Vec<Position>>()
+                    .collect::<HashSet<Position>>()
             })
-            .filter(|pos| pos != position && !climb.contains(pos) && !climb_crawl.contains(pos))
             .collect::<HashSet<Position>>();
-        return crawl.iter().cloned().collect();
+        println!("{:?}", second);
+        let third: HashSet<Position> = second
+            .iter()
+            .flat_map(|pos| {
+                Bug::descend(pos, &board)
+                    .iter()
+                    .filter(|pos| *pos != position)
+                    .cloned()
+                    .collect::<HashSet<Position>>()
+            })
+            .collect::<HashSet<Position>>();
+        println!("{:?}", third);
+        return third.iter().cloned().collect();
     }
 
     fn queen_moves(position: &Position, board: &Board) -> Vec<Position> {
@@ -188,11 +207,8 @@ impl Bug {
 
     fn spider_moves(position: &Position, board: &Board) -> Vec<Position> {
         let first: HashSet<Position> = HashSet::from_iter(Bug::crawl(position, board));
-        println!("{:?}", first);
-        println!("{}", board);
         let mut board = board.clone();
         board.board.remove(position);
-        println!("{}", board);
         let second: HashSet<Position> = first
             .iter()
             .flat_map(|pos| {
@@ -203,29 +219,70 @@ impl Bug {
                     .collect::<HashSet<Position>>()
             })
             .collect::<HashSet<Position>>();
-        println!("{:?}", second);
-        let third: Vec<Position> = second
+        let third: HashSet<Position> = second
             .iter()
             .flat_map(|pos| {
-                println!("{pos}");
-                println!("{}", board);
                 Bug::crawl(pos, &board)
                     .iter()
                     .filter(|pos| *pos != position && !first.contains(pos) && !second.contains(pos))
                     .cloned()
                     .collect::<HashSet<Position>>()
             })
-            .collect::<Vec<Position>>();
-        println!("{:?}", third);
-        return third;
+            .collect::<HashSet<Position>>();
+        return third.iter().cloned().collect();
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use crate::{color::Color, piece::Piece};
 
-    use super::*;
+    #[test]
+    fn tests_descend() {
+        let mut board = Board::new();
+        board.spawn(&Position(0, 0), Piece::new(Bug::Queen, Color::White, 1));
+        board.spawn(&Position(0, 0), Piece::new(Bug::Beetle, Color::Black, 1));
+        board.spawn(&Position(0, 1), Piece::new(Bug::Ant, Color::White, 1));
+        board.spawn(&Position(0, 1), Piece::new(Bug::Beetle, Color::Black, 1));
+        board.spawn(&Position(0, -1), Piece::new(Bug::Ant, Color::White, 1));
+        board.spawn(&Position(0, -1), Piece::new(Bug::Beetle, Color::Black, 1));
+        let positions = Bug::descend(&Position(0, 0), &board);
+        assert_eq!(positions.len(), 3);
+        assert!(positions.contains(&Position(-1, -1)));
+        assert!(positions.contains(&Position(-1, 0)));
+        assert!(positions.contains(&Position(-1, 1)));
+    }
+
+    #[test]
+    fn tests_climb() {
+        let mut board = Board::new();
+        board.spawn(&Position(0, 0), Piece::new(Bug::Queen, Color::White, 1));
+        board.spawn(&Position(1, 0), Piece::new(Bug::Beetle, Color::Black, 1));
+        let positions = Bug::climb(&Position(1, 0), &board);
+        assert_eq!(positions.len(), 1);
+        assert!(positions.contains(&Position(0, 0)));
+
+        let mut board = Board::new();
+        board.spawn(&Position(0, 0), Piece::new(Bug::Beetle, Color::White, 1));
+        for (i, pos) in board.positions_around(&Position(0, 0)).iter().enumerate() {
+            board.spawn(pos, Piece::new(Bug::Queen, Color::Black, 1));
+            let positions = Bug::climb(&Position(0, 0), &board);
+            assert_eq!(positions.len(), i + 1);
+        }
+
+        let mut board = Board::new();
+        board.spawn(&Position(0, 0), Piece::new(Bug::Beetle, Color::White, 1));
+        for pos in board.positions_around(&Position(0, 0)).iter() {
+            board.spawn(pos, Piece::new(Bug::Queen, Color::Black, 1));
+        }
+        board.spawn(&Position(0, 1), Piece::new(Bug::Beetle, Color::White, 1));
+        board.spawn(&Position(0, -1), Piece::new(Bug::Beetle, Color::White, 2));
+        let positions = Bug::climb(&Position(0, 0), &board);
+        println!("{board}");
+        println!("{:?}", positions);
+        assert_eq!(positions.len(), 5);
+    }
 
     #[test]
     fn tests_crawl() {
@@ -244,7 +301,6 @@ mod tests {
         for pos in board.positions_around(&Position(0, 1)).iter() {
             board.spawn(pos, Piece::new(Bug::Queen, Color::Black, 1));
             let positions = Bug::crawl(&Position(0, 1), &board);
-            println!("{:?}",positions);
             assert_eq!(positions.len(), 2);
             board.board.remove(pos);
         }
@@ -347,10 +403,9 @@ mod tests {
         board.spawn(&Position(0, 0), Piece::new(Bug::Spider, Color::White, 1));
         board.spawn(&Position(1, 0), Piece::new(Bug::Ant, Color::Black, 1));
         let positions = Bug::spider_moves(&Position(0, 0), &board);
-        println!("{:?}", positions);
         assert_eq!(positions.len(), 1);
+        assert!(positions.contains(&Position(2, 0)));
     }
-
 
     #[test]
     fn tests_ladybug_moves() {
@@ -378,6 +433,7 @@ mod tests {
             Piece::new(Bug::Grasshopper, Color::Black, 1),
         );
         board.board.remove(&Position(1, 0));
+        println!("{board}");
         assert_eq!(Bug::ladybug_moves(&Position(0, 0), &board).len(), 14);
     }
 
