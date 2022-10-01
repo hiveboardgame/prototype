@@ -1,12 +1,10 @@
-// use std::collections::{HashMap, HashSet};
-// use std::fmt;
-// use std::fmt::Write;
-
+#![feature(is_some_with)]
 use crate::state::State;
 use crate::position::Position;
 use crate::bug::Bug;
 use crate::color::Color;
 use crate::piece::Piece;
+use crate::moves::Moves;
 
 mod state;
 mod position;
@@ -15,20 +13,19 @@ mod color;
 mod board;
 mod piece;
 mod player;
+mod moves;
 
 fn main() {
     let mut state = State::new();
     state
         .board
-        .spawn(&Position(0, 0), Piece::new(Bug::Queen, Color::Black, 1));
-    println!("{}", state.board);
-    for (i, pos) in state
+        .spawn(&Position(0, 0), Piece::new(Bug::Ladybug, Color::White, 1));
+    state
         .board
-        .positions_around(&Position(0, 0))
-        .iter()
-        .enumerate()
-    {
-        state.board.spawn(pos, Piece::new(Bug::Ant, Color::Black, i as i8));
-        println!("{}", state.board);
-    }
+        .spawn(&Position(1, 0), Piece::new(Bug::Queen, Color::Black, 1));
+    state
+        .board
+        .spawn(&Position(2, 0), Piece::new(Bug::Grasshopper, Color::Black, 1));
+    let moves = Moves::new(0, Color::Black, &state.board);
+    moves.print_moves(&Position(0, 0));
 }

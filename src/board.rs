@@ -5,10 +5,12 @@ use std::fmt::Write;
 use crate::bug::Bug;
 use crate::color::Color;
 use crate::piece::Piece;
-use crate::position::{self, Position};
+use crate::position::{Direction, Position};
 
+// TODO: make this a newtype?
+#[derive(Clone)]
 pub struct Board {
-    board: HashMap<Position, Vec<Piece>>,
+    pub board: HashMap<Position, Vec<Piece>>,
 }
 
 impl fmt::Display for Board {
@@ -59,21 +61,54 @@ impl Board {
         }
     }
 
+    pub fn positions_for_color(&self, color: Color) -> Vec<Position> {
+        self.board
+            .keys()
+            .filter(|pos| {
+                self.board
+                    .get(pos)
+                    .unwrap() // unwrap here is safe because we are got pos from board.keys
+                    .last()
+                    .expect(format!("Could not find a piece at pos: {}", pos).as_str())
+                    .is_color(color)
+            })
+            .cloned()
+            .collect()
+    }
+
     pub fn positions_around(&self, position: &Position) -> Vec<Position> {
         vec![
-            Position(position.0 + 0 , position.1 - 1), // North West
-            Position(position.0 + 1, position.1 - 1),     // North East
-            Position(position.0 + 1, position.1 + 0),     // East
-            Position(position.0 + 0, position.1 + 1),     // South East
-            Position(position.0 - 1, position.1 + 1), // South West
-            Position(position.0 - 1, position.1 + 0),     // West
+            position.to(&Direction::NW),
+            position.to(&Direction::NE),
+            position.to(&Direction::E),
+            position.to(&Direction::SE),
+            position.to(&Direction::SW),
+            position.to(&Direction::W),
         ]
+    }
+
+    pub fn gated(&self, level: usize, from: &Position, to: &Position) -> bool {
+        let (pos1, pos2) = from.common_adjacent_positions(to);
+        self.board
+            .get(&pos1)
+            .is_some_and(|v| v.len() >= level)
+            && self
+                .board
+                .get(&pos2)
+                .is_some_and(|v| v.len() >= level)
     }
 
     pub fn positions_taken_around(&self, position: &Position) -> Vec<Position> {
         self.positions_around(position)
             .into_iter()
             .filter(|pos| self.board.contains_key(pos))
+            .collect()
+    }
+
+    pub fn positions_available_around(&self, position: &Position) -> Vec<Position> {
+        self.positions_around(position)
+            .into_iter()
+            .filter(|pos| !self.board.contains_key(pos))
             .collect()
     }
 
@@ -117,7 +152,7 @@ impl Board {
         visited
     }
 
-    pub fn move_splits_hive(&self, position: &Position) -> bool {
+    pub fn pinned(&self, position: &Position) -> bool {
         let len = self.board.keys().len();
         let mut visited = HashSet::new();
         match self
@@ -172,11 +207,15 @@ impl Board {
             .any(|piece| color == piece.color.opposite())
     }
 
+    // TODO:either make this -> Result or make sure that
     pub fn spawn(&mut self, position: &Position, piece: Piece) {
+        // TODO: if !self.spawnable(piece.color, position) {
+        // TODO:     return Err(format!("Position: {} is not spawnable for {}", position, piece.color);
+        // TODO: }
         self.board
             .entry(*position)
             .and_modify(|v| v.push(piece))
-            .or_insert(vec![piece]);
+            .or_insert_with(|| vec![piece]);
     }
 }
 
@@ -296,8 +335,10 @@ mod tests {
         assert_eq!(positions.len(), 3);
         let positions = board.spawnable_positions(Color::White);
         assert_eq!(positions.len(), 3);
-        board.spawn(&Position(2, 0), Piece::new(Bug::Ant, Color::Black, 1));
+        board.spawn(&Position(2, 0), Piece::new(Bug::Ant, Color::White, 2));
         let positions = board.spawnable_positions(Color::White);
+        assert_eq!(positions.len(), 6);
+        let positions = board.spawnable_positions(Color::Black);
         assert_eq!(positions.len(), 0);
     }
 
@@ -334,18 +375,18 @@ mod tests {
         board.spawn(&Position(1, 0), Piece::new(Bug::Ant, Color::Black, 1));
         board.spawn(&Position(2, 0), Piece::new(Bug::Ant, Color::Black, 2));
         board.spawn(&Position(3, 0), Piece::new(Bug::Ant, Color::Black, 3));
-        assert!(!board.move_splits_hive(&Position(0, 0)));
-        assert!(board.move_splits_hive(&Position(1, 0)));
-        assert!(board.move_splits_hive(&Position(2, 0)));
-        assert!(!board.move_splits_hive(&Position(3, 0)));
+        assert!(!board.pinned(&Position(0, 0)));
+        assert!(board.pinned(&Position(1, 0)));
+        assert!(board.pinned(&Position(2, 0)));
+        assert!(!board.pinned(&Position(3, 0)));
         for pos in board.positions_around(&Position(0, 0)).iter() {
             board.spawn(pos, Piece::new(Bug::Ant, Color::Black, 5));
         }
         for pos in board.positions_around(&Position(0, 0)).iter() {
             if pos == &Position(1, 0) {
-                assert!(board.move_splits_hive(pos));
+                assert!(board.pinned(pos));
             } else {
-                assert!(!board.move_splits_hive(pos));
+                assert!(!board.pinned(pos));
             };
         }
     }

@@ -14,6 +14,10 @@ impl Piece {
     pub fn new(bug: Bug, color: Color, order: i8) -> Piece {
         Piece { bug, color, order }
     }
+
+    pub fn is_color(&self, color: Color) -> bool {
+        color == self.color
+    }
 }
 
 impl fmt::Display for Piece {
