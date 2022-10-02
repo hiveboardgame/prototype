@@ -19,7 +19,7 @@ fn main() {
     let mut state = State::new();
     state
         .board
-        .spawn(&Position(0, 0), Piece::new(Bug::Ladybug, Color::White, 1));
+        .spawn(&Position(0, 0), Piece::new(Bug::Ant, Color::White, 1));
     state
         .board
         .spawn(&Position(1, 0), Piece::new(Bug::Queen, Color::Black, 1));

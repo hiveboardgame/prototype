@@ -64,9 +64,8 @@ impl Bug {
         if board.pinned(position) {
             return vec![];
         }
-        let bug = board.board.get(position).unwrap().last().unwrap().bug;
-        return match bug {
-            Bug::Ant => unimplemented!(),
+        match board.board.get(position).unwrap().last().unwrap().bug {
+            Bug::Ant => Bug::ant_moves(position, board),
             Bug::Beetle => Bug::beetle_moves(position, board),
             Bug::Grasshopper => Bug::grasshopper_moves(position, board),
             Bug::Ladybug => Bug::ladybug_moves(position, board),
@@ -74,7 +73,7 @@ impl Bug {
             Bug::Pillbug => unimplemented!(),
             Bug::Queen => Bug::queen_moves(position, board),
             Bug::Spider => unimplemented!(),
-        };
+        }
     }
 
     pub fn grasshopper_moves(position: &Position, board: &Board) -> Vec<Position> {
@@ -203,6 +202,51 @@ impl Bug {
 
     fn queen_moves(position: &Position, board: &Board) -> Vec<Position> {
         Bug::crawl(position, board)
+    }
+
+    fn pillbug_moves(position: &Position, board: &Board) -> Vec<Position> {
+        Bug::crawl(position, board)
+    }
+
+    fn mosquito_moves(position: &Position, board: &Board) -> Vec<Position> {
+        board
+            .neighbors(position)
+            .iter()
+            .flat_map(|pieces| match pieces.last().unwrap().bug {
+                Bug::Ant => Bug::ant_moves(position, board),
+                Bug::Beetle => Bug::beetle_moves(position, board),
+                Bug::Grasshopper => Bug::grasshopper_moves(position, board),
+                Bug::Ladybug => Bug::ladybug_moves(position, board),
+                Bug::Mosquito => vec![],
+                Bug::Pillbug => Bug::pillbug_moves(position, board),
+                Bug::Queen => Bug::queen_moves(position, board),
+                Bug::Spider => Bug::spider_moves(position, board),
+            })
+            .collect()
+    }
+
+    fn ant_rec(found: &mut HashSet<Position>, unexplored: &mut HashSet<Position>, board: &Board) {
+        if let Some(position) = unexplored.iter().next().cloned() {
+            unexplored.remove(&position);
+            found.insert(position);
+            for pos in Bug::crawl(&position, board).into_iter() {
+                if !found.contains(&pos) {
+                    unexplored.insert(pos);
+                }
+            }
+            Bug::ant_rec(found, unexplored, board)
+        }
+    }
+
+    fn ant_moves(position: &Position, board: &Board) -> Vec<Position> {
+        let mut found = HashSet::new();
+        let mut unexplored = HashSet::new();
+        unexplored.insert(position.clone());
+        let mut board = board.clone();
+        board.board.remove(position);
+        Bug::ant_rec(&mut found, &mut unexplored, &board);
+        found.remove(position);
+        return found.iter().cloned().collect();
     }
 
     fn spider_moves(position: &Position, board: &Board) -> Vec<Position> {
@@ -459,6 +503,14 @@ mod tests {
         }
         board.board.remove(&Position(1, 0));
         assert_eq!(Bug::beetle_moves(&Position(0, 0), &board).len(), 5);
+    }
+
+    #[test]
+    fn tests_ant_moves() {
+        let mut board = Board::new();
+        board.spawn(&Position(0, 0), Piece::new(Bug::Ant, Color::White, 1));
+        board.spawn(&Position(1, 0), Piece::new(Bug::Beetle, Color::White, 1));
+        assert_eq!(Bug::ant_moves(&Position(0, 0), &board).len(), 5);
     }
 
     #[test]
