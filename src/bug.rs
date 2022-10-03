@@ -2,7 +2,7 @@ use std::collections::{HashMap, HashSet};
 use std::fmt;
 
 use crate::board::Board;
-use crate::position::{self, Direction, Position};
+use crate::position::{Direction, Position};
 
 // https://entomology.gitlab.io/notation.html
 // Each piece used during a game has a unique name. This name is made of one lowercase letter for
@@ -48,85 +48,48 @@ impl fmt::Display for Bug {
 
 impl Bug {
     pub fn all() -> HashMap<Bug, i8> {
-        let mut bugs = HashMap::new();
-        bugs.insert(Bug::Ant, 3);
-        bugs.insert(Bug::Beetle, 2);
-        bugs.insert(Bug::Grasshopper, 3);
-        bugs.insert(Bug::Ladybug, 1);
-        bugs.insert(Bug::Mosquito, 1);
-        bugs.insert(Bug::Pillbug, 1);
-        bugs.insert(Bug::Queen, 1);
-        bugs.insert(Bug::Spider, 3);
-        bugs
+        HashMap::from([
+            (Bug::Ant, 3),
+            (Bug::Beetle, 2),
+            (Bug::Grasshopper, 3),
+            (Bug::Ladybug, 1),
+            (Bug::Mosquito, 1),
+            (Bug::Pillbug, 1),
+            (Bug::Queen, 1),
+            (Bug::Spider, 3),
+        ])
     }
 
-    pub fn available_moves(position: &Position, board: &Board) -> Vec<Position> {
+    pub fn available_moves(position: &Position, board: &Board) -> HashMap<Position, Vec<Position>> {
+        let mut moves = HashMap::new();
         if board.pinned(position) {
-            return vec![];
+            return moves;
         }
-        match board.board.get(position).unwrap().last().unwrap().bug {
+        let positions = match board.board.get(position).unwrap().last().unwrap().bug {
             Bug::Ant => Bug::ant_moves(position, board),
             Bug::Beetle => Bug::beetle_moves(position, board),
             Bug::Grasshopper => Bug::grasshopper_moves(position, board),
             Bug::Ladybug => Bug::ladybug_moves(position, board),
-            Bug::Mosquito => unimplemented!(),
-            Bug::Pillbug => unimplemented!(),
+            Bug::Mosquito => Bug::mosquito_moves(position, board),
+            Bug::Pillbug => Bug::pillbug_moves(position, board),
             Bug::Queen => Bug::queen_moves(position, board),
-            Bug::Spider => unimplemented!(),
-        }
+            Bug::Spider => Bug::spider_moves(position, board),
+        };
+        moves.insert(position.clone(), positions);
+        return moves;
     }
 
-    pub fn grasshopper_moves(position: &Position, board: &Board) -> Vec<Position> {
-        // get the directions of the grasshopper's neighbors
-        let direction_of_neighbors = board
-            .positions_taken_around(position)
-            .iter()
-            .map(|pos| position.direction(pos))
-            .collect::<Vec<Direction>>();
-        let mut positions = vec![];
-        // move in the given direction
-        for dir in direction_of_neighbors.iter() {
-            let mut cur_pos = position.clone();
-            // until there is a free position
-            while let Some(_) = board.board.get(&cur_pos.to(dir)) {
-                cur_pos = cur_pos.to(dir);
+    pub fn available_abilities(
+        position: &Position,
+        board: &Board,
+    ) -> HashMap<Position, Vec<Position>> {
+        match board.board.get(position).unwrap().last().unwrap().bug {
+            Bug::Pillbug => Bug::pillbug_throw(position, board),
+            Bug::Mosquito if board.board.get(position).unwrap().len() == 1 => {
+                Bug::pillbug_throw(position, board)
             }
-            // then add the free position
-            positions.push(cur_pos.to(dir));
+            _ => HashMap::new(),
         }
-        return positions;
-    }
-
-    pub fn beetle_moves(position: &Position, board: &Board) -> Vec<Position> {
-        let level = board
-            .board
-            .get(position)
-            .expect(&format!("There is no beetle at pos: {}", position))
-            .len();
-        // get free positions around beetle
-        let free_around_beetle: HashSet<Position> =
-            HashSet::from_iter(board.positions_available_around(position));
-        // the positions that are taken, beetles can climb on them
-        let taken_around_beetle: HashSet<Position> =
-            HashSet::from_iter(board.positions_taken_around(position));
-        // get the positions that are free around the neighbors
-        let free_around_neighbors = HashSet::from_iter(
-            board
-                .positions_taken_around(position)
-                .iter()
-                .flat_map(|pos| board.positions_available_around(pos)),
-        );
-        // intersect to find connected positions that the beetle can move on without climbing
-        free_around_beetle
-            .intersection(&free_around_neighbors)
-            // filter out the positions we cannot crawl to
-            .filter(|pos| !board.gated(level, position, pos))
-            .cloned()
-            .collect::<HashSet<Position>>()
-            // add the climbable positions
-            .union(&taken_around_beetle)
-            .cloned()
-            .collect()
     }
 
     fn crawl(position: &Position, board: &Board) -> Vec<Position> {
@@ -171,58 +134,15 @@ impl Bug {
             .collect()
     }
 
-    fn ladybug_moves(position: &Position, board: &Board) -> Vec<Position> {
-        // find all adjacent bugs to climb on
-        let first = Bug::climb(position, board);
-        println!("{:?}", first);
-        let second: HashSet<Position> = first
-            .iter()
-            .flat_map(|first_pos| {
-                Bug::climb(first_pos, &board)
-                    .iter()
-                    .filter(|pos| *pos != position && *pos != first_pos)
-                    .cloned()
-                    .collect::<HashSet<Position>>()
-            })
-            .collect::<HashSet<Position>>();
-        println!("{:?}", second);
-        let third: HashSet<Position> = second
-            .iter()
-            .flat_map(|pos| {
-                Bug::descend(pos, &board)
-                    .iter()
-                    .filter(|pos| *pos != position)
-                    .cloned()
-                    .collect::<HashSet<Position>>()
-            })
-            .collect::<HashSet<Position>>();
-        println!("{:?}", third);
-        return third.iter().cloned().collect();
-    }
-
-    fn queen_moves(position: &Position, board: &Board) -> Vec<Position> {
-        Bug::crawl(position, board)
-    }
-
-    fn pillbug_moves(position: &Position, board: &Board) -> Vec<Position> {
-        Bug::crawl(position, board)
-    }
-
-    fn mosquito_moves(position: &Position, board: &Board) -> Vec<Position> {
-        board
-            .neighbors(position)
-            .iter()
-            .flat_map(|pieces| match pieces.last().unwrap().bug {
-                Bug::Ant => Bug::ant_moves(position, board),
-                Bug::Beetle => Bug::beetle_moves(position, board),
-                Bug::Grasshopper => Bug::grasshopper_moves(position, board),
-                Bug::Ladybug => Bug::ladybug_moves(position, board),
-                Bug::Mosquito => vec![],
-                Bug::Pillbug => Bug::pillbug_moves(position, board),
-                Bug::Queen => Bug::queen_moves(position, board),
-                Bug::Spider => Bug::spider_moves(position, board),
-            })
-            .collect()
+    fn ant_moves(position: &Position, board: &Board) -> Vec<Position> {
+        let mut found = HashSet::new();
+        let mut unexplored = HashSet::new();
+        unexplored.insert(position.clone());
+        let mut board = board.clone();
+        board.board.remove(position);
+        Bug::ant_rec(&mut found, &mut unexplored, &board);
+        found.remove(position);
+        return found.iter().cloned().collect();
     }
 
     fn ant_rec(found: &mut HashSet<Position>, unexplored: &mut HashSet<Position>, board: &Board) {
@@ -238,15 +158,124 @@ impl Bug {
         }
     }
 
-    fn ant_moves(position: &Position, board: &Board) -> Vec<Position> {
-        let mut found = HashSet::new();
-        let mut unexplored = HashSet::new();
-        unexplored.insert(position.clone());
-        let mut board = board.clone();
-        board.board.remove(position);
-        Bug::ant_rec(&mut found, &mut unexplored, &board);
-        found.remove(position);
-        return found.iter().cloned().collect();
+    pub fn beetle_moves(position: &Position, board: &Board) -> Vec<Position> {
+        let mut positions = Vec::new();
+        for pos in Bug::climb(position, board).into_iter() {
+            positions.push(pos);
+        }
+        if board.board.get(position).unwrap().len() == 1 {
+            for pos in Bug::crawl(position, board).into_iter() {
+                if !positions.contains(&pos) {
+                    positions.push(pos);
+                }
+            }
+        } else {
+            for pos in Bug::descend(position, board).into_iter() {
+                if !positions.contains(&pos) {
+                    positions.push(pos);
+                }
+            }
+        }
+        return positions;
+    }
+
+    pub fn grasshopper_moves(position: &Position, board: &Board) -> Vec<Position> {
+        // get the directions of the grasshopper's neighbors
+        let direction_of_neighbors = board
+            .positions_taken_around(position)
+            .iter()
+            .map(|pos| position.direction(pos))
+            .collect::<Vec<Direction>>();
+        let mut positions = vec![];
+        // move in the given direction
+        for dir in direction_of_neighbors.iter() {
+            let mut cur_pos = position.clone();
+            // until there is a free position
+            while let Some(_) = board.board.get(&cur_pos.to(dir)) {
+                cur_pos = cur_pos.to(dir);
+            }
+            // then add the free position
+            positions.push(cur_pos.to(dir));
+        }
+        return positions;
+    }
+
+    fn ladybug_moves(position: &Position, board: &Board) -> Vec<Position> {
+        // find all adjacent bugs to climb on
+        let first = Bug::climb(position, board);
+        // stay on top of the hive by performing another climb
+        let second: HashSet<Position> = first
+            .iter()
+            .flat_map(|first_pos| {
+                Bug::climb(first_pos, &board)
+                    .iter()
+                    .filter(|pos| *pos != position && *pos != first_pos)
+                    .cloned()
+                    .collect::<HashSet<Position>>()
+            })
+            .collect::<HashSet<Position>>();
+        // then descend into a free position
+        let third: HashSet<Position> = second
+            .iter()
+            .flat_map(|pos| {
+                Bug::descend(pos, &board)
+                    .iter()
+                    .filter(|pos| *pos != position)
+                    .cloned()
+                    .collect::<HashSet<Position>>()
+            })
+            .collect::<HashSet<Position>>();
+        return third.iter().cloned().collect();
+    }
+
+    fn mosquito_moves(position: &Position, board: &Board) -> Vec<Position> {
+        return if board.board.get(position).unwrap().len() == 1 {
+            board
+                .neighbors(position)
+                .iter()
+                .flat_map(|pieces| match pieces.last().unwrap().bug {
+                    Bug::Ant => Bug::ant_moves(position, board),
+                    Bug::Beetle => Bug::beetle_moves(position, board),
+                    Bug::Grasshopper => Bug::grasshopper_moves(position, board),
+                    Bug::Ladybug => Bug::ladybug_moves(position, board),
+                    Bug::Mosquito => vec![],
+                    Bug::Pillbug => Bug::pillbug_moves(position, board),
+                    Bug::Queen => Bug::queen_moves(position, board),
+                    Bug::Spider => Bug::spider_moves(position, board),
+                })
+                .collect()
+        } else {
+            Bug::beetle_moves(position, board)
+        };
+    }
+
+    fn pillbug_moves(position: &Position, board: &Board) -> Vec<Position> {
+        Bug::crawl(position, board)
+    }
+
+    fn pillbug_throw(position: &Position, board: &Board) -> HashMap<Position, Vec<Position>> {
+        let mut moves = HashMap::new();
+        // get all the positions the pillbug can throw a bug to
+        let to = board
+            .positions_available_around(position)
+            .iter()
+            .filter(|pos| !board.gated(2, position, pos))
+            .cloned()
+            .collect::<Vec<Position>>();
+        // get bugs around the pillbug that aren't pinned
+        for pos in board
+            .positions_taken_around(position)
+            .iter()
+            .filter(|pos| !board.pinned(pos) && !board.gated(1, pos, position))
+            .into_iter()
+        {
+            moves.insert(pos.clone(), to.clone());
+        }
+        return moves;
+    }
+
+    fn queen_moves(position: &Position, board: &Board) -> Vec<Position> {
+        Bug::crawl(position, board)
     }
 
     fn spider_moves(position: &Position, board: &Board) -> Vec<Position> {

@@ -52,7 +52,7 @@ impl<'board> Moves<'board> {
         println!("Positions: {:?}", positions);
         println!("Moves: {:?}", moves);
         println!("Board:");
-        positions.append(&mut moves.clone());
+        positions.append(&mut moves.get(position).unwrap().clone());
         positions.sort_by(|a, b| a.1.cmp(&b.1).then(a.0.cmp(&b.0)));
 
         let min_x = positions
@@ -88,7 +88,7 @@ impl<'board> Moves<'board> {
                 match self.board.board.get(&Position(x, y)) {
                     Some(piece) => s.push_str(format!("{} ", piece.last().unwrap()).as_str()),
                     None => {
-                        if moves.contains(&Position(x, y)) {
+                        if moves.contains_key(&Position(x, y)) {
                             s.push_str(bug.as_str())
                         } else {
                             s.push_str("    ")
