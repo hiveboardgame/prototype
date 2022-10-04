@@ -4,20 +4,6 @@ use std::fmt;
 use crate::board::Board;
 use crate::position::{Direction, Position};
 
-// https://entomology.gitlab.io/notation.html
-// Each piece used during a game has a unique name. This name is made of one lowercase letter for
-// the color (w for white or b for black) followed by one uppercase letter for the bug type (A for
-// Ant, B for Beetle, G for Grasshopper, L for Ladybug, M for Mosquito, P for Pillbug, Q for Queen
-// Bee or S for Spider). In case the bug appears multiple times, the piece name also contains one
-// digit indicating in which order that piece came into play. For instance, wA1 is the first white
-// Ant that has been added to the hive while bB2 is the second black Beetle. Since there is only
-// one copy of it, the white Pillbug is simply named wP and not wP1.
-//
-//
-// Bugs can:
-// *crawl* which means they stay on their initial level
-// *climb* which means they increase their level to what ever is 1 higher than the level already
-// taken
 #[derive(Hash, Eq, PartialEq, Clone, Copy)]
 pub enum Bug {
     Ant,
@@ -76,6 +62,7 @@ impl Bug {
             Bug::Spider => Bug::spider_moves(position, board),
         };
         moves.insert(position.clone(), positions);
+        moves.extend(Bug::available_abilities(position, board));
         return moves;
     }
 
@@ -85,7 +72,7 @@ impl Bug {
     ) -> HashMap<Position, Vec<Position>> {
         match board.board.get(position).unwrap().last().unwrap().bug {
             Bug::Pillbug => Bug::pillbug_throw(position, board),
-            Bug::Mosquito if board.board.get(position).unwrap().len() == 1 => {
+            Bug::Mosquito if board.level(position) == 1 => {
                 Bug::pillbug_throw(position, board)
             }
             _ => HashMap::new(),
@@ -115,8 +102,7 @@ impl Bug {
             .positions_taken_around(position)
             .iter()
             .filter(|pos| {
-                let level = board.board.get(pos).unwrap().len() + 1;
-                !board.gated(level, position, pos)
+                !board.gated(board.level(pos) + 1, position, pos)
             })
             .cloned()
             .collect()
@@ -127,8 +113,7 @@ impl Bug {
             .positions_available_around(position)
             .iter()
             .filter(|pos| {
-                let level = board.board.get(position).unwrap().len();
-                !board.gated(level, position, pos)
+                !board.gated(board.level(position), position, pos)
             })
             .cloned()
             .collect()
@@ -163,7 +148,7 @@ impl Bug {
         for pos in Bug::climb(position, board).into_iter() {
             positions.push(pos);
         }
-        if board.board.get(position).unwrap().len() == 1 {
+        if board.level(position) == 1 {
             for pos in Bug::crawl(position, board).into_iter() {
                 if !positions.contains(&pos) {
                     positions.push(pos);
@@ -229,7 +214,7 @@ impl Bug {
     }
 
     fn mosquito_moves(position: &Position, board: &Board) -> Vec<Position> {
-        return if board.board.get(position).unwrap().len() == 1 {
+        return if board.level(position) == 1 {
             board
                 .neighbors(position)
                 .iter()
@@ -266,9 +251,10 @@ impl Bug {
         for pos in board
             .positions_taken_around(position)
             .iter()
-            .filter(|pos| !board.pinned(pos) && !board.gated(1, pos, position))
+            .filter(|p| !board.pinned(p) && !board.gated(1, p, position) && board.level(p) <= 1)
             .into_iter()
         {
+            println!("pos {} level {}", pos, board.level(pos));
             moves.insert(pos.clone(), to.clone());
         }
         return moves;
@@ -312,6 +298,81 @@ mod tests {
     use crate::{color::Color, piece::Piece};
 
     #[test]
+    fn tests_available_moves() {
+        let mut board = Board::new();
+        board.spawn(&Position(0, 0), Piece::new(Bug::Pillbug, Color::White, 1));
+        board.spawn(&Position(1, 0), Piece::new(Bug::Mosquito, Color::Black, 1));
+        board.spawn(&Position(1, 0), Piece::new(Bug::Beetle, Color::Black, 1));
+        let moves = Bug::available_moves(&Position(0, 0), &board);
+        assert_eq!(moves.get(&Position(0, 0)).unwrap().len(), 2);
+        let moves = Bug::available_moves(&Position(1, 0), &board);
+        assert_eq!(moves.get(&Position(1, 0)).unwrap().len(), 6);
+    }
+
+    #[test]
+    fn tests_available_abilities() {
+        let mut board = Board::new();
+        board.spawn(&Position(0, 0), Piece::new(Bug::Pillbug, Color::White, 1));
+        board.spawn(&Position(1, 0), Piece::new(Bug::Mosquito, Color::Black, 1));
+        let positions = Bug::available_abilities(&Position(0, 0), &board);
+        assert_eq!(positions.get(&Position(1, 0)).unwrap().len(), 5);
+        let positions = Bug::available_abilities(&Position(1, 0), &board);
+        assert_eq!(positions.get(&Position(0, 0)).unwrap().len(), 5);
+    }
+
+    #[test]
+    fn tests_pillbug_throw() {
+        let mut board = Board::new();
+        board.spawn(&Position(0, 0), Piece::new(Bug::Pillbug, Color::White, 1));
+        board.spawn(&Position(1, 0), Piece::new(Bug::Mosquito, Color::Black, 1));
+        let positions = Bug::pillbug_throw(&Position(0, 0), &board);
+        assert_eq!(positions.get(&Position(1, 0)).unwrap().len(), 5);
+
+        let mut board = Board::new();
+        board.spawn(&Position(0, 0), Piece::new(Bug::Pillbug, Color::White, 1));
+        board.spawn(&Position(1, 0), Piece::new(Bug::Mosquito, Color::Black, 1));
+        board.spawn(&Position(1, 0), Piece::new(Bug::Beetle, Color::Black, 1));
+        let positions = Bug::pillbug_throw(&Position(0, 0), &board);
+        assert!(!positions.contains_key(&Position(1, 0)));
+    }
+
+    #[test]
+    fn tests_pillbug_moves() {
+        let mut board = Board::new();
+        board.spawn(&Position(0, 0), Piece::new(Bug::Pillbug, Color::White, 1));
+        board.spawn(&Position(1, 0), Piece::new(Bug::Mosquito, Color::Black, 1));
+        let positions = Bug::pillbug_moves(&Position(0, 0), &board);
+        assert_eq!(positions.len(), 2);
+    }
+
+    #[test]
+    fn tests_mosquito_moves() {
+        let mut board = Board::new();
+        board.spawn(&Position(0, 0), Piece::new(Bug::Mosquito, Color::White, 1));
+        board.spawn(&Position(1, 0), Piece::new(Bug::Mosquito, Color::Black, 1));
+        let positions = Bug::mosquito_moves(&Position(0, 0), &board);
+        assert_eq!(positions.len(), 0);
+
+        let mut board = Board::new();
+        board.spawn(&Position(0, 0), Piece::new(Bug::Mosquito, Color::White, 1));
+        board.spawn(&Position(1, 0), Piece::new(Bug::Ant, Color::Black, 1));
+        let positions = Bug::mosquito_moves(&Position(0, 0), &board);
+        assert_eq!(positions.len(), 5);
+
+        let mut board = Board::new();
+        board.spawn(&Position(0, 0), Piece::new(Bug::Mosquito, Color::White, 1));
+        board.spawn(&Position(1, 0), Piece::new(Bug::Pillbug, Color::Black, 1));
+        let positions = Bug::mosquito_moves(&Position(0, 0), &board);
+        assert_eq!(positions.len(), 2);
+
+        let mut board = Board::new();
+        board.spawn(&Position(0, 0), Piece::new(Bug::Queen, Color::White, 1));
+        board.spawn(&Position(0, 0), Piece::new(Bug::Mosquito, Color::Black, 1));
+        let positions = Bug::mosquito_moves(&Position(0, 0), &board);
+        assert_eq!(positions.len(), 6);
+    }
+
+    #[test]
     fn tests_descend() {
         let mut board = Board::new();
         board.spawn(&Position(0, 0), Piece::new(Bug::Queen, Color::White, 1));
@@ -352,8 +413,6 @@ mod tests {
         board.spawn(&Position(0, 1), Piece::new(Bug::Beetle, Color::White, 1));
         board.spawn(&Position(0, -1), Piece::new(Bug::Beetle, Color::White, 2));
         let positions = Bug::climb(&Position(0, 0), &board);
-        println!("{board}");
-        println!("{:?}", positions);
         assert_eq!(positions.len(), 5);
     }
 

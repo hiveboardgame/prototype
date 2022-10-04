@@ -8,7 +8,6 @@ pub struct Moves<'board> {
     board: &'board Board,
     moves: HashMap<(Piece, Position), Vec<Position>>,
     spawnable_positions: Vec<Position>,
-    spawnable_bugs: Vec<Bug>,
     reserve: HashMap<Bug, i8>,
 }
 
@@ -19,40 +18,55 @@ impl<'board> Moves<'board> {
             color,
             board,
             moves: Moves::moves(color, board),
-            spawnable_bugs: Moves::spawnable_bugs(color, board),
             spawnable_positions: Moves::spawnable_positions(color, board),
             reserve: Moves::reserve(color, board),
         }
     }
 
     fn moves(color: Color, board: &Board) -> HashMap<(Piece, Position), Vec<Position>> {
-        return HashMap::new();
-    }
-
-    fn spawnable_bugs(color: Color, board: &Board) -> Vec<Bug> {
-        return Vec::new();
-    }
-
-    fn spawnable_positions(color: Color, board: &Board) -> Vec<Position> {
-        return Vec::new();
+        let mut moves = HashMap::new();
+        for pos in board.board.keys() {
+            if board.top_piece(pos).is_color(color) {
+                for (start_pos, target_positions) in Bug::available_moves(pos, board) {
+                    moves.insert((board.top_piece(&start_pos), start_pos), target_positions);
+                }
+            }
+        }
+        return moves;
     }
 
     fn reserve(color: Color, board: &Board) -> HashMap<Bug, i8> {
-        return HashMap::new();
+        let mut bugs = Bug::all();
+        for pieces in board.board.values() {
+            for piece in pieces {
+                if piece.is_color(color) {
+                    if let Some(i) = bugs.get_mut(&piece.bug) {
+                        *i -= 1;
+                    }
+                }
+            }
+        }
+        return bugs;
     }
 
-    pub fn print_moves(&self, position: &Position) {
+    fn spawnable_positions(color: Color, board: &Board) -> Vec<Position> {
+        board.spawnable_positions(color)
+    }
+
+    pub fn print_available_moves(&self, position: &Position) {
         let mut positions = self.board.board.keys().cloned().collect::<Vec<Position>>();
         let bug = format!(
             "*{}* ",
             self.board.board.get(position).unwrap().last().unwrap().bug
         );
-        let moves = Bug::available_moves(&position, self.board);
         println!("Turn: {}", self.number);
         println!("Positions: {:?}", positions);
-        println!("Moves: {:?}", moves);
+        println!("Moves: {:?}", self.moves);
         println!("Board:");
-        positions.append(&mut moves.get(position).unwrap().clone());
+        let piece = self.board.board.get(position).unwrap().last().unwrap();
+        println!("Piece: {}", piece);
+        println!("Position: {}", position);
+        positions.append(&mut self.moves.get(&(*piece, *position)).unwrap().clone());
         positions.sort_by(|a, b| a.1.cmp(&b.1).then(a.0.cmp(&b.0)));
 
         let min_x = positions
@@ -88,7 +102,7 @@ impl<'board> Moves<'board> {
                 match self.board.board.get(&Position(x, y)) {
                     Some(piece) => s.push_str(format!("{} ", piece.last().unwrap()).as_str()),
                     None => {
-                        if moves.contains_key(&Position(x, y)) {
+                        if self.moves.get(&(*piece, *position)).unwrap().contains(&Position(x,y)) {
                             s.push_str(bug.as_str())
                         } else {
                             s.push_str("    ")

@@ -87,15 +87,21 @@ impl Board {
         ]
     }
 
+    pub fn level(&self, position: &Position) -> usize {
+        return match self.board.get(position) {
+            None => 0,
+            Some(pieces) => pieces.len(),
+        };
+    }
+
+    pub fn top_piece(&self, position: &Position) -> Piece {
+        self.board.get(position).unwrap().last().unwrap().clone()
+    }
+
     pub fn gated(&self, level: usize, from: &Position, to: &Position) -> bool {
         let (pos1, pos2) = from.common_adjacent_positions(to);
-        self.board
-            .get(&pos1)
-            .is_some_and(|v| v.len() >= level)
-            && self
-                .board
-                .get(&pos2)
-                .is_some_and(|v| v.len() >= level)
+        self.board.get(&pos1).is_some_and(|v| v.len() >= level)
+            && self.board.get(&pos2).is_some_and(|v| v.len() >= level)
     }
 
     pub fn positions_taken_around(&self, position: &Position) -> Vec<Position> {
