@@ -5,7 +5,7 @@ use std::fmt::Write;
 use crate::bug::Bug;
 use crate::color::Color;
 use crate::history::History;
-use crate::piece::{self, Piece};
+use crate::piece::{Piece};
 use crate::position::{Direction, Position};
 
 // TODO: make this a newtype?
@@ -97,15 +97,15 @@ impl Board {
         if self.board.get(current).unwrap().is_empty() {
             self.board.remove(current);
         }
-        self.insert(&target, piece);
+        self.insert(target, piece);
     }
 
     pub fn position(&self, piece: &Piece) -> Position {
         self.board
             .iter()
             .find_map(|(pos, pieces)| {
-                if pieces.contains(&piece) {
-                    Some(pos.clone())
+                if pieces.contains(piece) {
+                    Some(*pos)
                 } else {
                     None
                 }
@@ -125,7 +125,7 @@ impl Board {
                     .get(pos)
                     .unwrap() // unwrap here is safe because we are got pos from board.keys
                     .last()
-                    .expect(format!("Could not find a piece at pos: {}", pos).as_str())
+                    .unwrap_or_else(|| panic!("Could not find a piece at pos: {}", pos))
                     .is_color(color)
             })
             .cloned()
@@ -151,7 +151,7 @@ impl Board {
     }
 
     pub fn top_piece(&self, position: &Position) -> Piece {
-        self.board.get(position).unwrap().last().unwrap().clone()
+        *self.board.get(position).unwrap().last().unwrap()
     }
 
     pub fn gated(&self, level: usize, from: &Position, to: &Position) -> bool {

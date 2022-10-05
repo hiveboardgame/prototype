@@ -32,7 +32,7 @@ impl<'board> Moves<'board> {
                 }
             }
         }
-        return moves;
+        moves
     }
 
     fn reserve(color: Color, board: &Board) -> HashMap<Bug, i8> {
@@ -46,7 +46,7 @@ impl<'board> Moves<'board> {
                 }
             }
         }
-        return bugs;
+        bugs
     }
 
     fn spawnable_positions(color: &Color, board: &Board) -> Vec<Position> {
@@ -94,7 +94,7 @@ impl<'board> Moves<'board> {
             .1;
 
         let mut s = "".to_string();
-        for (i, y) in (min_y..=max_y).enumerate() {
+        for (_i, y) in (min_y..=max_y).enumerate() {
             if y.rem_euclid(2) == 1 {
                 s.push_str("  ")
             }
@@ -110,7 +110,7 @@ impl<'board> Moves<'board> {
                     }
                 };
             }
-            s.push_str("\n");
+            s.push('\n');
         }
         println!("{s}");
     }

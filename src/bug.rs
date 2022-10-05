@@ -33,7 +33,7 @@ impl fmt::Display for Bug {
 }
 
 impl Bug {
-    pub fn to_str(&self) -> &str {
+    pub fn as_str(&self) -> &str {
         match self {
             Bug::Ant => "A",
             Bug::Beetle => "B",
@@ -88,9 +88,9 @@ impl Bug {
             Bug::Queen => Bug::queen_moves(position, board),
             Bug::Spider => Bug::spider_moves(position, board),
         };
-        moves.insert(position.clone(), positions);
+        moves.insert(*position, positions);
         moves.extend(Bug::available_abilities(position, board));
-        return moves;
+        moves
     }
 
     pub fn available_abilities(
@@ -143,7 +143,7 @@ impl Bug {
     fn ant_moves(position: &Position, board: &Board) -> Vec<Position> {
         let mut found = HashSet::new();
         let mut unexplored = HashSet::new();
-        unexplored.insert(position.clone());
+        unexplored.insert(*position);
         let mut board = board.clone();
         board.board.remove(position);
         Bug::ant_rec(&mut found, &mut unexplored, &board);
@@ -182,7 +182,7 @@ impl Bug {
                 }
             }
         }
-        return positions;
+        positions
     }
 
     pub fn grasshopper_moves(position: &Position, board: &Board) -> Vec<Position> {
@@ -195,15 +195,15 @@ impl Bug {
         let mut positions = vec![];
         // move in the given direction
         for dir in direction_of_neighbors.iter() {
-            let mut cur_pos = position.clone();
+            let mut cur_pos = *position;
             // until there is a free position
-            while let Some(_) = board.board.get(&cur_pos.to(dir)) {
+            while board.board.get(&cur_pos.to(dir)).is_some() {
                 cur_pos = cur_pos.to(dir);
             }
             // then add the free position
             positions.push(cur_pos.to(dir));
         }
-        return positions;
+        positions
     }
 
     fn ladybug_moves(position: &Position, board: &Board) -> Vec<Position> {
@@ -213,7 +213,7 @@ impl Bug {
         let second: HashSet<Position> = first
             .iter()
             .flat_map(|first_pos| {
-                Bug::climb(first_pos, &board)
+                Bug::climb(first_pos, board)
                     .iter()
                     .filter(|pos| *pos != position && *pos != first_pos)
                     .cloned()
@@ -224,7 +224,7 @@ impl Bug {
         let third: HashSet<Position> = second
             .iter()
             .flat_map(|pos| {
-                Bug::descend(pos, &board)
+                Bug::descend(pos, board)
                     .iter()
                     .filter(|pos| *pos != position)
                     .cloned()
@@ -273,12 +273,11 @@ impl Bug {
             .positions_taken_around(position)
             .iter()
             .filter(|p| !board.pinned(p) && !board.gated(1, p, position) && board.level(p) <= 1)
-            .into_iter()
         {
             println!("pos {} level {}", pos, board.level(pos));
-            moves.insert(pos.clone(), to.clone());
+            moves.insert(*pos, to.clone());
         }
-        return moves;
+        moves
     }
 
     fn queen_moves(position: &Position, board: &Board) -> Vec<Position> {

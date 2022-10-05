@@ -14,8 +14,8 @@ impl Piece {
         Piece { bug, color, order }
     }
 
-    pub fn from_string(s: &String) -> Piece {
-        let color = Color::from_str(&s.chars().nth(0).unwrap().to_string());
+    pub fn from_string(s: &str) -> Piece {
+        let color = Color::from_str(&s.chars().next().unwrap().to_string());
         let bug = Bug::from_str(&s.chars().nth(1).unwrap().to_string());
         let mut order = None;
         if let Some(ch) = s.chars().nth(2) {

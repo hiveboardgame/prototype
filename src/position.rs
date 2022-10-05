@@ -80,7 +80,7 @@ impl Position {
             };
         }
         // odd rows
-        return match (to.0 - self.0, to.1 - self.1) {
+        match (to.0 - self.0, to.1 - self.1) {
             (0, -1) => Direction::NW,
             (1, -1) => Direction::NE,
             (1, 0) => Direction::E,
@@ -91,7 +91,7 @@ impl Position {
                 "(odd) Direction of movement unknown, from: {} to: {} ({x},{y})",
                 self, to
             ),
-        };
+        }
     }
 
     pub fn common_adjacent_positions(&self, to: &Position) -> (Position, Position) {
@@ -104,34 +104,34 @@ impl Position {
         if self.1.rem_euclid(2) == 0 {
             return match direction {
                 Direction::NW => Position(self.0 - 1, self.1 - 1),
-                Direction::NE => Position(self.0 + 0, self.1 - 1),
-                Direction::E => Position(self.0 + 1, self.1 + 0),
-                Direction::SE => Position(self.0 + 0, self.1 + 1),
+                Direction::NE => Position(self.0, self.1 - 1),
+                Direction::E => Position(self.0 + 1, self.1),
+                Direction::SE => Position(self.0, self.1 + 1),
                 Direction::SW => Position(self.0 - 1, self.1 + 1),
-                Direction::W => Position(self.0 - 1, self.1 + 0),
+                Direction::W => Position(self.0 - 1, self.1),
             };
         }
         // odd rows
-        return match direction {
-            Direction::NW => Position(self.0 + 0, self.1 - 1),
+        match direction {
+            Direction::NW => Position(self.0, self.1 - 1),
             Direction::NE => Position(self.0 + 1, self.1 - 1),
-            Direction::E => Position(self.0 + 1, self.1 + 0),
+            Direction::E => Position(self.0 + 1, self.1),
             Direction::SE => Position(self.0 + 1, self.1 + 1),
-            Direction::SW => Position(self.0 - 0, self.1 + 1),
-            Direction::W => Position(self.0 - 1, self.1 + 0),
-        };
+            Direction::SW => Position(self.0, self.1 + 1),
+            Direction::W => Position(self.0 - 1, self.1),
+        }
     }
 
-    pub fn from_string(s: &String, board: &Board) -> Position {
-        if s.starts_with(".") {
+    pub fn from_string(s: &str, board: &Board) -> Position {
+        if s.starts_with('.') {
             return Position(0,0);
         }
 
         let re = Regex::new(r"([-/\\]?)([wb][ABGMLPSQ]\d?)([-/\\]?)").unwrap();
-        let cap = re.captures(&s).unwrap();
-        let piece = Piece::from_string(&cap[2].to_string());
+        let cap = re.captures(s).unwrap();
+        let piece = Piece::from_string(&cap[2]);
         let mut position = board.position(&piece);
-        if cap[1].len() > 0 {
+        if !cap[1].is_empty() {
             match &cap[1] {
                 "\\" => {position = position.to(&Direction::NW);},
                 "-" => {position = position.to(&Direction::W);},
@@ -139,7 +139,7 @@ impl Position {
                 _ => {panic!("Not a valid direction");},
             }
         }
-        if cap[3].len() > 0 {
+        if !cap[3].is_empty() {
             match &cap[3] {
                 "/" => {position = position.to(&Direction::NE);},
                 "-" => {position = position.to(&Direction::E);},
@@ -147,7 +147,7 @@ impl Position {
                 _ => {panic!("Not a valid direction");},
             }
         }
-        return position;
+        position
     }
 }
 
