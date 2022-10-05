@@ -13,6 +13,14 @@ impl Color {
             Self::White => Self::Black,
         }
     }
+
+    pub fn from_str(s: &str) -> Color {
+        match s {
+            "w" => Color::White,
+            "b" => Color::Black, 
+            _ => panic!("That's not a color!"),
+        }
+    }
 }
 
 impl fmt::Display for Color {

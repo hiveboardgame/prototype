@@ -1,4 +1,10 @@
+use regex::Regex;
 use std::fmt;
+
+use crate::{
+    board::Board,
+    piece::Piece,
+};
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord)]
 pub struct Position(pub i8, pub i8);
@@ -36,6 +42,7 @@ impl Direction {
             Direction::W,
         ]
     }
+
     pub fn adjacent_directions(&self) -> (Direction, Direction) {
         match self {
             Direction::NW => (Direction::W, Direction::NE),
@@ -113,6 +120,34 @@ impl Position {
             Direction::SW => Position(self.0 - 0, self.1 + 1),
             Direction::W => Position(self.0 - 1, self.1 + 0),
         };
+    }
+
+    pub fn from_string(s: &String, board: &Board) -> Position {
+        if s.starts_with(".") {
+            return Position(0,0);
+        }
+
+        let re = Regex::new(r"([-/\\]?)([wb][ABGMLPSQ]\d?)([-/\\]?)").unwrap();
+        let cap = re.captures(&s).unwrap();
+        let piece = Piece::from_string(&cap[2].to_string());
+        let mut position = board.position(&piece);
+        if cap[1].len() > 0 {
+            match &cap[1] {
+                "\\" => {position = position.to(&Direction::NW);},
+                "-" => {position = position.to(&Direction::W);},
+                "/" => {position = position.to(&Direction::SW);},
+                _ => {panic!("Not a valid direction");},
+            }
+        }
+        if cap[3].len() > 0 {
+            match &cap[3] {
+                "/" => {position = position.to(&Direction::NE);},
+                "-" => {position = position.to(&Direction::E);},
+                "\\" => {position = position.to(&Direction::SE);},
+                _ => {panic!("Not a valid direction");},
+            }
+        }
+        return position;
     }
 }
 

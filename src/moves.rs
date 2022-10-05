@@ -18,7 +18,7 @@ impl<'board> Moves<'board> {
             color,
             board,
             moves: Moves::moves(color, board),
-            spawnable_positions: Moves::spawnable_positions(color, board),
+            spawnable_positions: Moves::spawnable_positions(&color, board),
             reserve: Moves::reserve(color, board),
         }
     }
@@ -49,7 +49,7 @@ impl<'board> Moves<'board> {
         return bugs;
     }
 
-    fn spawnable_positions(color: Color, board: &Board) -> Vec<Position> {
+    fn spawnable_positions(color: &Color, board: &Board) -> Vec<Position> {
         board.spawnable_positions(color)
     }
 
