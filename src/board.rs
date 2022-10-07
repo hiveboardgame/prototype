@@ -5,7 +5,8 @@ use std::fmt::Write;
 use crate::bug::Bug;
 use crate::color::Color;
 use crate::history::History;
-use crate::piece::{Piece};
+use crate::moves::Moves;
+use crate::piece::Piece;
 use crate::position::{Direction, Position};
 
 // TODO: make this a newtype?
@@ -65,9 +66,14 @@ impl Board {
     pub fn new_from_history(history: &History) -> Self {
         let mut board = Board::new();
         for (i, (piece, pos)) in history.moves.iter().enumerate() {
-            println!("Turn: {i} piece: {piece} pos: {pos}");
+            let mut color = Color::White;
+            if i.rem_euclid(2) == 1 {
+                color = Color::Black;
+            }
+            println!("{color} Turn: {i} piece: {piece} pos: {pos}");
             let piece = Piece::from_string(piece);
             let target_position = Position::from_string(pos, &board);
+            let moves = Moves::new(i as i32, color, &board);
             if board.piece_already_played(&piece) {
                 // this makes it a move
                 let current_position = board.position(&piece);
@@ -78,7 +84,18 @@ impl Board {
                     );
                 }
                 // remove the piece from its current location
-                board.move_piece(&current_position, &target_position);
+                if !moves.valid(&piece, &current_position, &target_position) {
+                    println!("Trying to move {piece} from {current_position} to {target_position}");
+                    println!(
+                        "But valid target positions are only: {:?}",
+                        moves
+                            .moves
+                            .get(&(piece, current_position))
+                            .unwrap_or(&Vec::new())
+                    );
+                    panic!("Not a legal move!");
+                }
+                board.move_piece(&piece, &current_position, &target_position);
             } else {
                 // this makes it new spawn
                 if board.spawnable(&piece.color, &target_position) {
@@ -87,17 +104,50 @@ impl Board {
                     panic!("Can't spawn here!");
                 }
             }
-            println!("{board}");
         }
         board
     }
 
-    pub fn move_piece(&mut self, current: &Position, target: &Position) {
+    pub fn winner(&self) -> Option<Color> {
+        if self
+            .position_of_piece(&Piece::new(Bug::Queen, Color::White, None))
+            .is_some_and(|pos| self.neighbors(pos).len() == 6)
+        {
+            return Some(Color::Black);
+        }
+        if self
+            .position_of_piece(&Piece::new(Bug::Queen, Color::Black, None))
+            .is_some_and(|pos| self.neighbors(pos).len() == 6)
+        {
+            return Some(Color::White);
+        }
+        None
+    }
+
+    pub fn position_of_piece(&self, piece: &Piece) -> Option<Position> {
+        for (pos, pieces) in self.board.iter() {
+            if pieces.contains(piece) {
+                return Some(*pos);
+            }
+        }
+        None
+    }
+
+    pub fn move_piece(&mut self, piece: &Piece, current: &Position, target: &Position) {
+        if !self.is_top_piece(piece, current) {
+            panic!("Tried to move non top piece!");
+        }
         let piece = self.board.get_mut(current).unwrap().pop().unwrap();
         if self.board.get(current).unwrap().is_empty() {
             self.board.remove(current);
         }
         self.insert(target, piece);
+    }
+
+    pub fn neighbor_is_a(&self, position: &Position, bug: Bug) -> bool {
+        self.top_layer_neighbors(position)
+            .iter()
+            .any(|piece| piece.bug == bug)
     }
 
     pub fn position(&self, piece: &Piece) -> Position {
@@ -148,6 +198,10 @@ impl Board {
             None => 0,
             Some(pieces) => pieces.len(),
         };
+    }
+
+    pub fn is_top_piece(&self, piece: &Piece, position: &Position) -> bool {
+        self.board.get(position).unwrap().last().unwrap() == piece
     }
 
     pub fn top_piece(&self, position: &Position) -> Piece {
@@ -474,11 +528,10 @@ mod tests {
         assert!(!board.pinned(&Position(3, 0)));
         for pos in board.positions_around(&Position(0, 0)).iter() {
             if pos == &Position(1, 0) {
-                continue
+                continue;
             }
             board.insert(pos, Piece::new(Bug::Ant, Color::Black, Some(5)));
         }
-        println!("{board}");
         for pos in board.positions_around(&Position(0, 0)).iter() {
             if pos == &Position(1, 0) {
                 assert!(board.pinned(pos));

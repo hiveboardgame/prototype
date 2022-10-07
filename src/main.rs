@@ -19,4 +19,5 @@ fn main() {
     println!("{:?}", history);
     let board = Board::new_from_history(&history);
     println!("{}", board);
+    println!("{} won!", board.winner().unwrap());
 }

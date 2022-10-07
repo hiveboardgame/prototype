@@ -3,12 +3,12 @@ use std::collections::HashMap;
 use crate::{board::Board, bug::Bug, color::Color, piece::Piece, position::Position};
 
 pub struct Moves<'board> {
-    number: i32,
-    color: Color,
-    board: &'board Board,
-    moves: HashMap<(Piece, Position), Vec<Position>>,
-    spawnable_positions: Vec<Position>,
-    reserve: HashMap<Bug, i8>,
+    pub number: i32,
+    pub color: Color,
+    pub board: &'board Board,
+    pub moves: HashMap<(Piece, Position), Vec<Position>>,
+    pub spawnable_positions: Vec<Position>,
+    pub reserve: HashMap<Bug, i8>,
 }
 
 impl<'board> Moves<'board> {
@@ -23,12 +23,30 @@ impl<'board> Moves<'board> {
         }
     }
 
+    pub fn valid(
+        &self,
+        piece: &Piece,
+        current_position: &Position,
+        target_position: &Position,
+    ) -> bool {
+        return match self.moves.get(&(*piece, *current_position)) {
+            None => false,
+            Some(positions) => positions.contains(target_position),
+        };
+    }
+
     fn moves(color: Color, board: &Board) -> HashMap<(Piece, Position), Vec<Position>> {
-        let mut moves = HashMap::new();
+        let mut moves: HashMap<(Piece, Position), Vec<Position>> = HashMap::new();
+        // for all pieces on the board
         for pos in board.board.keys() {
+            // that are the correct color
             if board.top_piece(pos).is_color(color) {
+                // get all the moves
                 for (start_pos, target_positions) in Bug::available_moves(pos, board) {
-                    moves.insert((board.top_piece(&start_pos), start_pos), target_positions);
+                    moves
+                        .entry((board.top_piece(&start_pos), start_pos))
+                        .or_default()
+                        .append(&mut target_positions.clone());
                 }
             }
         }
@@ -62,10 +80,10 @@ impl<'board> Moves<'board> {
         println!("Turn: {}", self.number);
         println!("Positions: {:?}", positions);
         println!("Moves: {:?}", self.moves);
-        println!("Board:");
         let piece = self.board.board.get(position).unwrap().last().unwrap();
         println!("Piece: {}", piece);
         println!("Position: {}", position);
+        println!("Board: {}", self.board);
         positions.append(&mut self.moves.get(&(*piece, *position)).unwrap().clone());
         positions.sort_by(|a, b| a.1.cmp(&b.1).then(a.0.cmp(&b.0)));
 
@@ -102,7 +120,12 @@ impl<'board> Moves<'board> {
                 match self.board.board.get(&Position(x, y)) {
                     Some(piece) => s.push_str(format!("{} ", piece.last().unwrap()).as_str()),
                     None => {
-                        if self.moves.get(&(*piece, *position)).unwrap().contains(&Position(x,y)) {
+                        if self
+                            .moves
+                            .get(&(*piece, *position))
+                            .unwrap()
+                            .contains(&Position(x, y))
+                        {
                             s.push_str(bug.as_str())
                         } else {
                             s.push_str("    ")

@@ -75,20 +75,19 @@ impl Bug {
 
     pub fn available_moves(position: &Position, board: &Board) -> HashMap<Position, Vec<Position>> {
         let mut moves = HashMap::new();
-        if board.pinned(position) {
-            return moves;
+        if !board.pinned(position) {
+            let positions = match board.board.get(position).unwrap().last().unwrap().bug {
+                Bug::Ant => Bug::ant_moves(position, board),
+                Bug::Beetle => Bug::beetle_moves(position, board),
+                Bug::Grasshopper => Bug::grasshopper_moves(position, board),
+                Bug::Ladybug => Bug::ladybug_moves(position, board),
+                Bug::Mosquito => Bug::mosquito_moves(position, board),
+                Bug::Pillbug => Bug::pillbug_moves(position, board),
+                Bug::Queen => Bug::queen_moves(position, board),
+                Bug::Spider => Bug::spider_moves(position, board),
+            };
+            moves.insert(*position, positions);
         }
-        let positions = match board.board.get(position).unwrap().last().unwrap().bug {
-            Bug::Ant => Bug::ant_moves(position, board),
-            Bug::Beetle => Bug::beetle_moves(position, board),
-            Bug::Grasshopper => Bug::grasshopper_moves(position, board),
-            Bug::Ladybug => Bug::ladybug_moves(position, board),
-            Bug::Mosquito => Bug::mosquito_moves(position, board),
-            Bug::Pillbug => Bug::pillbug_moves(position, board),
-            Bug::Queen => Bug::queen_moves(position, board),
-            Bug::Spider => Bug::spider_moves(position, board),
-        };
-        moves.insert(*position, positions);
         moves.extend(Bug::available_abilities(position, board));
         moves
     }
@@ -99,7 +98,11 @@ impl Bug {
     ) -> HashMap<Position, Vec<Position>> {
         match board.board.get(position).unwrap().last().unwrap().bug {
             Bug::Pillbug => Bug::pillbug_throw(position, board),
-            Bug::Mosquito if board.level(position) == 1 => Bug::pillbug_throw(position, board),
+            Bug::Mosquito
+                if board.level(position) == 1 && board.neighbor_is_a(position, Bug::Pillbug) =>
+            {
+                Bug::pillbug_throw(position, board)
+            }
             _ => HashMap::new(),
         }
     }
@@ -220,13 +223,14 @@ impl Bug {
                     .collect::<HashSet<Position>>()
             })
             .collect::<HashSet<Position>>();
-        // then descend into a free position
+        // then find available and ungated positions
         let third: HashSet<Position> = second
             .iter()
             .flat_map(|pos| {
-                Bug::descend(pos, board)
+                board
+                    .positions_available_around(pos)
                     .iter()
-                    .filter(|pos| *pos != position)
+                    .filter(|p| !board.gated(board.level(pos) + 1, pos, p) && *p != position)
                     .cloned()
                     .collect::<HashSet<Position>>()
             })
@@ -272,9 +276,8 @@ impl Bug {
         for pos in board
             .positions_taken_around(position)
             .iter()
-            .filter(|p| !board.pinned(p) && !board.gated(1, p, position) && board.level(p) <= 1)
+            .filter(|p| !board.pinned(p) && !board.gated(2, p, position) && board.level(p) <= 1)
         {
-            println!("pos {} level {}", pos, board.level(pos));
             moves.insert(*pos, to.clone());
         }
         moves
@@ -320,9 +323,18 @@ mod tests {
     #[test]
     fn tests_available_moves() {
         let mut board = Board::new();
-        board.insert(&Position(0, 0), Piece::new(Bug::Pillbug, Color::White, Some(1)));
-        board.insert(&Position(1, 0), Piece::new(Bug::Mosquito, Color::Black, Some(1)));
-        board.insert(&Position(1, 0), Piece::new(Bug::Beetle, Color::Black, Some(1)));
+        board.insert(
+            &Position(0, 0),
+            Piece::new(Bug::Pillbug, Color::White, Some(1)),
+        );
+        board.insert(
+            &Position(1, 0),
+            Piece::new(Bug::Mosquito, Color::Black, Some(1)),
+        );
+        board.insert(
+            &Position(1, 0),
+            Piece::new(Bug::Beetle, Color::Black, Some(1)),
+        );
         let moves = Bug::available_moves(&Position(0, 0), &board);
         assert_eq!(moves.get(&Position(0, 0)).unwrap().len(), 2);
         let moves = Bug::available_moves(&Position(1, 0), &board);
@@ -332,8 +344,14 @@ mod tests {
     #[test]
     fn tests_available_abilities() {
         let mut board = Board::new();
-        board.insert(&Position(0, 0), Piece::new(Bug::Pillbug, Color::White, Some(1)));
-        board.insert(&Position(1, 0), Piece::new(Bug::Mosquito, Color::Black, Some(1)));
+        board.insert(
+            &Position(0, 0),
+            Piece::new(Bug::Pillbug, Color::White, Some(1)),
+        );
+        board.insert(
+            &Position(1, 0),
+            Piece::new(Bug::Mosquito, Color::Black, Some(1)),
+        );
         let positions = Bug::available_abilities(&Position(0, 0), &board);
         assert_eq!(positions.get(&Position(1, 0)).unwrap().len(), 5);
         let positions = Bug::available_abilities(&Position(1, 0), &board);
@@ -343,15 +361,30 @@ mod tests {
     #[test]
     fn tests_pillbug_throw() {
         let mut board = Board::new();
-        board.insert(&Position(0, 0), Piece::new(Bug::Pillbug, Color::White, Some(1)));
-        board.insert(&Position(1, 0), Piece::new(Bug::Mosquito, Color::Black, Some(1)));
+        board.insert(
+            &Position(0, 0),
+            Piece::new(Bug::Pillbug, Color::White, Some(1)),
+        );
+        board.insert(
+            &Position(1, 0),
+            Piece::new(Bug::Mosquito, Color::Black, Some(1)),
+        );
         let positions = Bug::pillbug_throw(&Position(0, 0), &board);
         assert_eq!(positions.get(&Position(1, 0)).unwrap().len(), 5);
 
         let mut board = Board::new();
-        board.insert(&Position(0, 0), Piece::new(Bug::Pillbug, Color::White, Some(1)));
-        board.insert(&Position(1, 0), Piece::new(Bug::Mosquito, Color::Black, Some(1)));
-        board.insert(&Position(1, 0), Piece::new(Bug::Beetle, Color::Black, Some(1)));
+        board.insert(
+            &Position(0, 0),
+            Piece::new(Bug::Pillbug, Color::White, Some(1)),
+        );
+        board.insert(
+            &Position(1, 0),
+            Piece::new(Bug::Mosquito, Color::Black, Some(1)),
+        );
+        board.insert(
+            &Position(1, 0),
+            Piece::new(Bug::Beetle, Color::Black, Some(1)),
+        );
         let positions = Bug::pillbug_throw(&Position(0, 0), &board);
         assert!(!positions.contains_key(&Position(1, 0)));
     }
@@ -359,8 +392,14 @@ mod tests {
     #[test]
     fn tests_pillbug_moves() {
         let mut board = Board::new();
-        board.insert(&Position(0, 0), Piece::new(Bug::Pillbug, Color::White, Some(1)));
-        board.insert(&Position(1, 0), Piece::new(Bug::Mosquito, Color::Black, Some(1)));
+        board.insert(
+            &Position(0, 0),
+            Piece::new(Bug::Pillbug, Color::White, Some(1)),
+        );
+        board.insert(
+            &Position(1, 0),
+            Piece::new(Bug::Mosquito, Color::Black, Some(1)),
+        );
         let positions = Bug::pillbug_moves(&Position(0, 0), &board);
         assert_eq!(positions.len(), 2);
     }
@@ -368,26 +407,47 @@ mod tests {
     #[test]
     fn tests_mosquito_moves() {
         let mut board = Board::new();
-        board.insert(&Position(0, 0), Piece::new(Bug::Mosquito, Color::White, Some(1)));
-        board.insert(&Position(1, 0), Piece::new(Bug::Mosquito, Color::Black, Some(1)));
+        board.insert(
+            &Position(0, 0),
+            Piece::new(Bug::Mosquito, Color::White, Some(1)),
+        );
+        board.insert(
+            &Position(1, 0),
+            Piece::new(Bug::Mosquito, Color::Black, Some(1)),
+        );
         let positions = Bug::mosquito_moves(&Position(0, 0), &board);
         assert_eq!(positions.len(), 0);
 
         let mut board = Board::new();
-        board.insert(&Position(0, 0), Piece::new(Bug::Mosquito, Color::White, Some(1)));
+        board.insert(
+            &Position(0, 0),
+            Piece::new(Bug::Mosquito, Color::White, Some(1)),
+        );
         board.insert(&Position(1, 0), Piece::new(Bug::Ant, Color::Black, Some(1)));
         let positions = Bug::mosquito_moves(&Position(0, 0), &board);
         assert_eq!(positions.len(), 5);
 
         let mut board = Board::new();
-        board.insert(&Position(0, 0), Piece::new(Bug::Mosquito, Color::White, Some(1)));
-        board.insert(&Position(1, 0), Piece::new(Bug::Pillbug, Color::Black, Some(1)));
+        board.insert(
+            &Position(0, 0),
+            Piece::new(Bug::Mosquito, Color::White, Some(1)),
+        );
+        board.insert(
+            &Position(1, 0),
+            Piece::new(Bug::Pillbug, Color::Black, Some(1)),
+        );
         let positions = Bug::mosquito_moves(&Position(0, 0), &board);
         assert_eq!(positions.len(), 2);
 
         let mut board = Board::new();
-        board.insert(&Position(0, 0), Piece::new(Bug::Queen, Color::White, Some(1)));
-        board.insert(&Position(0, 0), Piece::new(Bug::Mosquito, Color::Black, Some(1)));
+        board.insert(
+            &Position(0, 0),
+            Piece::new(Bug::Queen, Color::White, Some(1)),
+        );
+        board.insert(
+            &Position(0, 0),
+            Piece::new(Bug::Mosquito, Color::Black, Some(1)),
+        );
         let positions = Bug::mosquito_moves(&Position(0, 0), &board);
         assert_eq!(positions.len(), 6);
     }
@@ -395,12 +455,27 @@ mod tests {
     #[test]
     fn tests_descend() {
         let mut board = Board::new();
-        board.insert(&Position(0, 0), Piece::new(Bug::Queen, Color::White, Some(1)));
-        board.insert(&Position(0, 0), Piece::new(Bug::Beetle, Color::Black, Some(1)));
+        board.insert(
+            &Position(0, 0),
+            Piece::new(Bug::Queen, Color::White, Some(1)),
+        );
+        board.insert(
+            &Position(0, 0),
+            Piece::new(Bug::Beetle, Color::Black, Some(1)),
+        );
         board.insert(&Position(0, 1), Piece::new(Bug::Ant, Color::White, Some(1)));
-        board.insert(&Position(0, 1), Piece::new(Bug::Beetle, Color::Black, Some(1)));
-        board.insert(&Position(0, -1), Piece::new(Bug::Ant, Color::White, Some(1)));
-        board.insert(&Position(0, -1), Piece::new(Bug::Beetle, Color::Black, Some(1)));
+        board.insert(
+            &Position(0, 1),
+            Piece::new(Bug::Beetle, Color::Black, Some(1)),
+        );
+        board.insert(
+            &Position(0, -1),
+            Piece::new(Bug::Ant, Color::White, Some(1)),
+        );
+        board.insert(
+            &Position(0, -1),
+            Piece::new(Bug::Beetle, Color::Black, Some(1)),
+        );
         let positions = Bug::descend(&Position(0, 0), &board);
         assert_eq!(positions.len(), 3);
         assert!(positions.contains(&Position(-1, -1)));
@@ -411,14 +486,23 @@ mod tests {
     #[test]
     fn tests_climb() {
         let mut board = Board::new();
-        board.insert(&Position(0, 0), Piece::new(Bug::Queen, Color::White, Some(1)));
-        board.insert(&Position(1, 0), Piece::new(Bug::Beetle, Color::Black, Some(1)));
+        board.insert(
+            &Position(0, 0),
+            Piece::new(Bug::Queen, Color::White, Some(1)),
+        );
+        board.insert(
+            &Position(1, 0),
+            Piece::new(Bug::Beetle, Color::Black, Some(1)),
+        );
         let positions = Bug::climb(&Position(1, 0), &board);
         assert_eq!(positions.len(), 1);
         assert!(positions.contains(&Position(0, 0)));
 
         let mut board = Board::new();
-        board.insert(&Position(0, 0), Piece::new(Bug::Beetle, Color::White, Some(1)));
+        board.insert(
+            &Position(0, 0),
+            Piece::new(Bug::Beetle, Color::White, Some(1)),
+        );
         for (i, pos) in board.positions_around(&Position(0, 0)).iter().enumerate() {
             board.insert(pos, Piece::new(Bug::Queen, Color::Black, Some(1)));
             let positions = Bug::climb(&Position(0, 0), &board);
@@ -426,12 +510,21 @@ mod tests {
         }
 
         let mut board = Board::new();
-        board.insert(&Position(0, 0), Piece::new(Bug::Beetle, Color::White, Some(1)));
+        board.insert(
+            &Position(0, 0),
+            Piece::new(Bug::Beetle, Color::White, Some(1)),
+        );
         for pos in board.positions_around(&Position(0, 0)).iter() {
             board.insert(pos, Piece::new(Bug::Queen, Color::Black, Some(1)));
         }
-        board.insert(&Position(0, 1), Piece::new(Bug::Beetle, Color::White, Some(1)));
-        board.insert(&Position(0, -1), Piece::new(Bug::Beetle, Color::White, Some(2)));
+        board.insert(
+            &Position(0, 1),
+            Piece::new(Bug::Beetle, Color::White, Some(1)),
+        );
+        board.insert(
+            &Position(0, -1),
+            Piece::new(Bug::Beetle, Color::White, Some(2)),
+        );
         let positions = Bug::climb(&Position(0, 0), &board);
         assert_eq!(positions.len(), 5);
     }
@@ -440,7 +533,10 @@ mod tests {
     fn tests_crawl() {
         // one neighbor gives 2 positions to move to
         let mut board = Board::new();
-        board.insert(&Position(0, 0), Piece::new(Bug::Queen, Color::White, Some(1)));
+        board.insert(
+            &Position(0, 0),
+            Piece::new(Bug::Queen, Color::White, Some(1)),
+        );
         board.insert(&Position(1, 0), Piece::new(Bug::Ant, Color::Black, Some(1)));
         let positions = Bug::crawl(&Position(0, 0), &board);
         assert_eq!(positions.len(), 2);
@@ -449,7 +545,10 @@ mod tests {
 
         // just a quick sanity check
         let mut board = Board::new();
-        board.insert(&Position(0, 1), Piece::new(Bug::Queen, Color::White, Some(1)));
+        board.insert(
+            &Position(0, 1),
+            Piece::new(Bug::Queen, Color::White, Some(1)),
+        );
         for pos in board.positions_around(&Position(0, 1)).iter() {
             board.insert(pos, Piece::new(Bug::Queen, Color::Black, Some(1)));
             let positions = Bug::crawl(&Position(0, 1), &board);
@@ -459,7 +558,10 @@ mod tests {
 
         // two adjacent neighbors means two positions
         let mut board = Board::new();
-        board.insert(&Position(0, 0), Piece::new(Bug::Queen, Color::White, Some(1)));
+        board.insert(
+            &Position(0, 0),
+            Piece::new(Bug::Queen, Color::White, Some(1)),
+        );
         board.insert(&Position(1, 0), Piece::new(Bug::Ant, Color::Black, Some(1)));
         board.insert(&Position(0, 1), Piece::new(Bug::Ant, Color::Black, Some(2)));
         let positions = Bug::crawl(&Position(0, 0), &board);
@@ -469,9 +571,15 @@ mod tests {
 
         // two (opposite) neighbors give 4 positions to move to
         let mut board = Board::new();
-        board.insert(&Position(0, 0), Piece::new(Bug::Queen, Color::White, Some(1)));
+        board.insert(
+            &Position(0, 0),
+            Piece::new(Bug::Queen, Color::White, Some(1)),
+        );
         board.insert(&Position(1, 0), Piece::new(Bug::Ant, Color::Black, Some(1)));
-        board.insert(&Position(-1, 0), Piece::new(Bug::Ant, Color::Black, Some(2)));
+        board.insert(
+            &Position(-1, 0),
+            Piece::new(Bug::Ant, Color::Black, Some(2)),
+        );
         let positions = Bug::crawl(&Position(0, 0), &board);
         assert_eq!(positions.len(), 4);
         assert!(positions.contains(&Position(0, -1)));
@@ -481,9 +589,15 @@ mod tests {
 
         // two neighbors that form a gate
         let mut board = Board::new();
-        board.insert(&Position(0, 0), Piece::new(Bug::Queen, Color::White, Some(1)));
+        board.insert(
+            &Position(0, 0),
+            Piece::new(Bug::Queen, Color::White, Some(1)),
+        );
         board.insert(&Position(1, 0), Piece::new(Bug::Ant, Color::Black, Some(1)));
-        board.insert(&Position(-1, 1), Piece::new(Bug::Ant, Color::Black, Some(2)));
+        board.insert(
+            &Position(-1, 1),
+            Piece::new(Bug::Ant, Color::Black, Some(2)),
+        );
         let positions = Bug::crawl(&Position(0, 0), &board);
         assert_eq!(positions.len(), 2);
         assert!(positions.contains(&Position(0, -1)));
@@ -491,10 +605,19 @@ mod tests {
 
         // a third neighbor forms a gate so we are back to 2 positions
         let mut board = Board::new();
-        board.insert(&Position(0, 0), Piece::new(Bug::Queen, Color::White, Some(1)));
+        board.insert(
+            &Position(0, 0),
+            Piece::new(Bug::Queen, Color::White, Some(1)),
+        );
         board.insert(&Position(1, 0), Piece::new(Bug::Ant, Color::Black, Some(1)));
-        board.insert(&Position(-1, 0), Piece::new(Bug::Ant, Color::Black, Some(2)));
-        board.insert(&Position(0, -1), Piece::new(Bug::Ant, Color::Black, Some(3)));
+        board.insert(
+            &Position(-1, 0),
+            Piece::new(Bug::Ant, Color::Black, Some(2)),
+        );
+        board.insert(
+            &Position(0, -1),
+            Piece::new(Bug::Ant, Color::Black, Some(3)),
+        );
         let positions = Bug::crawl(&Position(0, 0), &board);
         assert_eq!(positions.len(), 2);
         assert!(positions.contains(&Position(0, 1)));
@@ -502,18 +625,33 @@ mod tests {
 
         // three neighbors that form a tripple gate means no movement
         let mut board = Board::new();
-        board.insert(&Position(0, 0), Piece::new(Bug::Queen, Color::White, Some(1)));
+        board.insert(
+            &Position(0, 0),
+            Piece::new(Bug::Queen, Color::White, Some(1)),
+        );
         board.insert(&Position(1, 0), Piece::new(Bug::Ant, Color::Black, Some(1)));
-        board.insert(&Position(-1, 1), Piece::new(Bug::Ant, Color::Black, Some(2)));
-        board.insert(&Position(-1, -1), Piece::new(Bug::Ant, Color::Black, Some(3)));
+        board.insert(
+            &Position(-1, 1),
+            Piece::new(Bug::Ant, Color::Black, Some(2)),
+        );
+        board.insert(
+            &Position(-1, -1),
+            Piece::new(Bug::Ant, Color::Black, Some(3)),
+        );
         let positions = Bug::crawl(&Position(0, 0), &board);
         assert_eq!(positions.len(), 0);
 
         // three neighbors no gate -> 2 positions
         let mut board = Board::new();
-        board.insert(&Position(0, 0), Piece::new(Bug::Queen, Color::White, Some(1)));
+        board.insert(
+            &Position(0, 0),
+            Piece::new(Bug::Queen, Color::White, Some(1)),
+        );
         board.insert(&Position(1, 0), Piece::new(Bug::Ant, Color::Black, Some(1)));
-        board.insert(&Position(0, -1), Piece::new(Bug::Ant, Color::Black, Some(2)));
+        board.insert(
+            &Position(0, -1),
+            Piece::new(Bug::Ant, Color::Black, Some(2)),
+        );
         board.insert(&Position(0, 1), Piece::new(Bug::Ant, Color::Black, Some(3)));
         let positions = Bug::crawl(&Position(0, 0), &board);
         assert_eq!(positions.len(), 2);
@@ -522,11 +660,20 @@ mod tests {
 
         // four neighbors no gate -> 2 positions
         let mut board = Board::new();
-        board.insert(&Position(0, 0), Piece::new(Bug::Queen, Color::White, Some(1)));
+        board.insert(
+            &Position(0, 0),
+            Piece::new(Bug::Queen, Color::White, Some(1)),
+        );
         board.insert(&Position(1, 0), Piece::new(Bug::Ant, Color::Black, Some(1)));
-        board.insert(&Position(0, -1), Piece::new(Bug::Ant, Color::Black, Some(2)));
+        board.insert(
+            &Position(0, -1),
+            Piece::new(Bug::Ant, Color::Black, Some(2)),
+        );
         board.insert(&Position(0, 1), Piece::new(Bug::Ant, Color::Black, Some(3)));
-        board.insert(&Position(-1, 1), Piece::new(Bug::Ladybug, Color::Black, Some(1)));
+        board.insert(
+            &Position(-1, 1),
+            Piece::new(Bug::Ladybug, Color::Black, Some(1)),
+        );
         let positions = Bug::crawl(&Position(0, 0), &board);
         assert_eq!(positions.len(), 2);
         assert!(positions.contains(&Position(-1, -1)));
@@ -534,12 +681,24 @@ mod tests {
 
         // five neighbors -> 0 positions
         let mut board = Board::new();
-        board.insert(&Position(0, 0), Piece::new(Bug::Queen, Color::White, Some(1)));
+        board.insert(
+            &Position(0, 0),
+            Piece::new(Bug::Queen, Color::White, Some(1)),
+        );
         board.insert(&Position(1, 0), Piece::new(Bug::Ant, Color::Black, Some(1)));
-        board.insert(&Position(0, -1), Piece::new(Bug::Ant, Color::Black, Some(2)));
+        board.insert(
+            &Position(0, -1),
+            Piece::new(Bug::Ant, Color::Black, Some(2)),
+        );
         board.insert(&Position(0, 1), Piece::new(Bug::Ant, Color::Black, Some(3)));
-        board.insert(&Position(-1, 1), Piece::new(Bug::Ladybug, Color::Black, Some(1)));
-        board.insert(&Position(-1, 0), Piece::new(Bug::Ladybug, Color::Black, Some(1)));
+        board.insert(
+            &Position(-1, 1),
+            Piece::new(Bug::Ladybug, Color::Black, Some(1)),
+        );
+        board.insert(
+            &Position(-1, 0),
+            Piece::new(Bug::Ladybug, Color::Black, Some(1)),
+        );
         let positions = Bug::crawl(&Position(0, 0), &board);
         assert_eq!(positions.len(), 0);
     }
@@ -552,7 +711,10 @@ mod tests {
     #[test]
     fn tests_spider_moves() {
         let mut board = Board::new();
-        board.insert(&Position(0, 0), Piece::new(Bug::Spider, Color::White, Some(1)));
+        board.insert(
+            &Position(0, 0),
+            Piece::new(Bug::Spider, Color::White, Some(1)),
+        );
         board.insert(&Position(1, 0), Piece::new(Bug::Ant, Color::Black, Some(1)));
         let positions = Bug::spider_moves(&Position(0, 0), &board);
         assert_eq!(positions.len(), 1);
@@ -562,13 +724,25 @@ mod tests {
     #[test]
     fn tests_ladybug_moves() {
         let mut board = Board::new();
-        board.insert(&Position(0, 0), Piece::new(Bug::Ladybug, Color::White, Some(1)));
-        board.insert(&Position(-1, 0), Piece::new(Bug::Queen, Color::White, Some(1)));
-        board.insert(&Position(-2, 0), Piece::new(Bug::Mosquito, Color::Black, Some(1)));
+        board.insert(
+            &Position(0, 0),
+            Piece::new(Bug::Ladybug, Color::White, Some(1)),
+        );
+        board.insert(
+            &Position(-1, 0),
+            Piece::new(Bug::Queen, Color::White, Some(1)),
+        );
+        board.insert(
+            &Position(-2, 0),
+            Piece::new(Bug::Mosquito, Color::Black, Some(1)),
+        );
         assert_eq!(Bug::ladybug_moves(&Position(0, 0), &board).len(), 5);
 
         let mut board = Board::new();
-        board.insert(&Position(0, 0), Piece::new(Bug::Ladybug, Color::White, Some(1)));
+        board.insert(
+            &Position(0, 0),
+            Piece::new(Bug::Ladybug, Color::White, Some(1)),
+        );
         for pos in board.positions_around(&Position(0, 0)).iter() {
             board.insert(pos, Piece::new(Bug::Grasshopper, Color::Black, Some(1)));
         }
@@ -576,7 +750,10 @@ mod tests {
         assert_eq!(Bug::ladybug_moves(&Position(0, 0), &board).len(), 12);
 
         let mut board = Board::new();
-        board.insert(&Position(0, 0), Piece::new(Bug::Ladybug, Color::White, Some(1)));
+        board.insert(
+            &Position(0, 0),
+            Piece::new(Bug::Ladybug, Color::White, Some(1)),
+        );
         for pos in board.positions_around(&Position(0, 0)).iter() {
             board.insert(pos, Piece::new(Bug::Grasshopper, Color::Black, Some(1)));
         }
@@ -585,27 +762,41 @@ mod tests {
             Piece::new(Bug::Grasshopper, Color::Black, Some(1)),
         );
         board.board.remove(&Position(1, 0));
-        println!("{board}");
         assert_eq!(Bug::ladybug_moves(&Position(0, 0), &board).len(), 14);
     }
 
     #[test]
     fn tests_beetle_moves() {
         let mut board = Board::new();
-        board.insert(&Position(0, 0), Piece::new(Bug::Beetle, Color::White, Some(1)));
-        board.insert(&Position(0, -1), Piece::new(Bug::Queen, Color::White, Some(1)));
-        board.insert(&Position(1, 0), Piece::new(Bug::Mosquito, Color::Black, Some(1)));
+        board.insert(
+            &Position(0, 0),
+            Piece::new(Bug::Beetle, Color::White, Some(1)),
+        );
+        board.insert(
+            &Position(0, -1),
+            Piece::new(Bug::Queen, Color::White, Some(1)),
+        );
+        board.insert(
+            &Position(1, 0),
+            Piece::new(Bug::Mosquito, Color::Black, Some(1)),
+        );
         assert_eq!(Bug::beetle_moves(&Position(0, 0), &board).len(), 4);
 
         let mut board = Board::new();
-        board.insert(&Position(0, 0), Piece::new(Bug::Beetle, Color::White, Some(1)));
+        board.insert(
+            &Position(0, 0),
+            Piece::new(Bug::Beetle, Color::White, Some(1)),
+        );
         for pos in board.positions_around(&Position(0, 0)).iter() {
             board.insert(pos, Piece::new(Bug::Grasshopper, Color::White, Some(1)));
         }
         assert_eq!(Bug::beetle_moves(&Position(0, 0), &board).len(), 6);
 
         let mut board = Board::new();
-        board.insert(&Position(0, 0), Piece::new(Bug::Beetle, Color::White, Some(1)));
+        board.insert(
+            &Position(0, 0),
+            Piece::new(Bug::Beetle, Color::White, Some(1)),
+        );
         for pos in board.positions_around(&Position(0, 0)).iter() {
             board.insert(pos, Piece::new(Bug::Grasshopper, Color::White, Some(1)));
         }
@@ -617,7 +808,10 @@ mod tests {
     fn tests_ant_moves() {
         let mut board = Board::new();
         board.insert(&Position(0, 0), Piece::new(Bug::Ant, Color::White, Some(1)));
-        board.insert(&Position(1, 0), Piece::new(Bug::Beetle, Color::White, Some(1)));
+        board.insert(
+            &Position(1, 0),
+            Piece::new(Bug::Beetle, Color::White, Some(1)),
+        );
         assert_eq!(Bug::ant_moves(&Position(0, 0), &board).len(), 5);
     }
 
@@ -638,8 +832,14 @@ mod tests {
             &Position(0, 0),
             Piece::new(Bug::Grasshopper, Color::White, Some(1)),
         );
-        board.insert(&Position(1, 0), Piece::new(Bug::Beetle, Color::Black, Some(1)));
-        board.insert(&Position(3, 0), Piece::new(Bug::Beetle, Color::Black, Some(1)));
+        board.insert(
+            &Position(1, 0),
+            Piece::new(Bug::Beetle, Color::Black, Some(1)),
+        );
+        board.insert(
+            &Position(3, 0),
+            Piece::new(Bug::Beetle, Color::Black, Some(1)),
+        );
         assert_eq!(Bug::grasshopper_moves(&Position(0, 0), &board).len(), 1);
         assert_eq!(
             *Bug::grasshopper_moves(&Position(0, 0), &board)
