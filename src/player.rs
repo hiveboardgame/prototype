@@ -11,7 +11,7 @@ impl Player {
     pub fn new(color: Color) -> Player {
         Player {
             color,
-            bugs: Bug::all(),
+            bugs: Bug::bugs_count(),
         }
     }
 

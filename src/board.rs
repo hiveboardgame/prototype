@@ -4,12 +4,9 @@ use std::fmt::Write;
 
 use crate::bug::Bug;
 use crate::color::Color;
-use crate::history::History;
-use crate::moves::Moves;
 use crate::piece::Piece;
 use crate::position::{Direction, Position};
 
-// TODO: make this a newtype?
 #[derive(Clone)]
 pub struct Board {
     pub board: HashMap<Position, Vec<Piece>>,
@@ -19,26 +16,7 @@ impl fmt::Display for Board {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut positions = self.board.keys().cloned().collect::<Vec<Position>>();
         positions.sort_by(|a, b| a.1.cmp(&b.1).then(a.0.cmp(&b.0)));
-        let min_x = positions
-            .iter()
-            .min_by(|a, b| a.0.cmp(&b.0))
-            .unwrap_or(&Position(0, 0))
-            .0;
-        let max_x = positions
-            .iter()
-            .max_by(|a, b| a.0.cmp(&b.0))
-            .unwrap_or(&Position(0, 0))
-            .0;
-        let min_y = positions
-            .iter()
-            .min_by(|a, b| a.1.cmp(&b.1))
-            .unwrap_or(&Position(0, 0))
-            .1;
-        let max_y = positions
-            .iter()
-            .max_by(|a, b| a.1.cmp(&b.1))
-            .unwrap_or(&Position(0, 0))
-            .1;
+        let ((min_x, min_y), (max_x, max_y)) = self.mix_max_positions();
         let mut s = "".to_string();
         for y in min_y..=max_y {
             if y.rem_euclid(2) == 1 {
@@ -63,49 +41,34 @@ impl Board {
         }
     }
 
-    pub fn new_from_history(history: &History) -> Self {
-        let mut board = Board::new();
-        for (i, (piece, pos)) in history.moves.iter().enumerate() {
-            let mut color = Color::White;
-            if i.rem_euclid(2) == 1 {
-                color = Color::Black;
-            }
-            println!("{color} Turn: {i} piece: {piece} pos: {pos}");
-            let piece = Piece::from_string(piece);
-            let target_position = Position::from_string(pos, &board);
-            let moves = Moves::new(i as i32, color, &board);
-            if board.piece_already_played(&piece) {
-                // this makes it a move
-                let current_position = board.position(&piece);
-                if board.pinned(&current_position) {
-                    panic!(
-                        "Invalid history: Piece {} at pos {} is pinned!",
-                        piece, current_position
-                    );
-                }
-                // remove the piece from its current location
-                if !moves.valid(&piece, &current_position, &target_position) {
-                    println!("Trying to move {piece} from {current_position} to {target_position}");
-                    println!(
-                        "But valid target positions are only: {:?}",
-                        moves
-                            .moves
-                            .get(&(piece, current_position))
-                            .unwrap_or(&Vec::new())
-                    );
-                    panic!("Not a legal move!");
-                }
-                board.move_piece(&piece, &current_position, &target_position);
-            } else {
-                // this makes it new spawn
-                if board.spawnable(&piece.color, &target_position) {
-                    board.insert(&target_position, piece);
-                } else {
-                    panic!("Can't spawn here!");
-                }
-            }
-        }
-        board
+    pub fn mix_max_positions(&self) -> ((i8, i8), (i8, i8)) {
+        let mut positions = self.board.keys().cloned().collect::<Vec<Position>>();
+        positions.sort_by(|a, b| a.1.cmp(&b.1).then(a.0.cmp(&b.0)));
+        let min_x = positions
+            .iter()
+            .min_by(|a, b| a.0.cmp(&b.0))
+            .unwrap_or(&Position(0, 0))
+            .0;
+
+        let max_x = positions
+            .iter()
+            .max_by(|a, b| a.0.cmp(&b.0))
+            .unwrap_or(&Position(0, 0))
+            .0;
+
+        let min_y = positions
+            .iter()
+            .min_by(|a, b| a.1.cmp(&b.1))
+            .unwrap_or(&Position(0, 0))
+            .1;
+
+        let max_y = positions
+            .iter()
+            .max_by(|a, b| a.1.cmp(&b.1))
+            .unwrap_or(&Position(0, 0))
+            .1;
+
+        return ((min_x, min_y), (max_x, max_y));
     }
 
     pub fn winner(&self) -> Option<Color> {
@@ -206,6 +169,10 @@ impl Board {
 
     pub fn top_piece(&self, position: &Position) -> Piece {
         *self.board.get(position).unwrap().last().unwrap()
+    }
+
+    pub fn top_bug(&self, position: &Position) -> Bug {
+        self.board.get(position).unwrap().last().unwrap().bug
     }
 
     pub fn gated(&self, level: usize, from: &Position, to: &Position) -> bool {

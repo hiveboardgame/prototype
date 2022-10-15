@@ -7,6 +7,8 @@ edition = "2021"
 [dependencies]
 lazy_static = "*"
 regex = "*"
+sha2 = "*"
+hex-literal = "*"
 
 [attributes]
 #![feature(is_some_with)]

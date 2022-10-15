@@ -12,7 +12,11 @@ pub struct Moves<'board> {
 }
 
 impl<'board> Moves<'board> {
-    pub fn new(number: i32, color: Color, board: &'board Board) -> Self {
+    pub fn new(number: i32, board: &'board Board) -> Self {
+        let mut color = Color::White;
+        if number.rem_euclid(2) == 1 {
+            color = Color::Black;
+        }
         Moves {
             number,
             color,
@@ -54,7 +58,7 @@ impl<'board> Moves<'board> {
     }
 
     fn reserve(color: Color, board: &Board) -> HashMap<Bug, i8> {
-        let mut bugs = Bug::all();
+        let mut bugs = Bug::bugs_count();
         for pieces in board.board.values() {
             for piece in pieces {
                 if piece.is_color(color) {

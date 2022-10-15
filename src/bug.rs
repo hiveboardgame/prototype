@@ -18,17 +18,7 @@ pub enum Bug {
 
 impl fmt::Display for Bug {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let b = match self {
-            Bug::Ant => "A",
-            Bug::Beetle => "B",
-            Bug::Grasshopper => "G",
-            Bug::Ladybug => "L",
-            Bug::Mosquito => "M",
-            Bug::Pillbug => "P",
-            Bug::Queen => "Q",
-            Bug::Spider => "S",
-        };
-        write!(f, "{}", b)
+        write!(f, "{}", self.as_str())
     }
 }
 
@@ -60,7 +50,7 @@ impl Bug {
         }
     }
 
-    pub fn all() -> HashMap<Bug, i8> {
+    pub fn bugs_count() -> HashMap<Bug, i8> {
         HashMap::from([
             (Bug::Ant, 3),
             (Bug::Beetle, 2),
@@ -76,7 +66,7 @@ impl Bug {
     pub fn available_moves(position: &Position, board: &Board) -> HashMap<Position, Vec<Position>> {
         let mut moves = HashMap::new();
         if !board.pinned(position) {
-            let positions = match board.board.get(position).unwrap().last().unwrap().bug {
+            let positions = match board.top_bug(position) {
                 Bug::Ant => Bug::ant_moves(position, board),
                 Bug::Beetle => Bug::beetle_moves(position, board),
                 Bug::Grasshopper => Bug::grasshopper_moves(position, board),
@@ -96,7 +86,7 @@ impl Bug {
         position: &Position,
         board: &Board,
     ) -> HashMap<Position, Vec<Position>> {
-        match board.board.get(position).unwrap().last().unwrap().bug {
+        match board.top_bug(position) {
             Bug::Pillbug => Bug::pillbug_throw(position, board),
             Bug::Mosquito
                 if board.level(position) == 1 && board.neighbor_is_a(position, Bug::Pillbug) =>
