@@ -1,4 +1,4 @@
-#![feature(is_some_with)]
+#![feature(is_some_and)]
 use crate::bug::Bug;
 use crate::color::Color;
 use crate::history::History;

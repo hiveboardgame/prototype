@@ -74,13 +74,13 @@ impl Board {
     pub fn winner(&self) -> Option<Color> {
         if self
             .position_of_piece(&Piece::new(Bug::Queen, Color::White, None))
-            .is_some_and(|pos| self.neighbors(pos).len() == 6)
+            .is_some_and(|pos| self.neighbors(&pos).len() == 6)
         {
             return Some(Color::Black);
         }
         if self
             .position_of_piece(&Piece::new(Bug::Queen, Color::Black, None))
-            .is_some_and(|pos| self.neighbors(pos).len() == 6)
+            .is_some_and(|pos| self.neighbors(&pos).len() == 6)
         {
             return Some(Color::White);
         }
