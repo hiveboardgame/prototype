@@ -1,5 +1,5 @@
-use crate::Bug;
-use crate::Color;
+use crate::bug::Bug;
+use crate::color::Color;
 use std::collections::HashMap;
 
 pub struct Player {
