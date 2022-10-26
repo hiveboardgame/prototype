@@ -1,12 +1,10 @@
 use regex::Regex;
+use serde::{Deserialize, Serialize};
 use std::fmt;
 
-use crate::{
-    board::Board,
-    piece::Piece,
-};
+use crate::{board::Board, piece::Piece};
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord, Deserialize, Serialize)]
 pub struct Position(pub i8, pub i8);
 
 pub enum Direction {
@@ -124,7 +122,7 @@ impl Position {
 
     pub fn from_string(s: &str, board: &Board) -> Position {
         if s.starts_with('.') {
-            return Position(0,0);
+            return Position(0, 0);
         }
 
         let re = Regex::new(r"([-/\\]?)([wb][ABGMLPSQ]\d?)([-/\\]?)").unwrap();
@@ -133,18 +131,34 @@ impl Position {
         let mut position = board.position(&piece);
         if !cap[1].is_empty() {
             match &cap[1] {
-                "\\" => {position = position.to(&Direction::NW);},
-                "-" => {position = position.to(&Direction::W);},
-                "/" => {position = position.to(&Direction::SW);},
-                _ => {panic!("Not a valid direction");},
+                "\\" => {
+                    position = position.to(&Direction::NW);
+                }
+                "-" => {
+                    position = position.to(&Direction::W);
+                }
+                "/" => {
+                    position = position.to(&Direction::SW);
+                }
+                _ => {
+                    panic!("Not a valid direction");
+                }
             }
         }
         if !cap[3].is_empty() {
             match &cap[3] {
-                "/" => {position = position.to(&Direction::NE);},
-                "-" => {position = position.to(&Direction::E);},
-                "\\" => {position = position.to(&Direction::SE);},
-                _ => {panic!("Not a valid direction");},
+                "/" => {
+                    position = position.to(&Direction::NE);
+                }
+                "-" => {
+                    position = position.to(&Direction::E);
+                }
+                "\\" => {
+                    position = position.to(&Direction::SE);
+                }
+                _ => {
+                    panic!("Not a valid direction");
+                }
             }
         }
         position

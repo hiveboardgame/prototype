@@ -1,6 +1,6 @@
 use sha2::{Digest, Sha512};
 
-use crate::{history::History, board::Board};
+use crate::{board::Board, history::History};
 
 pub struct Hasher {
     pub moves: Vec<Vec<u8>>,
@@ -9,7 +9,10 @@ pub struct Hasher {
 
 impl Hasher {
     pub fn new() -> Self {
-        Self { moves: Vec::new(), states: Vec::new() }
+        Self {
+            moves: Vec::new(),
+            states: Vec::new(),
+        }
     }
 
     pub fn record_board_state(&mut self, board: &Board) {

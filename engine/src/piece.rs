@@ -1,8 +1,9 @@
 use crate::bug::Bug;
 use crate::color::Color;
+use serde::{Deserialize, Serialize};
 use std::fmt;
 
-#[derive(Hash, Eq, PartialEq, Clone, Copy)]
+#[derive(Serialize, Deserialize, PartialEq, Clone, Hash, Eq, Copy)]
 pub struct Piece {
     pub bug: Bug,
     pub color: Color,

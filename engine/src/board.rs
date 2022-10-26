@@ -1,3 +1,4 @@
+use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::fmt;
 use std::fmt::Write;
@@ -5,9 +6,10 @@ use std::fmt::Write;
 use crate::bug::Bug;
 use crate::color::Color;
 use crate::piece::Piece;
-use crate::position::{Direction, Position};
+use crate::position::Direction;
+use crate::position::Position;
 
-#[derive(Clone)]
+#[derive(Deserialize, Serialize, Clone)]
 pub struct Board {
     pub board: HashMap<Position, Vec<Piece>>,
 }

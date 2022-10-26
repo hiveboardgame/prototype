@@ -1,5 +1,3 @@
-use hive_lib::bug::Bug;
-use hive_lib::color::Color;
 use hive_lib::history::History;
 use hive_lib::state::State;
 

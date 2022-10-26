@@ -1,12 +1,13 @@
 #![feature(is_some_and)]
+// #[serde(rename_all = "camelCase")]
 
-pub mod state;
-pub mod position;
+pub mod board;
 pub mod bug;
 pub mod color;
-pub mod board;
+pub mod hasher;
+pub mod history;
+pub mod moves;
 pub mod piece;
 pub mod player;
-pub mod moves;
-pub mod history;
-pub mod hasher;
+pub mod position;
+pub mod state;

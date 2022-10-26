@@ -1,6 +1,7 @@
+use serde::{Deserialize, Serialize};
 use std::fmt;
 
-#[derive(Hash, Eq, PartialEq, Clone, Copy)]
+#[derive(Serialize, Deserialize, Hash, Eq, PartialEq, Clone, Copy, Debug)]
 pub enum Color {
     Black,
     White,
@@ -17,7 +18,7 @@ impl Color {
     pub fn from_str(s: &str) -> Color {
         match s {
             "w" => Color::White,
-            "b" => Color::Black, 
+            "b" => Color::Black,
             _ => panic!("That's not a color!"),
         }
     }

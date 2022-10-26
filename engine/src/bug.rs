@@ -1,10 +1,11 @@
+use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::fmt;
 
 use crate::board::Board;
 use crate::position::{Direction, Position};
 
-#[derive(Hash, Eq, PartialEq, Clone, Copy)]
+#[derive(Hash, Eq, PartialEq, Clone, Copy, Serialize, Deserialize)]
 pub enum Bug {
     Ant,
     Beetle,

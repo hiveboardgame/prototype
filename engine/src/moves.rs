@@ -1,7 +1,9 @@
+use serde::Serialize;
 use std::collections::HashMap;
 
 use crate::{board::Board, bug::Bug, color::Color, piece::Piece, position::Position};
 
+#[derive(Serialize, Clone)]
 pub struct Moves<'board> {
     pub number: i32,
     pub color: Color,
