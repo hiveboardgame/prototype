@@ -7,9 +7,15 @@ edition = "2021"
 
 [dependencies]
 yew = "*"
-gloo-console = "*"
+gloo = "*"
 serde = "*"
 serde_json = "*"
 stylist = { version = "*", features = ["yew", "yew_integration"] }
 wasm-bindgen = "*"
 web-sys = { version = "*", features = ["HtmlInputElement"] }
+yew-oauth2 = "*"
+yew-router = "*"
+yewdux = "*"
+gloo-net = "*"
+wasm-bindgen-futures = "*"
+hive = { path = "../engine" }

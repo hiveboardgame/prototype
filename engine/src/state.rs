@@ -6,7 +6,9 @@ use crate::moves::Moves;
 use crate::piece::Piece;
 use crate::player::Player;
 use crate::position::Position;
+use serde::{Serialize, Deserialize};
 
+#[derive(Serialize, Deserialize, Clone, Default, Debug)]
 pub struct State {
     pub board: Board,
     pub history: History,

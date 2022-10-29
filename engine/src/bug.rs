@@ -5,7 +5,7 @@ use std::fmt;
 use crate::board::Board;
 use crate::position::{Direction, Position};
 
-#[derive(Hash, Eq, PartialEq, Clone, Copy, Serialize, Deserialize)]
+#[derive(Hash, Eq, PartialEq, Clone, Copy, Serialize, Deserialize, Debug)]
 pub enum Bug {
     Ant,
     Beetle,

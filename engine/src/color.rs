@@ -7,6 +7,12 @@ pub enum Color {
     White,
 }
 
+// This kind of doesn't make sense but it's nice to be able to create some other data structres
+// with ::default()
+impl Default for Color {
+    fn default() -> Self { Color::Black }
+}
+
 impl Color {
     pub fn opposite(&self) -> Color {
         match self {

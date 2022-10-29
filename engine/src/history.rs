@@ -1,7 +1,9 @@
 use std::fs::File;
 use std::io::{self, BufRead};
 
-#[derive(Debug, Clone)]
+use serde::{Serialize, Deserialize};
+
+#[derive(Debug, Clone, Serialize, Default, Deserialize)]
 pub struct History {
     pub moves: Vec<(String, String)>,
 }

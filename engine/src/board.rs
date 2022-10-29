@@ -9,7 +9,7 @@ use crate::piece::Piece;
 use crate::position::Direction;
 use crate::position::Position;
 
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone, Default, Debug)]
 pub struct Board {
     pub board: HashMap<Position, Vec<Piece>>,
 }

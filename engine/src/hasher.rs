@@ -1,7 +1,9 @@
+use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha512};
 
 use crate::{board::Board, history::History};
 
+#[derive(Serialize, Clone, Default, Deserialize, Debug)]
 pub struct Hasher {
     pub moves: Vec<Vec<u8>>,
     pub states: Vec<Vec<u8>>,

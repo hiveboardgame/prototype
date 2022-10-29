@@ -6,4 +6,11 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-actix-web = "4.2.1"
+actix-web = { version = "4.2.1", features = ["openssl"] }
+actix-cors = "*"
+frontend = { path = "../frontend" }
+oauth2 = "4.2.3"
+serde = { version = "*", features = ["derive"] }
+openssl = "0.10.42"
+jsonwebtoken-google = "0.1.6"
+hive = { path = "../engine/" }
