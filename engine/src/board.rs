@@ -9,7 +9,7 @@ use crate::piece::Piece;
 use crate::position::Direction;
 use crate::position::Position;
 
-#[derive(Deserialize, Serialize, Clone, Default, Debug)]
+#[derive(Deserialize, Serialize, Clone, Default, Debug, PartialEq)]
 pub struct Board {
     pub board: HashMap<Position, Vec<Piece>>,
 }
@@ -264,6 +264,20 @@ impl Board {
             .filter_map(|pos| self.board.get(pos).and_then(|v| v.last()))
             .cloned()
             .collect();
+    }
+
+    pub fn reserve(&self, color: Color) -> HashMap<Bug, i8> {
+        let mut bugs = Bug::bugs_count();
+        for pieces in self.board.values() {
+            for piece in pieces {
+                if piece.is_color(color) {
+                    if let Some(i) = bugs.get_mut(&piece.bug) {
+                        *i -= 1;
+                    }
+                }
+            }
+        }
+        bugs
     }
 
     pub fn negative_space(&self) -> Vec<Position> {

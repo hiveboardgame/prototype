@@ -1,6 +1,10 @@
 use gloo::console::log;
 use gloo_net::http::Request;
-use hive_lib::history::History;
+use hive_lib::color::Color;
+use hive_lib::piece::Piece;
+use crate::components::organisms::board::FBoard;
+use crate::components::organisms::reserve::Reserve;
+use hive_lib::{history::History, bug::Bug};
 use hive_lib::state::State;
 use serde::{Deserialize, Serialize};
 use yew::prelude::*;
@@ -50,15 +54,24 @@ pub fn home() -> Html {
                 {"Game"}
             </h1>
             <div>
+                <button onclick={next_move}>{"Next"}</button>
+            </div>
+            <div>
+                <Reserve board={state.borrow_mut().board.clone()} color={Color::Black} zoom=1/>
+            </div>
+            <div>
+                <Reserve board={state.borrow_mut().board.clone()} color={Color::White} zoom=1/>
+            </div>
+            <div>
+                <FBoard board={state.borrow_mut().board.clone()} zoom=1/>
+            </div>
+            <div>
                 <button onclick={get_game}>{"Get game"}</button>
             </div>
             <div id="history">
                 <ul class="item-list">
                     { history.moves.clone().iter().map(|(piece, pos)| html!{ <li> { format!("{} {}", piece, pos) } </li> }).collect::<Html>() }
                 </ul>
-            </div>
-            <div>
-                <button onclick={next_move}>{"Next"}</button>
             </div>
             <div id="board">
                 {state.borrow_mut().board.clone()}

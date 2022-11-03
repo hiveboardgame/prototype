@@ -28,6 +28,13 @@ impl Color {
             _ => panic!("That's not a color!"),
         }
     }
+
+    pub fn to_html_color(&self) -> &str {
+        match self {
+            Self::Black => "grey",
+            Self::White => "white",
+        }
+    }
 }
 
 impl fmt::Display for Color {

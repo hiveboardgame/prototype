@@ -25,7 +25,7 @@ impl<'board> Moves<'board> {
             board,
             moves: Moves::moves(color, board),
             spawnable_positions: Moves::spawnable_positions(&color, board),
-            reserve: Moves::reserve(color, board),
+            reserve: board.reserve(color),
         }
     }
 
@@ -59,19 +59,6 @@ impl<'board> Moves<'board> {
         moves
     }
 
-    fn reserve(color: Color, board: &Board) -> HashMap<Bug, i8> {
-        let mut bugs = Bug::bugs_count();
-        for pieces in board.board.values() {
-            for piece in pieces {
-                if piece.is_color(color) {
-                    if let Some(i) = bugs.get_mut(&piece.bug) {
-                        *i -= 1;
-                    }
-                }
-            }
-        }
-        bugs
-    }
 
     fn spawnable_positions(color: &Color, board: &Board) -> Vec<Position> {
         board.spawnable_positions(color)

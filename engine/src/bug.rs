@@ -37,6 +37,19 @@ impl Bug {
         }
     }
 
+    pub fn as_emoji(&self) -> String {
+        match self {
+            Bug::Ant => '\u{1f41c}',
+            Bug::Beetle => '\u{1fab2}',
+            Bug::Grasshopper => '\u{1f997}',
+            Bug::Ladybug => '\u{1f41e}',
+            Bug::Mosquito => '\u{1f99f}',
+            Bug::Pillbug => '\u{1f48a}',
+            Bug::Queen => '\u{1f41d}',
+            Bug::Spider => '\u{1f577}',
+        }.clone().to_string()
+    }
+
     pub fn from_str(s: &str) -> Bug {
         match s {
             "A" => Bug::Ant,
