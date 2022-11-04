@@ -1,12 +1,11 @@
-use std::fmt::format;
-
+use gloo::console::log;
 use hive_lib::piece::Piece;
 use yew::prelude::*;
-use gloo::console::log;
 
 #[derive(Properties, PartialEq)]
-pub struct PieceProps {
+pub struct FlatPieceProps {
     pub piece: Piece,
+    pub center_offset: (f32, f32),
     pub pos: Pos,
     pub size: u32,
     pub zoom: u32,
@@ -19,7 +18,9 @@ pub struct Pos {
 
 impl Pos {
     pub fn new(x: i8, y: i8) -> Self {
-        Self { pos: (x as f32, y as f32) }
+        Self {
+            pos: (x as f32, y as f32),
+        }
     }
 
     pub fn center(&self, size: f32) -> (f32, f32) {
@@ -35,10 +36,15 @@ impl Pos {
         };
     }
 
-    pub fn corners(&self, size: f32) -> Vec<(f32, f32)> {
+    pub fn center_with_offset(&self, size: f32, center_offset: (f32, f32)) -> (f32, f32) {
+        let center = self.center(size);
+        (center.0 + center_offset.0, center.1 + center_offset.1)
+    }
+
+    pub fn corners_with_offset(&self, size: f32, center_offset: (f32, f32)) -> Vec<(f32, f32)> {
         let h = 2.0 * size;
         let w = (3.0 as f32).sqrt() * size as f32;
-        let c = self.center(size);
+        let c = self.center_with_offset(size, center_offset);
         vec![
             (c.0, c.1 + h * 0.5),
             (c.0 - 0.5 * w, c.1 + 0.25 * h),
@@ -49,8 +55,8 @@ impl Pos {
         ]
     }
 
-    pub fn corner_string(&self, size: f32) -> String {
-        let c = self.corners(size);
+    pub fn corner_string_with_offset(&self, size: f32, center_offset: (f32, f32)) -> String {
+        let c = self.corners_with_offset(size, center_offset);
         format!(
             "{},{} {},{} {},{} {},{} {},{} {},{}",
             c[0].0,
@@ -69,22 +75,31 @@ impl Pos {
     }
 }
 
-#[function_component(BoardPiece)]
-pub fn boardpiece(props: &PieceProps) -> Html {
+#[function_component(FlatPiece)]
+pub fn flatpiece(props: &FlatPieceProps) -> Html {
     let color = props.piece.color.to_html_color().to_string().clone();
     let bug = props.piece.bug.as_emoji();
-    let bug_size = format!("{}em", props.zoom as f32 * 1.5);
-    let points = props.pos.corner_string(props.size as f32);
-    let center = props.pos.center(props.size as f32);
+    let bug_size = format!("{}em", props.zoom as f32 * 1.0);
+    let points = props
+        .pos
+        .corner_string_with_offset(props.size as f32, props.center_offset);
+    let center = props
+        .pos
+        .center_with_offset(props.size as f32, props.center_offset);
     let transform = format!("translate({},{})", center.0, center.1);
-    log!("Pos:", props.pos.pos.0, props.pos.pos.1);
-    log!("Center:", center.0, center.1);
+
+    let onclick_log = {
+        Callback::from(move |_| {
+            log!("I am a bug");
+        })
+    };
+
     html! {
         <>
-        <g fill={color}>
+        <g onclick={onclick_log.clone()} fill={color} stroke="grey">
            <polygon points={points}></polygon>
         </g>
-        <g {transform}><text text-anchor="middle" dominant-baseline="middle" font-size={bug_size}>{bug}</text></g>
+        <g onclick={onclick_log} {transform}><text text-anchor="middle" dominant-baseline="middle" font-size={bug_size}>{bug}</text></g>
         </>
     }
 }

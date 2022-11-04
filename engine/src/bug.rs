@@ -24,6 +24,19 @@ impl fmt::Display for Bug {
 }
 
 impl Bug {
+    pub fn all() -> Vec<Bug> {
+        vec![
+            Bug::Ant,
+            Bug::Beetle,
+            Bug::Grasshopper,
+            Bug::Ladybug,
+            Bug::Mosquito,
+            Bug::Pillbug,
+            Bug::Queen,
+            Bug::Spider,
+        ]
+    }
+
     pub fn as_str(&self) -> &str {
         match self {
             Bug::Ant => "A",
@@ -47,7 +60,9 @@ impl Bug {
             Bug::Pillbug => '\u{1f48a}',
             Bug::Queen => '\u{1f41d}',
             Bug::Spider => '\u{1f577}',
-        }.clone().to_string()
+        }
+        .clone()
+        .to_string()
     }
 
     pub fn from_str(s: &str) -> Bug {
@@ -73,7 +88,7 @@ impl Bug {
             (Bug::Mosquito, 1),
             (Bug::Pillbug, 1),
             (Bug::Queen, 1),
-            (Bug::Spider, 3),
+            (Bug::Spider, 2),
         ])
     }
 

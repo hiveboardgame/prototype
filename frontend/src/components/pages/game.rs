@@ -1,12 +1,9 @@
 use gloo::console::log;
 use gloo_net::http::Request;
 use hive_lib::color::Color;
-use hive_lib::piece::Piece;
 use crate::components::organisms::board::FBoard;
 use crate::components::organisms::reserve::Reserve;
-use hive_lib::{history::History, bug::Bug};
-use hive_lib::state::State;
-use serde::{Deserialize, Serialize};
+use hive_lib::{history::History, state::State};
 use yew::prelude::*;
 
 #[function_component(Game)]
@@ -54,6 +51,9 @@ pub fn home() -> Html {
                 {"Game"}
             </h1>
             <div>
+                <button onclick={get_game}>{"Get game"}</button>
+            </div>
+            <div>
                 <button onclick={next_move}>{"Next"}</button>
             </div>
             <div>
@@ -64,9 +64,6 @@ pub fn home() -> Html {
             </div>
             <div>
                 <FBoard board={state.borrow_mut().board.clone()} zoom=1/>
-            </div>
-            <div>
-                <button onclick={get_game}>{"Get game"}</button>
             </div>
             <div id="history">
                 <ul class="item-list">
