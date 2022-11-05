@@ -25,8 +25,8 @@ impl Piece {
         Piece::new(bug, color, order)
     }
 
-    pub fn is_color(&self, color: Color) -> bool {
-        color == self.color
+    pub fn is_color(&self, color: &Color) -> bool {
+        *color == self.color
     }
 }
 

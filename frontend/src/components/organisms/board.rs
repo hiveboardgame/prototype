@@ -1,7 +1,8 @@
 use crate::components::molecules::{flatpiece::Pos, stackedpieces::StackedPieces};
-use hive_lib::board::Board;
+use hive_lib::{board::Board, moves::Moves};
 use web_sys;
 use yew::prelude::*;
+use yewdux::prelude::*;
 
 #[derive(Properties, PartialEq)]
 pub struct BoardProps {
@@ -17,7 +18,6 @@ pub fn board(props: &BoardProps) -> Html {
     let vb = format!{"{} {} {} {}", -0.2*width, -0.2*height, width*0.4, height*0.4};
 
     html!{
-        //<svg viewBox={vb} style={style}>
         <svg viewBox={vb}>
             {
                 for props.board.board.iter().map(|(pos, pieces)| {

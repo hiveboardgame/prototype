@@ -1,3 +1,4 @@
-pub mod home;
-pub mod game;
 pub mod get;
+pub mod home;
+pub mod play;
+pub mod review;

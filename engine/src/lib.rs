@@ -6,7 +6,6 @@ pub mod bug;
 pub mod color;
 pub mod hasher;
 pub mod history;
-pub mod moves;
 pub mod piece;
 pub mod player;
 pub mod position;

@@ -9,7 +9,7 @@ use crate::piece::Piece;
 use crate::position::Direction;
 use crate::position::Position;
 
-#[derive(Deserialize, Serialize, Clone, Default, Debug, PartialEq)]
+#[derive(Deserialize, Serialize, Clone, Default, Debug, Eq, PartialEq)]
 pub struct Board {
     pub board: HashMap<Position, Vec<Piece>>,
 }
@@ -132,7 +132,7 @@ impl Board {
         self.board.values().any(|pieces| pieces.contains(piece))
     }
 
-    pub fn positions_for_color(&self, color: Color) -> Vec<Position> {
+    pub fn positions_for_color(&self, color: &Color) -> Vec<Position> {
         self.board
             .keys()
             .filter(|pos| {
@@ -206,7 +206,41 @@ impl Board {
             .collect();
     }
 
+    pub fn is_valid_move(
+        &self,
+        color: &Color,
+        piece: &Piece,
+        current_position: &Position,
+        target_position: &Position,
+    ) -> bool {
+        return match self.moves(color).get(&(*piece, *current_position)) {
+            None => false,
+            Some(positions) => positions.contains(target_position),
+        };
+    }
+
+    pub fn moves(&self, color: &Color) -> HashMap<(Piece, Position), Vec<Position>> {
+        let mut moves: HashMap<(Piece, Position), Vec<Position>> = HashMap::new();
+        // for all pieces on the board
+        for pos in self.board.keys() {
+            // that are the correct color
+            if self.top_piece(pos).is_color(color) {
+                // get all the moves
+                for (start_pos, target_positions) in Bug::available_moves(pos, self) {
+                    moves
+                        .entry((self.top_piece(&start_pos), start_pos))
+                        .or_default()
+                        .append(&mut target_positions.clone());
+                }
+            }
+        }
+        moves
+    }
+
     pub fn spawnable_positions(&self, color: &Color) -> Vec<Position> {
+        if self.board.is_empty() {
+            return vec!(Position(0,0));
+        }
         return self
             .negative_space()
             .iter()
@@ -266,7 +300,7 @@ impl Board {
             .collect();
     }
 
-    pub fn reserve(&self, color: Color) -> HashMap<Bug, i8> {
+    pub fn reserve(&self, color: &Color) -> HashMap<Bug, i8> {
         let mut bugs = Bug::bugs_count();
         for pieces in self.board.values() {
             for piece in pieces {

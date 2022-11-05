@@ -2,7 +2,6 @@ use crate::board::Board;
 use crate::color::Color;
 use crate::hasher::Hasher;
 use crate::history::History;
-use crate::moves::Moves;
 use crate::piece::Piece;
 use crate::player::Player;
 use crate::position::Position;
@@ -14,6 +13,7 @@ pub struct State {
     pub history: History,
     pub hasher: Hasher,
     pub turn: i32,
+    pub turn_color: Color,
     pub players: (Player, Player),
 }
 
@@ -24,6 +24,7 @@ impl State {
             history: History::new(),
             hasher: Hasher::new(),
             turn: 0,
+            turn_color: Color::White,
             players: (Player::new(Color::White), Player::new(Color::Black)),
         }
     }
@@ -44,7 +45,7 @@ impl State {
     pub fn play_turn(&mut self, piece: &str, position: &str) {
         let piece = Piece::from_string(piece);
         let target_position = Position::from_string(position, &self.board);
-        let moves = Moves::new(self.turn, &self.board);
+        let moves = self.board.moves(&self.turn_color);
 
         // If the piece is already in play, it's a move
         if self.board.piece_already_played(&piece) {
@@ -56,12 +57,11 @@ impl State {
                 );
             }
             // remove the piece from its current location
-            if !moves.valid(&piece, &current_position, &target_position) {
+            if !self.board.is_valid_move(&self.turn_color, &piece, &current_position, &target_position) {
                 println!("Trying to move {piece} from {current_position} to {target_position}");
                 println!(
                     "But valid target positions are only: {:?}",
-                    moves
-                        .moves
+                        moves
                         .get(&(piece, current_position))
                         .unwrap_or(&Vec::new())
                 );
@@ -78,6 +78,7 @@ impl State {
             }
         }
         self.turn += 1;
+        self.turn_color = self.turn_color.opposite();
         // valid?
         // write history
         // update hasher
