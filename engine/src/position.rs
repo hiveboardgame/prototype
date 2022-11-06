@@ -60,6 +60,9 @@ impl fmt::Display for Position {
 }
 
 impl Position {
+    pub fn new(x: i8, y:i8) -> Self {
+        Self(x, y)
+    }
     // this implements "odd-r horizontal" which offsets odd rows to the right
     pub fn direction(&self, to: &Position) -> Direction {
         // even rows
