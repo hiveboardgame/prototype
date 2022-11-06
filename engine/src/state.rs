@@ -5,14 +5,14 @@ use crate::history::History;
 use crate::piece::Piece;
 use crate::player::Player;
 use crate::position::Position;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Clone, Default, Debug)]
+#[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq)]
 pub struct State {
     pub board: Board,
     pub history: History,
     pub hasher: Hasher,
-    pub turn: i32,
+    pub turn: usize,
     pub turn_color: Color,
     pub players: (Player, Player),
 }
@@ -57,15 +57,17 @@ impl State {
                 );
             }
             // remove the piece from its current location
-            if !self.board.is_valid_move(&self.turn_color, &piece, &current_position, &target_position) {
-                println!("Trying to move {piece} from {current_position} to {target_position}");
-                println!(
-                    "But valid target positions are only: {:?}",
-                        moves
-                        .get(&(piece, current_position))
-                        .unwrap_or(&Vec::new())
+            if !self.board.is_valid_move(
+                &self.turn_color,
+                &piece,
+                &current_position,
+                &target_position,
+            ) {
+                panic!(
+                    "Not a legal move! \n Turn is {:?} color is {:?}\n Trying to move {piece} from {current_position} to
+                       {target_position} \n But valid target positions are only: {:?}\n All valid moves are: {:?}",
+                       self.turn, self.turn_color, moves.get(&(piece, current_position)).unwrap_or(&Vec::new()), moves
                 );
-                panic!("Not a legal move!");
             }
             self.board
                 .move_piece(&piece, &current_position, &target_position);
@@ -79,8 +81,7 @@ impl State {
         }
         self.turn += 1;
         self.turn_color = self.turn_color.opposite();
-        // valid?
-        // write history
+        // TODO: write history
         // update hasher
         // check for win
     }

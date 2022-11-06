@@ -3,14 +3,12 @@ use std::fmt;
 
 #[derive(Serialize, Deserialize, Hash, Eq, PartialEq, Clone, Copy, Debug)]
 pub enum Color {
-    Black,
     White,
+    Black,
 }
 
-// This kind of doesn't make sense but it's nice to be able to create some other data structres
-// with ::default()
 impl Default for Color {
-    fn default() -> Self { Color::Black }
+    fn default() -> Self { Color::White }
 }
 
 impl Color {

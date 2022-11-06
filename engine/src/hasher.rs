@@ -3,7 +3,7 @@ use sha2::{Digest, Sha512};
 
 use crate::{board::Board, history::History};
 
-#[derive(Serialize, Clone, Default, Deserialize, Debug)]
+#[derive(Serialize, Clone, Default, Deserialize, Debug, PartialEq, Eq)]
 pub struct Hasher {
     pub moves: Vec<Vec<u8>>,
     pub states: Vec<Vec<u8>>,

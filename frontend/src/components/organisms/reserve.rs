@@ -4,16 +4,23 @@ use hive_lib::{board::Board, bug::Bug, color::Color, piece::Piece};
 use web_sys;
 use yew::prelude::*;
 
+#[derive(PartialEq)]
+pub enum Orientation {
+    Horizontal,
+    Vertical,
+}
+
 #[derive(Properties, PartialEq)]
 pub struct ReserveProps {
     pub board: Board,
     pub zoom: u32,
     pub color: Color,
+    pub orientation: Orientation,
 }
 
 #[function_component(Reserve)]
 pub fn reserve(props: &ReserveProps) -> Html {
-    let reserve = props.board.reserve(props.color);
+    let reserve = props.board.reserve(&props.color);
     let len = reserve.iter().fold(0, |acc, (_, amount)| acc + amount);
     let pos_pieces = Bug::all()
         .iter()
@@ -36,20 +43,36 @@ pub fn reserve(props: &ReserveProps) -> Html {
         }).into_iter()
         .enumerate()
         .map(|(i, pieces)| 
-             ( Pos::new(-1 * len as i8 + i as i8, 0), pieces)
+             // TODO: calculate position from vb size
+            match props.orientation {
+               Orientation::Horizontal => (Pos::new(-1 * len as i8 + i as i8, 0), pieces),
+               Orientation::Vertical => (Pos::new(1, 1*i as i8), pieces),
+            }
         )
         .collect::<Vec<(Pos, Vec<Piece>)>>();
     let window = web_sys::window().unwrap();
     let height = window.inner_height().unwrap().as_f64().unwrap();
     let width = window.inner_width().unwrap().as_f64().unwrap();
-    let vb = format! {"{} {} {} {}", -0.4*width, -0.03*height, width*0.4, height*0.06};
+    let vb = match props.orientation {
+                Orientation::Horizontal => format! {"{} {} {} {}", -0.4*width, -0.03*height, width*0.4, height*0.06},
+                Orientation::Vertical => format! {"{} {} {} {}", -0.0*width, -0.1 * height, width*0.1, height*0.9},
+    };
+    // TODO: calculate size from VB size
+    let zoom = match props.orientation {
+                Orientation::Horizontal => 1,
+                Orientation::Vertical => 2,
+    };
+    let size = match props.orientation {
+                Orientation::Horizontal => 20,
+                Orientation::Vertical => 40,
+    };
 
     html! {
         <svg viewBox={vb}>
         { 
             for pos_pieces.iter().map(|(pos, pieces)| {
                 html_nested! {
-                    <StackedPieces pieces={pieces.clone()} pos={pos.clone()} zoom={1} size={20}/>
+                    <StackedPieces pieces={pieces.clone()} pos={pos.clone()} zoom={zoom} size={size}/>
                 }
             })
         }

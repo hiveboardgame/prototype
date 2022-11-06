@@ -3,7 +3,7 @@ use std::io::{self, BufRead};
 
 use serde::{Serialize, Deserialize};
 
-#[derive(Debug, Clone, Serialize, Default, Deserialize)]
+#[derive(Debug, Clone, Serialize, Default, Deserialize, PartialEq, Eq)]
 pub struct History {
     pub moves: Vec<(String, String)>,
 }
