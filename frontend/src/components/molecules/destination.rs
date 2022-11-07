@@ -34,15 +34,18 @@ pub fn destination(props: &DestinationProps) -> Html {
         })
     };
 
+    // this displays the destinations to chose from
     if store.active.is_some() && store.position.is_none() {
         return html! (
             <>
-            <g onclick={onclick_log.clone()} stroke="blue" stroke-width="3">
+            <g onclick={onclick_log.clone()} stroke="blue" fill="white" fill-opacity="0.1" stroke-width="3">
                <polygon points={points}></polygon>
             </g>
             </>
         )
     }
+
+    // this shows the piece at the new destination
     if store.active.is_some() && store.position.is_some() {
         return html! (
             <>

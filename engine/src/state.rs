@@ -1,4 +1,5 @@
 use crate::board::Board;
+use crate::bug::Bug;
 use crate::color::Color;
 use crate::hasher::Hasher;
 use crate::history::History;
@@ -82,7 +83,7 @@ impl State {
                 .move_piece(&piece, &current_position, &target_position);
         } else {
             // let's spawn the piece
-            if self.board.queen_required(self.turn, &piece.color) {
+            if piece.bug != Bug::Queen && self.board.queen_required(self.turn, &piece.color) {
                 panic!("Queen needs to be spawned");
             }
             if self.board.spawnable(&piece.color, &target_position) {

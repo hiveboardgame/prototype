@@ -32,6 +32,7 @@ pub fn flatpiece(props: &FlatPieceProps) -> Html {
 
     let onclick_log = {
         let dispatch = state_dispatch.clone();
+        let store = store.clone();
         let piece = props.piece.clone();
         let position = props.position.clone();
         match props.piecetype.clone() {
@@ -45,6 +46,9 @@ pub fn flatpiece(props: &FlatPieceProps) -> Html {
                     store.active = None;
                     store.position = None;
                 });
+            }),
+            PieceType::Active => Callback::from(move |_| {
+                log!("I am the active piece");
             }),
             PieceType::Covered => Callback::from(move |_| {
                 log!("You can't click me! I am covered");
@@ -83,17 +87,48 @@ pub fn flatpiece(props: &FlatPieceProps) -> Html {
         }
     };
 
-    let opacity = match props.piecetype {
-        PieceType::Spawn => "0.5",
-        _ => "1.0",
-    };
+    let stylesheet = style!(
+        r#"
+            @keyframes blink {
+                100%,
+                0% {
+                    opacity: 0.1;
+                }
+                60% {
+                    opacity: 1.0;
+                    }
+                }
+            #spawn {
+                animation: blink 1.3s infinite;
+            }
+            #active {
+                opacity: 0.1;
+            }
+            #inactive {
+                opacity: 0.1;
+            }
+            #covered {
+                opacity: 0.0;
+            }
+        "#
+    )
+    .expect("FlatPiece styling failed");
+
+    let mut piecetype = props.piecetype.to_string();
+    if let Some(active) = store.active {
+        if active == props.piece && piecetype != "spawn" {
+            piecetype = "active".to_owned();
+        }
+    }
 
     html! {
         <>
-        <g onclick={onclick_log.clone()} fill={color} stroke="grey" opacity={opacity}>
-           <polygon points={points}></polygon>
+        <g class={stylesheet}>
+            <g id={piecetype.clone()} onclick={onclick_log.clone()} fill={color} stroke="grey">
+               <polygon points={points}></polygon>
+            </g>
+            <g id={piecetype} onclick={onclick_log} {transform}><text text-anchor="middle" dominant-baseline="middle" font-size={bug_size}>{bug}</text></g>
         </g>
-        <g onclick={onclick_log} {transform}><text text-anchor="middle" dominant-baseline="middle" font-size={bug_size}>{bug}</text></g>
         </>
     }
 }
