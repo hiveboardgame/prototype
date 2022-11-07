@@ -1,10 +1,11 @@
+use crate::components::common::piecetype::PieceType;
+use crate::components::molecules::destination::Destination;
 use crate::components::molecules::stackedpieces::StackedPieces;
+use crate::components::molecules::flatpiece::FlatPiece;
 use crate::stores::gamestate::GameStateStore;
-use hive_lib::board::Board;
 use web_sys;
 use yew::prelude::*;
 use yewdux::prelude::*;
-use crate::components::common::piecetype::PieceType;
 
 #[function_component(PlayBoard)]
 pub fn playboard() -> Html {
@@ -21,6 +22,13 @@ pub fn playboard() -> Html {
                 for store.state.board.board.iter().map(|(pos, pieces)| {
                     html_nested! {
                         <StackedPieces pieces={pieces.clone()} position={pos.clone()} piecetype={PieceType::Board} zoom={2} size={30}/>
+                    }
+                })
+            }
+            {
+                for store.target_postitions.iter().map(|pos| {
+                    html_nested! {
+                        <Destination position={pos.clone()} zoom={2} size={30}/>
                     }
                 })
             }

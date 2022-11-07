@@ -3,7 +3,6 @@ use crate::components::common::piecetype::PieceType;
 use hive_lib::board::Board;
 use web_sys;
 use yew::prelude::*;
-use yewdux::prelude::*;
 
 #[derive(Properties, PartialEq)]
 pub struct BoardProps {

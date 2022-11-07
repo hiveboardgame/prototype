@@ -33,7 +33,8 @@ impl State {
         let mut state = State::new();
         state.history = history.clone();
         for (piece, pos) in history.moves.iter() {
-            state.play_turn(piece, pos);
+            println!("Spawning: {} at: {}", piece, pos);
+            state.play_turn_from_notation(piece, pos);
             let mut h = History::new();
             h.moves = history.moves[0..=((state.turn - 1) as usize)].to_vec();
             state.hasher.record_move(&h);
@@ -42,9 +43,17 @@ impl State {
         state
     }
 
-    pub fn play_turn(&mut self, piece: &str, position: &str) {
+    pub fn queen_allowed(&self) -> bool {
+        self.turn > 1
+    }
+
+    pub fn play_turn_from_notation(&mut self, piece: &str, position: &str) {
         let piece = Piece::from_string(piece);
         let target_position = Position::from_string(position, &self.board);
+        self.play_turn(piece, target_position);
+    }
+
+    pub fn play_turn(&mut self, piece: Piece, target_position: Position) {
         let moves = self.board.moves(&self.turn_color);
 
         // If the piece is already in play, it's a move
@@ -73,6 +82,9 @@ impl State {
                 .move_piece(&piece, &current_position, &target_position);
         } else {
             // let's spawn the piece
+            if self.board.queen_required(self.turn, &piece.color) {
+                panic!("Queen needs to be spawned");
+            }
             if self.board.spawnable(&piece.color, &target_position) {
                 self.board.insert(&target_position, piece);
             } else {

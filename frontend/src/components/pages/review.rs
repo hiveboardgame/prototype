@@ -3,8 +3,8 @@ use crate::components::organisms::reserve::{Orientation, Reserve};
 use crate::stores::gamestate::GameStateStore;
 use gloo::console::log;
 use gloo_net::http::Request;
-use hive_lib::{board::Board, color::Color};
-use hive_lib::{history::History, state::State};
+use hive_lib::color::Color;
+use hive_lib::history::History;
 use yew::prelude::*;
 use yewdux::prelude::*;
 
@@ -39,9 +39,13 @@ pub fn review() -> Html {
                 let turn = state.state.turn;
                 let color = state.state.turn_color;
                 if let Some((piece, position)) = history.moves.get(turn) {
-                    log!("Turn and color:", state.state.turn, state.state.turn_color.to_string());
+                    log!(
+                        "Turn and color:",
+                        state.state.turn,
+                        state.state.turn_color.to_string()
+                    );
                     log!("Playing: ", piece, position);
-                    state.state.play_turn(&piece, &position);
+                    state.state.play_turn_from_notation(&piece, &position);
                 }
             });
         })

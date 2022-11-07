@@ -249,11 +249,21 @@ impl Board {
             .collect();
     }
 
-    pub fn queen_played(&self, color: Color) -> bool {
+    pub fn queen_played(&self, color: &Color) -> bool {
         return self
             .board
             .values()
-            .any(|p| p.contains(&Piece::new(Bug::Queen, color, Some(1))));
+            .any(|p| p.contains(&Piece::new(Bug::Queen, *color, None)));
+    }
+
+    pub fn queen_required(&self, turn: usize, color: &Color) -> bool {
+        if turn == 6 && color == &Color::White && !self.queen_played(&Color::White) {
+            return true;
+        }
+        if turn == 7 && color == &Color::Black && !self.queen_played(&Color::Black) {
+            return true;
+        }
+        return false;
     }
 
     fn walk_board(
