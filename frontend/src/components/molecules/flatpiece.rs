@@ -113,28 +113,18 @@ pub fn flatpiece(props: &FlatPieceProps) -> Html {
         }
     }
 
-    if piecetype == "inactive" {
-        return html! {
-            <>
-            <g class={stylesheet}>
-                <g onclick={onclick_log.clone()} fill={color} stroke="grey">
-                   <polygon points={points.clone()}></polygon>
-                </g>
-                <g onclick={onclick_log} {transform}><text text-anchor="middle" dominant-baseline="middle" font-size={bug_size}>{bug}</text></g>
-                <g id={piecetype.clone()} fill="grey" stroke="grey">
-                   <polygon points={points.clone()}></polygon>
-                </g>
-            </g>
-            </>
-        }
-    }
     html! {
         <>
         <g class={stylesheet}>
             <g id={piecetype.clone()} onclick={onclick_log.clone()} fill={color.clone()} stroke={color.clone()}>
                 <polygon points={points.clone()}></polygon>
             </g>
-            <g id={piecetype} onclick={onclick_log} {transform}><text text-anchor="middle" dominant-baseline="middle" font-size={bug_size}>{bug}</text></g>
+            <g id={piecetype.clone()} onclick={onclick_log} {transform}><text text-anchor="middle" dominant-baseline="middle" font-size={bug_size}>{bug}</text></g>
+            if piecetype.clone() == "inactive" {
+                <g id={piecetype.clone()} fill="grey" stroke="grey">
+                   <polygon points={points.clone()}></polygon>
+                </g>
+            }
         </g>
         </>
     }

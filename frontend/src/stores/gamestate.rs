@@ -25,6 +25,12 @@ impl GameStateStore {
     }
 
     pub fn show_moves(&mut self, piece: Piece, position: Position) {
+        if let Some(already) = self.active {
+            if piece == already {
+                self.reset();
+                return;
+            }
+        }
         self.reset();
         let moves = self.state.board.moves(&self.state.turn_color);
         if let Some(positions) = moves.get(&(piece, position)) {
