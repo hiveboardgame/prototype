@@ -77,13 +77,22 @@ pub fn flatpiece(props: &FlatPieceProps) -> Html {
                     }
             }
 
+            @keyframes darkblink {
+                100%,
+                0% {
+                    opacity: 0.1;
+                }
+                60% {
+                    opacity: 0.3;
+                    }
+            }
+
             #spawn {
                 animation: blink 1.3s infinite;
             }
 
             #active {
-                display: inline-block;
-                animation: wiggle 2.5s infinite;
+                animation: darkblink 1.3s infinite; 
             }
 
             #inactive {

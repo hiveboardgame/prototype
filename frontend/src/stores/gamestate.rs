@@ -25,6 +25,7 @@ impl GameStateStore {
     }
 
     pub fn show_moves(&mut self, piece: Piece, position: Position) {
+        self.reset();
         let moves = self.state.board.moves(&self.state.turn_color);
         if let Some(positions) = moves.get(&(piece, position)) {
             self.target_postitions = positions.to_owned();
