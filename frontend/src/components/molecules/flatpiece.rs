@@ -37,15 +37,8 @@ pub fn flatpiece(props: &FlatPieceProps) -> Html {
         let position = props.position.clone();
         match props.piecetype.clone() {
             PieceType::Spawn => Callback::from(move |_| {
-                log!("I am confirming the spawn");
-                dispatch.reduce_mut(|store| {
-                    store
-                        .state
-                        .play_turn(store.active.unwrap(), store.position.unwrap());
-                    store.target_postitions = vec![];
-                    store.active = None;
-                    store.position = None;
-                });
+                log!("I spawn the piece");
+                dispatch.reduce_mut(|store| store.spawn_active_piece());
             }),
             PieceType::Active => Callback::from(move |_| {
                 log!("I am the active piece");
@@ -54,35 +47,22 @@ pub fn flatpiece(props: &FlatPieceProps) -> Html {
                 log!("You can't click me! I am covered");
             }),
             PieceType::Board => Callback::from(move |_| {
-                log!("I am a board piece"); //, props.position.clone().to_string(), props.piece.clone().to_string());
-                let moves = store.state.board.moves(&store.state.turn_color);
-                if let Some(positions) = moves.get(&(piece, position)) {
-                    dispatch.reduce_mut(|store| {
-                        store.target_postitions = positions.to_owned();
-                        store.active = Some(piece);
-                    });
-                }
+                log!("I am a board piece");
+                dispatch.reduce_mut(|store| store.show_moves(piece, position));
             }),
             PieceType::Inactive => Callback::from(move |_| {
                 log!("I don't do anything");
                 if piece.color == store.state.turn_color {
                     dispatch.reduce_mut(|store| {
-                        store.target_postitions = vec![];
-                        store.active = None;
-                        store.position = None;
+                        store.reset()
                     });
                 }
             }),
             PieceType::Reserve => Callback::from(move |_| {
-                let spawns = store
-                    .state
-                    .board
-                    .spawnable_positions(&store.state.turn_color);
-                dispatch.reduce_mut(|store| {
-                    store.target_postitions = spawns;
-                    store.active = Some(piece);
-                });
                 log!("I am a reserve piece"); //, props.piece.clone().to_string());
+                dispatch.reduce_mut(|store| {
+                    store.show_spawns(piece)
+                });
             }),
         }
     };
