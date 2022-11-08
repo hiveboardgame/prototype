@@ -29,8 +29,8 @@ impl Color {
 
     pub fn to_html_color(&self) -> &str {
         match self {
-            Self::Black => "grey",
-            Self::White => "white",
+            Self::Black => "#131200",
+            Self::White => "#F0EAD6",
         }
     }
 }

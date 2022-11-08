@@ -56,6 +56,13 @@ pub fn reserve(props: &ReserveProps) -> Html {
                         piecetype = PieceType::Inactive;
                     }
                 }
+                if store.state.board.queen_required(store.state.turn, &store.state.turn_color) {
+                    if let Some(piece) = pieces.last() {
+                        if piece.bug != Bug:: Queen {
+                            piecetype = PieceType::Inactive;
+                        }
+                    }
+                }
                 piecetype
              };
              // TODO: calculate position from vb size

@@ -29,9 +29,10 @@ impl SvgPos {
     }
 
     pub fn corners_with_offset(&self, size: f32, center_offset: (f32, f32)) -> Vec<(f32, f32)> {
+        let c = self.center_with_offset(size, center_offset);
+        let size = size * 0.9;
         let h = 2.0 * size;
         let w = (3.0 as f32).sqrt() * size as f32;
-        let c = self.center_with_offset(size, center_offset);
         vec![
             (c.0, c.1 + h * 0.5),
             (c.0 - 0.5 * w, c.1 + 0.25 * h),
@@ -46,6 +47,7 @@ impl SvgPos {
         let c = self.corners_with_offset(size, center_offset);
         format!(
             "{},{} {},{} {},{} {},{} {},{} {},{}",
+            // "M {} {} L {} {} L {} {} L {} {} L {} {} L {} {} Z",
             c[0].0,
             c[0].1,
             c[1].0,

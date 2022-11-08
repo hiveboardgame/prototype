@@ -48,21 +48,19 @@ pub fn flatpiece(props: &FlatPieceProps) -> Html {
             }),
             PieceType::Board => Callback::from(move |_| {
                 log!("I am a board piece");
-                dispatch.reduce_mut(|store| store.show_moves(piece, position));
+                if store.state.board.queen_played(&store.state.turn_color) {
+                    dispatch.reduce_mut(|store| store.show_moves(piece, position));
+                }
             }),
             PieceType::Inactive => Callback::from(move |_| {
                 log!("I don't do anything");
                 if piece.color == store.state.turn_color {
-                    dispatch.reduce_mut(|store| {
-                        store.reset()
-                    });
+                    dispatch.reduce_mut(|store| store.reset());
                 }
             }),
             PieceType::Reserve => Callback::from(move |_| {
                 log!("I am a reserve piece"); //, props.piece.clone().to_string());
-                dispatch.reduce_mut(|store| {
-                    store.show_spawns(piece)
-                });
+                dispatch.reduce_mut(|store| store.show_spawns(piece));
             }),
         }
     };
@@ -77,18 +75,23 @@ pub fn flatpiece(props: &FlatPieceProps) -> Html {
                 60% {
                     opacity: 1.0;
                     }
-                }
+            }
+
             #spawn {
                 animation: blink 1.3s infinite;
             }
+
             #active {
-                opacity: 0.1;
+                display: inline-block;
+                animation: wiggle 2.5s infinite;
             }
+
             #inactive {
-                opacity: 0.1;
+                opacity: 0.6;
             }
+
             #covered {
-                opacity: 0.0;
+                opacity: 1.0;
             }
         "#
     )
@@ -101,11 +104,26 @@ pub fn flatpiece(props: &FlatPieceProps) -> Html {
         }
     }
 
+    if piecetype == "inactive" {
+        return html! {
+            <>
+            <g class={stylesheet}>
+                <g onclick={onclick_log.clone()} fill={color} stroke="grey">
+                   <polygon points={points.clone()}></polygon>
+                </g>
+                <g onclick={onclick_log} {transform}><text text-anchor="middle" dominant-baseline="middle" font-size={bug_size}>{bug}</text></g>
+                <g id={piecetype.clone()} fill="grey" stroke="grey">
+                   <polygon points={points.clone()}></polygon>
+                </g>
+            </g>
+            </>
+        }
+    }
     html! {
         <>
         <g class={stylesheet}>
-            <g id={piecetype.clone()} onclick={onclick_log.clone()} fill={color} stroke="grey">
-               <polygon points={points}></polygon>
+            <g id={piecetype.clone()} onclick={onclick_log.clone()} fill={color.clone()} stroke={color.clone()}>
+                <polygon points={points.clone()}></polygon>
             </g>
             <g id={piecetype} onclick={onclick_log} {transform}><text text-anchor="middle" dominant-baseline="middle" font-size={bug_size}>{bug}</text></g>
         </g>
