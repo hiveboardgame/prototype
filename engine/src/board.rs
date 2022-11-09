@@ -12,6 +12,7 @@ use crate::position::Position;
 #[derive(Deserialize, Serialize, Clone, Default, Debug, Eq, PartialEq)]
 pub struct Board {
     pub board: HashMap<Position, Vec<Piece>>,
+    pub last_moved: Option<(Piece, Position)>,
 }
 
 impl fmt::Display for Board {
@@ -37,9 +38,10 @@ impl fmt::Display for Board {
 }
 
 impl Board {
-    pub fn new() -> Board {
-        Board {
+    pub fn new() -> Self {
+        Self {
             board: HashMap::new(),
+            last_moved: None,
         }
     }
 
@@ -225,21 +227,29 @@ impl Board {
         for pos in self.board.keys() {
             // that are the correct color
             if self.top_piece(pos).is_color(color) {
-                // get all the moves
-                for (start_pos, target_positions) in Bug::available_moves(pos, self) {
-                    moves
-                        .entry((self.top_piece(&start_pos), start_pos))
-                        .or_default()
-                        .append(&mut target_positions.clone());
+                // let's make sure pieces that were just moved cannot be moved again
+                if let Some(last_moved) = self.last_moved {
+                    if last_moved != (self.top_piece(pos), *pos) {
+                        // get all the moves
+                        for (start_pos, target_positions) in Bug::available_moves(pos, self) {
+                            moves
+                                .entry((self.top_piece(&start_pos), start_pos))
+                                .or_default()
+                                .append(&mut target_positions.clone());
+                        }
+                    }
                 }
             }
+        }
+        if let Some(last_moved) = self.last_moved {
+            moves.remove(&last_moved);
         }
         moves
     }
 
     pub fn spawnable_positions(&self, color: &Color) -> Vec<Position> {
         if self.board.is_empty() {
-            return vec!(Position(0,0));
+            return vec![Position(0, 0)];
         }
         return self
             .negative_space()
@@ -339,7 +349,6 @@ impl Board {
             .collect()
     }
 
-    /// Checks whether a piece of color can be spawned at position
     pub fn spawnable(&self, color: &Color, position: &Position) -> bool {
         if self.board.contains_key(position) {
             return false;
@@ -353,12 +362,8 @@ impl Board {
             .any(|piece| color == &piece.color.opposite())
     }
 
-    // TODO: Implement a fn spawn() with checks
-    // TODO: if !self.spawnable(piece.color, position) {
-    // TODO:     return Err(format!("Position: {} is not spawnable for {}", position, piece.color);
-    // TODO: }
-    //
     pub fn insert(&mut self, position: &Position, piece: Piece) {
+        self.last_moved = Some((piece.clone(), position.clone()));
         self.board
             .entry(*position)
             .and_modify(|v| v.push(piece))
