@@ -40,6 +40,7 @@ impl GameStateStore {
     }
 
     pub fn show_spawns(&mut self, piece: Piece) {
+        self.reset();
         let spawns = self.state.board.spawnable_positions(&self.state.turn_color);
         self.target_postitions = spawns;
         self.active = Some(piece);
