@@ -51,6 +51,17 @@ impl Direction {
             Direction::W => (Direction::SW, Direction::NW),
         }
     }
+
+    pub fn to_history_string(&self, piece: String) -> String {
+        match self {
+            Direction::NE => piece + "/",
+            Direction::E => piece + "-",
+            Direction::SE => piece + "\\",
+            Direction::NW => "\\".to_string() + &piece,
+            Direction::SW => "/".to_string() + &piece,
+            Direction::W => "-".to_string() + &piece,
+        }
+    }
 }
 
 impl fmt::Display for Position {
@@ -60,9 +71,10 @@ impl fmt::Display for Position {
 }
 
 impl Position {
-    pub fn new(x: i8, y:i8) -> Self {
+    pub fn new(x: i8, y: i8) -> Self {
         Self(x, y)
     }
+
     // this implements "odd-r horizontal" which offsets odd rows to the right
     pub fn direction(&self, to: &Position) -> Direction {
         // even rows

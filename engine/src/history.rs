@@ -1,7 +1,6 @@
+use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::{self, BufRead};
-
-use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Clone, Serialize, Default, Deserialize, PartialEq, Eq)]
 pub struct History {
@@ -11,6 +10,10 @@ pub struct History {
 impl History {
     pub fn new() -> Self {
         History { moves: Vec::new() }
+    }
+
+    pub fn record_move(&mut self, piece: String, pos: String) {
+        self.moves.push((piece, pos));
     }
 
     pub fn from_filepath(str: &str) -> Self {

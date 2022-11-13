@@ -16,6 +16,7 @@ pub struct State {
     pub turn: usize,
     pub turn_color: Color,
     pub players: (Player, Player),
+    pub winner: Option<Color>,
 }
 
 impl State {
@@ -27,6 +28,7 @@ impl State {
             turn: 0,
             turn_color: Color::White,
             players: (Player::new(Color::White), Player::new(Color::Black)),
+            winner: None,
         }
     }
 
@@ -34,12 +36,7 @@ impl State {
         let mut state = State::new();
         state.history = history.clone();
         for (piece, pos) in history.moves.iter() {
-            println!("Spawning: {} at: {}", piece, pos);
             state.play_turn_from_notation(piece, pos);
-            let mut h = History::new();
-            h.moves = history.moves[0..=((state.turn - 1) as usize)].to_vec();
-            state.hasher.record_move(&h);
-            state.hasher.record_board_state(&state.board);
         }
         state
     }
@@ -52,6 +49,24 @@ impl State {
         let piece = Piece::from_string(piece);
         let target_position = Position::from_string(position, &self.board);
         self.play_turn(piece, target_position);
+    }
+
+    fn update_history(&mut self, piece: Piece, target_position: Position) {
+        // if there's no piece on the board yet use "."
+        let mut pos = ".".to_string();
+        if let Some(pieces) = self.board.board.get(&target_position) {
+            // there's a piece already at the position, so it must be a climb
+            pos = pieces.last().unwrap().to_string();
+        } else {
+            // no piece at the current position, so it's a spawn or a move
+            if let Some(neighbor_pos) = self.board.positions_taken_around(&target_position).get(0) {
+                let neighbor_piece = self.board.top_piece(neighbor_pos);
+                //let dir = neighbor_pos.direction(&target_position);
+                let dir = neighbor_pos.direction(&target_position);
+                pos = dir.to_history_string(neighbor_piece.to_string());
+            }
+        }
+        self.history.record_move(piece.to_string(), pos);
     }
 
     pub fn play_turn(&mut self, piece: Piece, target_position: Position) {
@@ -79,6 +94,7 @@ impl State {
                        self.turn, self.turn_color, moves.get(&(piece, current_position)).unwrap_or(&Vec::new()), moves
                 );
             }
+            self.update_history(piece, target_position);
             self.board
                 .move_piece(&piece, &current_position, &target_position);
         } else {
@@ -87,15 +103,20 @@ impl State {
                 panic!("Queen needs to be spawned");
             }
             if self.board.spawnable(&piece.color, &target_position) {
+                self.update_history(piece, target_position);
                 self.board.insert(&target_position, piece);
             } else {
                 panic!("Can't spawn here!");
             }
         }
-        self.turn += 1;
-        self.turn_color = self.turn_color.opposite();
-        // TODO: write history
-        // update hasher
-        // check for win
+        self.winner = self.board.winner();
+        if self.winner.is_none() {
+            self.turn += 1;
+            self.turn_color = self.turn_color.opposite();
+        }
+        let mut h = History::new();
+        h.moves = self.history.moves[0..=((self.turn - 1) as usize)].to_vec();
+        self.hasher.record_move(&h);
+        self.hasher.record_board_state(&self.board);
     }
 }

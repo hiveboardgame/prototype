@@ -5,5 +5,5 @@ fn main() {
     let history = History::from_filepath("game.txt");
     let state = State::new_from_history(&history);
     println!("{}", state.board);
-    println!("{} won!", state.board.winner().unwrap());
+    println!("{} won!", state.winner.unwrap());
 }
