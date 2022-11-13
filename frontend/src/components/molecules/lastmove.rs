@@ -27,7 +27,7 @@ pub fn lastmove(props: &LastMoveProps) -> Html {
 
     html! {
         <>
-            <g stroke="#FF0000" fill="white" fill-opacity="0.0" stroke-width="3">
+            <g stroke="#b58900" fill="white" fill-opacity="0.0" stroke-width="3">
                 <polygon points={points}></polygon>
             </g>
         </>

@@ -22,19 +22,19 @@ pub fn playboard() -> Html {
         {"History: "} {store.state.history.to_string()}
         <svg viewBox={vb}>
             {
-                for store.state.board.board.iter().map(|(pos, pieces)| {
-                    html_nested! {
-                        <StackedPieces pieces={pieces.clone()} position={pos.clone()} piecetype={PieceType::Board} zoom={2} size={30}/>
-                    }
-                })
-            }
-            {
                 for store.state.last_turn.iter().map(|(from, to)| {
                     html_nested! {
                         <>
                             <LastMove pos={*from} zoom={2} size={30}/>
                             <LastMove pos={*to} zoom={2} size={30}/>
                         </>
+                    }
+                })
+            }
+            {
+                for store.state.board.board.iter().map(|(pos, pieces)| {
+                    html_nested! {
+                        <StackedPieces pieces={pieces.clone()} position={pos.clone()} piecetype={PieceType::Board} zoom={2} size={30}/>
                     }
                 })
             }
