@@ -12,6 +12,14 @@ impl History {
         History { moves: Vec::new() }
     }
 
+    pub fn to_string(&self) -> String {
+        let mut his = String::new();
+        for (i, (piece, pos)) in self.moves.iter().enumerate() {
+            his += &format!("{}. {} {}", i+1, piece, pos);
+        }
+        his
+    }
+
     pub fn record_move(&mut self, piece: String, pos: String) {
         self.moves.push((piece, pos));
     }

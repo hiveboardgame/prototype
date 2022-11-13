@@ -1,7 +1,6 @@
 use crate::components::common::piecetype::{self, PieceType};
 use crate::components::common::svgpos::SvgPos;
 use crate::stores::gamestate::GameStateStore;
-use crate::stylesheets::flatpieces::FlatPieceStyle;
 use gloo::console::log;
 use hive_lib::{piece::Piece, position::Position};
 use stylist::{style, yew::styled_component};
@@ -21,6 +20,7 @@ pub struct FlatPieceProps {
 #[styled_component(FlatPiece)]
 pub fn flatpiece(props: &FlatPieceProps) -> Html {
     let color = props.piece.color.to_html_color().to_string().clone();
+    let opposite_color = props.piece.color.opposite().to_html_color().to_string().clone();
     let bug = props.piece.bug.as_emoji();
     let bug_size = format!("{}em", props.zoom as f32 * 1.0);
     let svg_pos = SvgPos::new(props.position.0, props.position.1);
@@ -53,7 +53,7 @@ pub fn flatpiece(props: &FlatPieceProps) -> Html {
                 }
             }),
             PieceType::Inactive => Callback::from(move |_| {
-                log!("I don't do anything");
+                log!("I am inactive");
                 if piece.color == store.state.turn_color {
                     dispatch.reduce_mut(|store| store.reset());
                 }
@@ -116,12 +116,12 @@ pub fn flatpiece(props: &FlatPieceProps) -> Html {
     html! {
         <>
         <g class={stylesheet}>
-            <g id={piecetype.clone()} onclick={onclick_log.clone()} fill={color.clone()} stroke={color.clone()}>
+            <g id={piecetype.clone()} onclick={onclick_log.clone()} fill={color.clone()} stroke={opposite_color.clone()}>
                 <polygon points={points.clone()}></polygon>
             </g>
-            <g id={piecetype.clone()} onclick={onclick_log} {transform}><text text-anchor="middle" dominant-baseline="middle" font-size={bug_size}>{bug}</text></g>
+            <g id={piecetype.clone()} onclick={onclick_log.clone()} {transform}><text text-anchor="middle" dominant-baseline="middle" font-size={bug_size}>{bug}</text></g>
             if piecetype.clone() == "inactive" {
-                <g id={piecetype.clone()} fill="grey" stroke="grey">
+                <g id={piecetype.clone()} onclick={onclick_log.clone()} fill="grey" stroke="grey">
                    <polygon points={points.clone()}></polygon>
                 </g>
             }

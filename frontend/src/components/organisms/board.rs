@@ -22,7 +22,7 @@ pub fn board(props: &BoardProps) -> Html {
             {
                 for props.board.board.iter().map(|(pos, pieces)| {
                     html_nested! {
-                        <StackedPieces pieces={pieces.clone()} position={pos.clone()} piecetype={PieceType::Covered} zoom={1} size={25}/>
+                        <StackedPieces pieces={pieces.clone()} position={pos.clone()} piecetype={PieceType::Board} zoom={1} size={25}/>
                     }
                 })
             }

@@ -10,6 +10,10 @@ impl SvgPos {
         }
     }
 
+    pub fn center_offset(i: usize) -> (f32, f32) {
+        (-2.0 * i as f32, -2.0 * i as f32)
+    }
+
     pub fn center(&self, size: f32) -> (f32, f32) {
         let p = self.pos;
         let h = 2.0 * size;

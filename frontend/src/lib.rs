@@ -1,7 +1,6 @@
 mod components;
 mod router;
 mod stores;
-mod stylesheets;
 
 use crate::components::organisms::navbar::Navbar;
 use crate::router::{switch, Route};

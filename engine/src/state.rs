@@ -13,6 +13,7 @@ pub struct State {
     pub board: Board,
     pub history: History,
     pub hasher: Hasher,
+    pub last_turn: Option<(Position, Position)>,
     pub turn: usize,
     pub turn_color: Color,
     pub players: (Player, Player),
@@ -25,6 +26,7 @@ impl State {
             board: Board::new(),
             history: History::new(),
             hasher: Hasher::new(),
+            last_turn: None,
             turn: 0,
             turn_color: Color::White,
             players: (Player::new(Color::White), Player::new(Color::Black)),
@@ -94,6 +96,7 @@ impl State {
                        self.turn, self.turn_color, moves.get(&(piece, current_position)).unwrap_or(&Vec::new()), moves
                 );
             }
+            self.last_turn = Some((current_position, target_position));
             self.update_history(piece, target_position);
             self.board
                 .move_piece(&piece, &current_position, &target_position);
@@ -105,6 +108,7 @@ impl State {
             if self.board.spawnable(&piece.color, &target_position) {
                 self.update_history(piece, target_position);
                 self.board.insert(&target_position, piece);
+                self.last_turn = Some((target_position, target_position));
             } else {
                 panic!("Can't spawn here!");
             }

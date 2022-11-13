@@ -23,7 +23,7 @@ pub struct ReserveProps {
 pub fn reserve(props: &ReserveProps) -> Html {
     let reserve = props.board.reserve(&props.color);
     let len = reserve.iter().fold(0, |acc, (_, amount)| acc + amount);
-    let (store, dispatch) = use_store::<GameStateStore>();
+    let (store, _dispatch) = use_store::<GameStateStore>();
     let pos_pieces = Bug::all()
         .iter()
         .filter_map(|bug| match reserve.get(bug) {
