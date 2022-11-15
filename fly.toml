@@ -1,6 +1,6 @@
 # fly.toml file generated for buggygamearea on 2022-11-15T20:11:59+01:00
 
-app = "buggygamearea"
+app = "buggygamearena"
 kill_signal = "SIGINT"
 kill_timeout = 5
 processes = []
