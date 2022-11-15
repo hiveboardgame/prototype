@@ -29,7 +29,7 @@ children+=($ACTIX_PROC)
 popd;
 
 pushd frontend;
-trunk serve &
+trunk serve --address 0.0.0.0 --port $TRUNK_SERVE_PORT &
 YEW_PROCESS=$!
 children+=($YEW_PROCESS)
 popd;
