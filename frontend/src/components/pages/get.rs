@@ -19,7 +19,7 @@ pub fn app() -> Html {
             let state = state.clone();
             log!("clicked the button");
             wasm_bindgen_futures::spawn_local(async move {
-                let resp = Request::get("http://127.0.0.1:8081/hello")
+                let resp = Request::get("/api/hello")
                     .send()
                     .await
                     .unwrap()

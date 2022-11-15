@@ -17,7 +17,7 @@ pub fn review() -> Html {
         Callback::from(move |_| {
             let history = history.clone();
             wasm_bindgen_futures::spawn_local(async move {
-                let resp = Request::get("http://127.0.0.1:8081/history")
+                let resp = Request::get("/api/history")
                     .send()
                     .await
                     .unwrap()
