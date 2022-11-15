@@ -1,6 +1,6 @@
-# fly.toml file generated for hive-jojo on 2022-11-15T12:40:05-05:00
+# fly.toml file generated for buggygamearea on 2022-11-15T20:11:59+01:00
 
-app = "hive-jojo"
+app = "buggygamearea"
 kill_signal = "SIGINT"
 kill_timeout = 5
 processes = []
