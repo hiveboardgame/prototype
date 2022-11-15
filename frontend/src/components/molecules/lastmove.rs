@@ -15,10 +15,11 @@ pub fn lastmove(props: &LastMoveProps) -> Html {
     let center = svg_pos.center(props.size as f32);
     let transform = format!("translate({},{})", center.0, center.1);
 
+    let mut filter = "filter: drop-shadow(0.3px 0.3px 0.3px #000)";
     html! {
         <>
-            <g {transform}>
-                <use href="#lastmove" transform="scale(0.56, 0.56) translate(-66.5, -13.65) rotate(-30)" />
+            <g {transform} style={filter}>
+                <use href="#lastmove" transform="scale(0.56, 0.56) translate(-46.608, -52.083)" />
             </g>
         </>
     }

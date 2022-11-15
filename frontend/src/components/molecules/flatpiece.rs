@@ -109,8 +109,8 @@ pub fn flatpiece(props: &FlatPieceProps) -> Html {
         <>
         <g class={stylesheet}>
             <g id={piecetype.clone()} onclick={onclick_log.clone()} {transform} style={filter}>
-                    <use href={format!("#{}", props.piece.color.name())} transform="scale(0.56, 0.56) translate(-65.65, -13.65) rotate(-30)" />
-                    <use href={format!("#{}", props.piece.bug.name())} transform="scale(0.56, 0.56) translate(-65.65, -13.65) rotate(-30)"/>
+                    <use href={format!("#{}", props.piece.color.name())} transform="scale(0.56, 0.56) translate(-45, -50)" />
+                    <use href={format!("#{}", props.piece.bug.name())} transform="scale(0.56, 0.56) translate(-50, -45)"/>
             </g>
         </g>
         </>
