@@ -12,15 +12,13 @@ pub struct FlatPieceProps {
     pub piece: Piece,
     pub center_offset: (f32, f32),
     pub position: Position,
-    pub size: u32,
-    pub zoom: u32,
     pub piecetype: PieceType,
 }
 
 #[styled_component(FlatPiece)]
 pub fn flatpiece(props: &FlatPieceProps) -> Html {
     let svg_pos = SvgPos::new(props.position.0, props.position.1);
-    let center = svg_pos.center_with_offset(props.size as f32, props.center_offset);
+    let center = svg_pos.center_with_offset(props.center_offset);
     let transform = format!("translate({},{})", center.0, center.1);
 
     let (store, state_dispatch) = use_store::<GameStateStore>();

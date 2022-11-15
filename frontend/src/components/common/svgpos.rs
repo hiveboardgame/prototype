@@ -14,8 +14,9 @@ impl SvgPos {
         (-3.0 * i as f32, -5.0 * i as f32)
     }
 
-    pub fn center(&self, size: f32) -> (f32, f32) {
+    pub fn center(&self) -> (f32, f32) {
         let p = self.pos;
+        let size = 30.0;
         let size = size * 1.1;
         let h = 2.0 * size;
         let w = (3.0 as f32).sqrt() * size as f32;
@@ -28,14 +29,14 @@ impl SvgPos {
         };
     }
 
-    pub fn center_with_offset(&self, size: f32, center_offset: (f32, f32)) -> (f32, f32) {
-        let center = self.center(size);
+    pub fn center_with_offset(&self, center_offset: (f32, f32)) -> (f32, f32) {
+        let center = self.center();
         (center.0 + center_offset.0, center.1 + center_offset.1)
     }
 
-    pub fn corners_with_offset(&self, size: f32, center_offset: (f32, f32)) -> Vec<(f32, f32)> {
-        let c = self.center_with_offset(size, center_offset);
-        //let size = size * 0.9;
+    pub fn corners_with_offset(&self, center_offset: (f32, f32)) -> Vec<(f32, f32)> {
+        let c = self.center_with_offset(center_offset);
+        let size = 30.0;
         let h = 2.0 * size;
         let w = (3.0 as f32).sqrt() * size as f32;
         vec![
@@ -48,8 +49,8 @@ impl SvgPos {
         ]
     }
 
-    pub fn corner_string_with_offset(&self, size: f32, center_offset: (f32, f32)) -> String {
-        let c = self.corners_with_offset(size, center_offset);
+    pub fn corner_string_with_offset(&self, center_offset: (f32, f32)) -> String {
+        let c = self.corners_with_offset(center_offset);
         format!(
             "{},{} {},{} {},{} {},{} {},{} {},{}",
             // "M {} {} L {} {} L {} {} L {} {} L {} {} L {} {} Z",

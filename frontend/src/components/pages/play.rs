@@ -16,13 +16,13 @@ pub fn play() -> Html {
             </h1>
             <div class="row" style="width: 100%;">
                 <div class="collumn" style="float:left; width: 10%">
-                    <Reserve board={store.state.board.clone()} orientation={Orientation::Vertical} color={Color::Black} zoom=1/>
+                    <Reserve board={store.state.board.clone()} orientation={Orientation::Vertical} color={Color::Black} />
                 </div>
                 <div class="collumn" style="float:left; width: 80%">
                     <PlayBoard />
                 </div>
                 <div class="collumn" style="float:right; width: 10%">
-                    <Reserve board={store.state.board.clone()} orientation={Orientation::Vertical} color={Color::White} zoom=2/>
+                    <Reserve board={store.state.board.clone()} orientation={Orientation::Vertical} color={Color::White} />
                 </div>
             </div>
             <div style="clear:both"></div>

@@ -26,24 +26,24 @@ pub fn playboard() -> Html {
                 for store.state.last_turn.iter().map(|(from, to)| {
                     html_nested! {
                         <>
-                            <LastMove pos={*from} zoom={2} size={30}/>
-                            <LastMove pos={*to} zoom={2} size={30}/>
+                            <LastMove pos={*from} />
+                            <LastMove pos={*to} />
                         </>
                     }
                 })
             }
-        // TODO: one for before one for after
+            // TODO: one for before one for after
             {
                 for store.target_postitions.iter().map(|pos| {
                     html_nested! {
-                        <Destination position={pos.clone()} zoom={2} size={30}/>
+                        <Destination position={pos.clone()} />
                     }
                 })
             }
             {
                 for store.state.board.board.iter().map(|(pos, pieces)| {
                     html_nested! {
-                        <StackedPieces pieces={pieces.clone()} position={pos.clone()} piecetype={PieceType::Board} zoom={2} size={30}/>
+                        <StackedPieces pieces={pieces.clone()} position={pos.clone()} piecetype={PieceType::Board} />
                     }
                 })
             }

@@ -11,8 +11,6 @@ use yewdux::prelude::*;
 #[derive(Properties, PartialEq)]
 pub struct DestinationProps {
     pub position: Position,
-    pub size: u32,
-    pub zoom: u32,
 }
 
 #[styled_component(Destination)]
@@ -23,7 +21,7 @@ pub fn destination(props: &DestinationProps) -> Html {
     if let Some(pieces) = store.state.board.board.get(&props.position.clone()) {
         center_offset = SvgPos::center_offset(pieces.len());
     }
-    let points = svg_pos.corner_string_with_offset(props.size as f32, center_offset);
+    let points = svg_pos.corner_string_with_offset(center_offset);
 
     let onclick = {
         let position = props.position;
@@ -67,7 +65,7 @@ pub fn destination(props: &DestinationProps) -> Html {
     if store.active.is_some() && store.position.is_some() {
         return html! (
             <>
-                <FlatPiece piece={store.active.unwrap()} position={store.position.unwrap()} center_offset={center_offset} piecetype={PieceType::Spawn} zoom={props.zoom.clone()} size={props.size.clone()}/>
+                <FlatPiece piece={store.active.unwrap()} position={store.position.unwrap()} center_offset={center_offset} piecetype={PieceType::Spawn} />
             </>
         );
     }

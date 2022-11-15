@@ -7,7 +7,6 @@ use yew::prelude::*;
 #[derive(Properties, PartialEq)]
 pub struct BoardProps {
     pub board: Board,
-    pub zoom: u32,
 }
 
 #[function_component(FBoard)]
@@ -22,7 +21,7 @@ pub fn board(props: &BoardProps) -> Html {
             {
                 for props.board.board.iter().map(|(pos, pieces)| {
                     html_nested! {
-                        <StackedPieces pieces={pieces.clone()} position={pos.clone()} piecetype={PieceType::Board} zoom={1} size={25}/>
+                        <StackedPieces pieces={pieces.clone()} position={pos.clone()} piecetype={PieceType::Board} />
                     }
                 })
             }

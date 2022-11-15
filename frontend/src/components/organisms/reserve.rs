@@ -15,7 +15,6 @@ pub enum Orientation {
 #[derive(Properties, PartialEq)]
 pub struct ReserveProps {
     pub board: Board,
-    pub zoom: u32,
     pub color: Color,
     pub orientation: Orientation,
 }
@@ -87,7 +86,7 @@ pub fn reserve(props: &ReserveProps) -> Html {
         { 
             for pos_pieces.iter().map(|(pos, piecetype, pieces)| {
                 html_nested! {
-                    <StackedPieces pieces={pieces.clone()} position={pos.clone()} piecetype={piecetype.clone()} zoom={2} size={30}/>
+                    <StackedPieces pieces={pieces.clone()} position={pos.clone()} piecetype={piecetype.clone()} />
                 }
             })
         }

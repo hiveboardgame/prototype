@@ -8,8 +8,6 @@ use yew::prelude::*;
 pub struct StackedPiecesProps {
     pub pieces: Vec<Piece>,
     pub position: Position,
-    pub size: u32,
-    pub zoom: u32,
     pub piecetype: PieceType,
 }
 
@@ -27,7 +25,7 @@ pub fn stackedpieces(props: &StackedPiecesProps) -> Html {
             let center_offset = SvgPos::center_offset(i);
 
             html_nested! {
-                <FlatPiece piece={piece.clone()} position={props.position.clone()} center_offset={center_offset} piecetype={piecetype} zoom={props.zoom.clone()} size={props.size.clone()}/>
+                <FlatPiece piece={piece.clone()} position={props.position.clone()} center_offset={center_offset} piecetype={piecetype} />
             }
         })
     }

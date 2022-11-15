@@ -5,14 +5,12 @@ use yew::prelude::*;
 #[derive(Properties, PartialEq)]
 pub struct LastMoveProps {
     pub pos: Position,
-    pub size: u32,
-    pub zoom: u32,
 }
 
 #[function_component(LastMove)]
 pub fn lastmove(props: &LastMoveProps) -> Html {
     let svg_pos = SvgPos::new(props.pos.0, props.pos.1);
-    let center = svg_pos.center(props.size as f32);
+    let center = svg_pos.center();
     let transform = format!("translate({},{})", center.0, center.1);
 
     let mut filter = "filter: drop-shadow(0.3px 0.3px 0.3px #000)";

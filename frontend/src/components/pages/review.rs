@@ -64,10 +64,10 @@ pub fn review() -> Html {
             </div>
             <div class="row" style="width: 100%;">
                 <div class="collumn" style="float:left; width: 50%">
-                    <Reserve board={store.state.board.clone()} orientation={Orientation::Horizontal} color={Color::White} zoom=1/>
+                    <Reserve board={store.state.board.clone()} orientation={Orientation::Horizontal} color={Color::White} />
                 </div>
                 <div class="collumn" style="float:left; width: 50%">
-                    <Reserve board={store.state.board.clone()} orientation={Orientation::Horizontal} color={Color::Black} zoom=1/>
+                    <Reserve board={store.state.board.clone()} orientation={Orientation::Horizontal} color={Color::Black} />
                 </div>
             </div>
             <div class="row" style="width: 100%;">
@@ -77,7 +77,7 @@ pub fn review() -> Html {
                     </ul>
                 </div>
                 <div class="collumn" style="float:left; width: 90%">
-                    <FBoard board={store.state.board.clone()} zoom=1/>
+                    <FBoard board={store.state.board.clone()} />
                 </div>
             </div>
             <div style="clear:both"></div>
