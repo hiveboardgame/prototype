@@ -19,6 +19,13 @@ impl Color {
         }
     }
 
+    pub fn name(&self) -> &'static str {
+        match self {
+            Self::Black => "black",
+            Self::White => "white",
+        }
+    }
+
     pub fn from_str(s: &str) -> Color {
         match s {
             "w" => Color::White,
@@ -27,7 +34,7 @@ impl Color {
         }
     }
 
-    pub fn to_html_color(&self) -> &str {
+    pub fn to_html_color(&self) -> &'static str {
         match self {
             Self::Black => "#131200",
             Self::White => "#F0EAD6",

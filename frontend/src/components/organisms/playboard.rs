@@ -1,9 +1,9 @@
 use crate::components::common::piecetype::PieceType;
 use crate::components::molecules::destination::Destination;
-use crate::components::molecules::flatpiece::FlatPiece;
 use crate::components::molecules::lastmove::LastMove;
 use crate::components::molecules::stackedpieces::StackedPieces;
 use crate::stores::gamestate::GameStateStore;
+use crate::components::svgs::bugs::Bugs;
 use web_sys;
 use yew::prelude::*;
 use yewdux::prelude::*;
@@ -20,7 +20,8 @@ pub fn playboard() -> Html {
     html! {
         <>
         {"History: "} {store.state.history.to_string()}
-        <svg viewBox={vb}>
+        <svg viewBox={vb} >
+            <Bugs />
             {
                 for store.state.last_turn.iter().map(|(from, to)| {
                     html_nested! {

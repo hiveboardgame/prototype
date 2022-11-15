@@ -4,6 +4,7 @@ use web_sys;
 use yew::prelude::*;
 use yewdux::prelude::*;
 use crate::components::common::piecetype::PieceType;
+use crate::components::svgs::bugs::Bugs;
 
 #[derive(PartialEq)]
 pub enum Orientation {
@@ -79,22 +80,14 @@ pub fn reserve(props: &ReserveProps) -> Html {
                 Orientation::Horizontal => format! {"{} {} {} {}", -0.4*width, -0.03*height, width*0.4, height*0.06},
                 Orientation::Vertical => format! {"{} {} {} {}", -0.0*width, -0.1 * height, width*0.1, height*0.9},
     };
-    // TODO: calculate size from VB size
-    let zoom = match props.orientation {
-                Orientation::Horizontal => 1,
-                Orientation::Vertical => 2,
-    };
-    let size = match props.orientation {
-                Orientation::Horizontal => 20,
-                Orientation::Vertical => 40,
-    };
 
     html! {
         <svg viewBox={vb}>
+        <Bugs />
         { 
             for pos_pieces.iter().map(|(pos, piecetype, pieces)| {
                 html_nested! {
-                    <StackedPieces pieces={pieces.clone()} position={pos.clone()} piecetype={piecetype.clone()} zoom={zoom} size={size}/>
+                    <StackedPieces pieces={pieces.clone()} position={pos.clone()} piecetype={piecetype.clone()} zoom={2} size={30}/>
                 }
             })
         }

@@ -7,7 +7,7 @@ use yewdux::prelude::*;
 
 #[function_component(Play)]
 pub fn play() -> Html {
-    let (store, state_dispatch) = use_store::<GameStateStore>();
+    let (store, _state_dispatch) = use_store::<GameStateStore>();
 
     html! {
         <div>

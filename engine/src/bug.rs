@@ -37,16 +37,20 @@ impl Bug {
         ]
     }
 
-    pub fn as_str(&self) -> &str {
+    pub fn as_str(&self) -> &'static str {
+        &self.name()[0..=0]
+    }
+
+    pub fn name(&self) -> &'static str {
         match self {
-            Bug::Ant => "A",
-            Bug::Beetle => "B",
-            Bug::Grasshopper => "G",
-            Bug::Ladybug => "L",
-            Bug::Mosquito => "M",
-            Bug::Pillbug => "P",
-            Bug::Queen => "Q",
-            Bug::Spider => "S",
+            Bug::Ant => "Ant",
+            Bug::Beetle => "Beetle",
+            Bug::Grasshopper => "Grasshopper",
+            Bug::Ladybug => "Ladybug",
+            Bug::Mosquito => "Mosquito",
+            Bug::Pillbug => "Pillbug",
+            Bug::Queen => "Queen",
+            Bug::Spider => "Spider",
         }
     }
 

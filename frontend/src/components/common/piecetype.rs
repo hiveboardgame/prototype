@@ -1,6 +1,5 @@
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub enum PieceType {
-    Active,
     Board,
     Covered,
     Reserve,
@@ -14,7 +13,6 @@ impl PieceType {
             PieceType::Board => "board",
             PieceType::Covered => "covered",
             PieceType::Inactive => "inactive",
-            PieceType::Active => "active",
             PieceType::Reserve => "reserve",
             PieceType::Spawn => "spawn",
         }

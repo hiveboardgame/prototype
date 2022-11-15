@@ -1,4 +1,4 @@
-use crate::components::common::piecetype::{self, PieceType};
+use crate::components::common::piecetype::PieceType;
 use crate::components::common::svgpos::SvgPos;
 use crate::stores::gamestate::GameStateStore;
 use gloo::console::log;
@@ -19,12 +19,7 @@ pub struct FlatPieceProps {
 
 #[styled_component(FlatPiece)]
 pub fn flatpiece(props: &FlatPieceProps) -> Html {
-    let color = props.piece.color.to_html_color().to_string().clone();
-    let opposite_color = props.piece.color.opposite().to_html_color().to_string().clone();
-    let bug = props.piece.bug.as_emoji();
-    let bug_size = format!("{}em", props.zoom as f32 * 1.0);
     let svg_pos = SvgPos::new(props.position.0, props.position.1);
-    let points = svg_pos.corner_string_with_offset(props.size as f32, props.center_offset);
     let center = svg_pos.center_with_offset(props.size as f32, props.center_offset);
     let transform = format!("translate({},{})", center.0, center.1);
 
@@ -39,9 +34,6 @@ pub fn flatpiece(props: &FlatPieceProps) -> Html {
             PieceType::Spawn => Callback::from(move |_| {
                 log!("I spawn the piece");
                 dispatch.reduce_mut(|store| store.spawn_active_piece());
-            }),
-            PieceType::Active => Callback::from(move |_| {
-                log!("I am the active piece");
             }),
             PieceType::Covered => Callback::from(move |_| {
                 log!("You can't click me! I am covered");
@@ -95,10 +87,6 @@ pub fn flatpiece(props: &FlatPieceProps) -> Html {
                 animation: darkblink 1.3s infinite; 
             }
 
-            #inactive {
-                opacity: 0.6;
-            }
-
             #covered {
                 opacity: 1.0;
             }
@@ -113,18 +101,17 @@ pub fn flatpiece(props: &FlatPieceProps) -> Html {
         }
     }
 
+    let mut filter = "filter: drop-shadow(0.3px 0.3px 0.3px #000)";
+    if piecetype.clone() == "inactive" {
+        filter = "filter: sepia(1)";
+    }
     html! {
         <>
         <g class={stylesheet}>
-            <g id={piecetype.clone()} onclick={onclick_log.clone()} fill={color.clone()} stroke={opposite_color.clone()}>
-                <polygon points={points.clone()}></polygon>
+            <g id={piecetype.clone()} onclick={onclick_log.clone()} {transform} style={filter}>
+                    <use href={format!("#{}", props.piece.color.name())} transform="scale(0.56, 0.56) translate(-65.65, -13.65) rotate(-30)" />
+                    <use href={format!("#{}", props.piece.bug.name())} transform="scale(0.56, 0.56) translate(-65.65, -13.65) rotate(-30)"/>
             </g>
-            <g id={piecetype.clone()} onclick={onclick_log.clone()} {transform}><text text-anchor="middle" dominant-baseline="middle" font-size={bug_size}>{bug}</text></g>
-            if piecetype.clone() == "inactive" {
-                <g id={piecetype.clone()} onclick={onclick_log.clone()} fill="grey" stroke="grey">
-                   <polygon points={points.clone()}></polygon>
-                </g>
-            }
         </g>
         </>
     }

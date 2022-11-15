@@ -37,7 +37,6 @@ pub fn review() -> Html {
             let dispatch = state_dispatch.clone();
             dispatch.reduce_mut(|state| {
                 let turn = state.state.turn;
-                let color = state.state.turn_color;
                 if let Some((piece, position)) = history.moves.get(turn) {
                     log!(
                         "Turn and color:",

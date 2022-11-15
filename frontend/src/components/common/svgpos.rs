@@ -11,11 +11,12 @@ impl SvgPos {
     }
 
     pub fn center_offset(i: usize) -> (f32, f32) {
-        (-2.0 * i as f32, -2.0 * i as f32)
+        (-3.0 * i as f32, -5.0 * i as f32)
     }
 
     pub fn center(&self, size: f32) -> (f32, f32) {
         let p = self.pos;
+        let size = size * 1.1;
         let h = 2.0 * size;
         let w = (3.0 as f32).sqrt() * size as f32;
         return if (p.1 as i32).rem_euclid(2) == 0 {
@@ -34,7 +35,7 @@ impl SvgPos {
 
     pub fn corners_with_offset(&self, size: f32, center_offset: (f32, f32)) -> Vec<(f32, f32)> {
         let c = self.center_with_offset(size, center_offset);
-        let size = size * 0.9;
+        //let size = size * 0.9;
         let h = 2.0 * size;
         let w = (3.0 as f32).sqrt() * size as f32;
         vec![
