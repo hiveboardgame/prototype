@@ -41,14 +41,14 @@ async fn echo(req_body: String) -> impl Responder {
 
 #[actix_web::main] // or #[tokio::main]
 async fn main() -> std::io::Result<()> {
-    let mut builder =
-        SslAcceptor::mozilla_intermediate(SslMethod::tls()).expect("Builder creation failed");
-    builder
-        .set_private_key_file("key.pem", SslFiletype::PEM)
-        .expect("key.pem couldn't be read");
-    builder
-        .set_certificate_chain_file("cert.pem")
-        .expect("cert.pem couldn't be read");
+    // let mut builder =
+    //     SslAcceptor::mozilla_intermediate(SslMethod::tls()).expect("Builder creation failed");
+    // builder
+    //     .set_private_key_file("key.pem", SslFiletype::PEM)
+    //     .expect("key.pem couldn't be read");
+    // builder
+    //     .set_certificate_chain_file("cert.pem")
+    //     .expect("cert.pem couldn't be read");
 
     HttpServer::new(|| {
         // TODO: make this cors a bit better
