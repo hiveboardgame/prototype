@@ -50,9 +50,14 @@ pub fn playboard() -> Html {
                 })
             }
             {
-                for store.state.board.board.iter().map(|(pos, pieces)| {
+                for store.state.board.level_iter().map(|(pos, piece, lvl, more)| {
+                    let piecetype = if more {
+                        PieceType::Covered
+                    } else {
+                        PieceType::Board
+                    };
                     html_nested! {
-                        <StackedPieces pieces={pieces.clone()} position={pos.clone()} piecetype={PieceType::Board} />
+                        <FlatPiece piece={piece} position={pos} center_offset={SvgPos::center_offset(lvl)} piecetype={piecetype} />
                     }
                 })
             }

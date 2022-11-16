@@ -45,6 +45,23 @@ impl Board {
         }
     }
 
+    pub fn level_iter<'b>(&'b self) -> impl Iterator<Item = (Position, Piece, usize, bool)> + 'b {
+        let len = self
+            .board
+            .iter()
+            .map(|(_, pieces)| pieces.len())
+            .max()
+            .unwrap_or(0) as usize;
+        (0..len).flat_map(|lvl| {
+            self.board.iter().filter_map(move |(pos, pieces)| {
+                let more = pieces.get(lvl + 1).is_some();
+                pieces
+                    .get(lvl)
+                    .map(|piece| (pos.clone(), piece.clone(), lvl.clone(), more))
+            })
+        })
+    }
+
     pub fn mix_max_positions(&self) -> ((i8, i8), (i8, i8)) {
         let mut positions = self.board.keys().cloned().collect::<Vec<Position>>();
         positions.sort_by(|a, b| a.1.cmp(&b.1).then(a.0.cmp(&b.0)));
