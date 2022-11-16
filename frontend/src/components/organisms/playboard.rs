@@ -1,6 +1,6 @@
 use crate::components::common::piecetype::PieceType;
 use crate::components::molecules::destination::Destination;
-use crate::components::molecules::lastmove::LastMove;
+use crate::components::molecules::lastmove::{LastMove, MoveType};
 use crate::components::molecules::stackedpieces::StackedPieces;
 use crate::stores::gamestate::GameStateStore;
 use crate::components::svgs::bugs::Bugs;
@@ -26,8 +26,8 @@ pub fn playboard() -> Html {
                 for store.state.last_turn.iter().map(|(from, to)| {
                     html_nested! {
                         <>
-                            <LastMove pos={*from} />
-                            <LastMove pos={*to} />
+                            <LastMove pos={*from} m={MoveType::From}/>
+                            <LastMove pos={*to} m={MoveType::To}/>
                         </>
                     }
                 })
