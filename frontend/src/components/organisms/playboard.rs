@@ -1,9 +1,11 @@
 use crate::components::common::piecetype::PieceType;
+use crate::components::common::svgpos::SvgPos;
 use crate::components::molecules::destination::Destination;
+use crate::components::molecules::flatpiece::FlatPiece;
 use crate::components::molecules::lastmove::{LastMove, MoveType};
 use crate::components::molecules::stackedpieces::StackedPieces;
-use crate::stores::gamestate::GameStateStore;
 use crate::components::svgs::bugs::Bugs;
+use crate::stores::gamestate::GameStateStore;
 use web_sys;
 use yew::prelude::*;
 use yewdux::prelude::*;
@@ -16,6 +18,13 @@ pub fn playboard() -> Html {
     let vb = format! {"{} {} {} {}", -0.2*width, -0.2*height, width*0.4, height*0.4};
 
     let (store, _dispatch) = use_store::<GameStateStore>();
+
+    let mut center_offset = (0.0, 0.0);
+    if let Some(position) = store.position {
+        if let Some(pieces) = store.state.board.board.get(&position) {
+            center_offset = SvgPos::center_offset(pieces.len());
+        }
+    }
 
     html! {
         <>
@@ -46,6 +55,10 @@ pub fn playboard() -> Html {
                         <StackedPieces pieces={pieces.clone()} position={pos.clone()} piecetype={PieceType::Board} />
                     }
                 })
+            }
+            // this shows the piece at the new destination
+            if store.active.is_some() && store.position.is_some() {
+                <FlatPiece piece={store.active.unwrap()} position={store.position.unwrap()} center_offset={center_offset} piecetype={PieceType::Spawn} />
             }
         </svg>
         </>

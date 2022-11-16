@@ -57,14 +57,5 @@ pub fn destination(props: &DestinationProps) -> Html {
             </g>
         );
     }
-
-    // this shows the piece at the new destination
-    if store.active.is_some() && store.position.is_some() {
-        return html! (
-            <>
-                <FlatPiece piece={store.active.unwrap()} position={store.position.unwrap()} center_offset={center_offset} piecetype={PieceType::Spawn} />
-            </>
-        );
-    }
     html!()
 }
