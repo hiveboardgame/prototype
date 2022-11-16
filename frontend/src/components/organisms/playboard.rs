@@ -1,6 +1,6 @@
 use crate::components::common::piecetype::PieceType;
 use crate::components::common::svgpos::SvgPos;
-use crate::components::molecules::destination::Destination;
+use crate::components::molecules::destination::{Destination, Level};
 use crate::components::molecules::flatpiece::FlatPiece;
 use crate::components::molecules::lastmove::{LastMove, MoveType};
 use crate::components::molecules::stackedpieces::StackedPieces;
@@ -45,7 +45,7 @@ pub fn playboard() -> Html {
             {
                 for store.target_postitions.iter().map(|pos| {
                     html_nested! {
-                        <Destination position={pos.clone()} />
+                        <Destination position={pos.clone()} level={Level::Low} />
                     }
                 })
             }
@@ -53,6 +53,13 @@ pub fn playboard() -> Html {
                 for store.state.board.board.iter().map(|(pos, pieces)| {
                     html_nested! {
                         <StackedPieces pieces={pieces.clone()} position={pos.clone()} piecetype={PieceType::Board} />
+                    }
+                })
+            }
+            {
+                for store.target_postitions.iter().map(|pos| {
+                    html_nested! {
+                        <Destination position={pos.clone()} level={Level::High} />
                     }
                 })
             }

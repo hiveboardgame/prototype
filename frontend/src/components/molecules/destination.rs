@@ -8,9 +8,16 @@ use stylist::{style, yew::styled_component};
 use yew::prelude::*;
 use yewdux::prelude::*;
 
+#[derive(PartialEq, Eq)]
+pub enum Level {
+    Low,
+    High,
+}
+
 #[derive(Properties, PartialEq)]
 pub struct DestinationProps {
     pub position: Position,
+    pub level: Level,
 }
 
 #[styled_component(Destination)]
@@ -51,11 +58,23 @@ pub fn destination(props: &DestinationProps) -> Html {
 
     // this displays the destinations to chose from
     if store.active.is_some() && store.position.is_none() {
-        return html! (
-            <g {transform} class={stylesheet}>
-                <use class="destination"  onclick={onclick} href="#destination" transform="scale(0.56, 0.56) translate(-46.608, -52.083)" />
-            </g>
-        );
+        match props.level {
+            Level::Low if center_offset == (0.0, 0.0) => {
+                return html! (
+                    <g {transform} class={stylesheet}>
+                        <use class="destination" onclick={onclick} href="#destination" transform="scale(0.56, 0.56) translate(-46.608, -52.083)" />
+                    </g>
+                )
+            }
+            Level::High if center_offset != (0.0, 0.0) => {
+                return html! (
+                    <g {transform} class={stylesheet}>
+                        <use class="destination" onclick={onclick} href="#destination" transform="scale(0.56, 0.56) translate(-46.608, -52.083)" />
+                    </g>
+                )
+            }
+            _ => {}
+        }
     }
     html!()
 }
