@@ -15,6 +15,7 @@ wasm-bindgen = "*"
 web-sys = { version = "*", features = ["HtmlInputElement"] }
 yew-oauth2 = "*"
 yew-router = "*"
+yew-hooks = "*"
 yewdux = "*"
 gloo-net = "*"
 wasm-bindgen-futures = "*"

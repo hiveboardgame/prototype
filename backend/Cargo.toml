@@ -6,11 +6,22 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-actix-web = { version = "4.2.1", features = ["openssl"] }
+actix = "*"
 actix-cors = "*"
+actix-web = { version = "4.2.1", features = ["openssl"] }
+actix-web-actors = "*"
 frontend = { path = "../frontend" }
+env_logger = "*"
+log = "*"
+actix-files = "*"
 oauth2 = "4.2.3"
 serde = { version = "*", features = ["derive"] }
 openssl = "0.10.42"
 jsonwebtoken-google = "0.1.6"
+diesel = { version = "2.0.0", features = ["postgres"] }
+dotenvy = "0.15"
 hive = { path = "../engine/" }
+futures-util = { version = "*", default-features = false, features = ["std", "sink"] }
+uuid = { version = "*", features = ["v4", "v7", "serde"] }
+tokio = { version = "*", features = ["full"] }
+tokio-stream = "*"

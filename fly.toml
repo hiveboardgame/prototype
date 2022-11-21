@@ -1,4 +1,4 @@
-# fly.toml file generated for buggygamearena on 2022-11-16T00:57:44+01:00
+# fly.toml file generated for buggygamearena on 2022-11-16T20:21:10+01:00
 
 app = "buggygamearena"
 kill_signal = "SIGINT"

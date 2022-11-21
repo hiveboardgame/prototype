@@ -10,6 +10,7 @@ pub fn navbar() -> Html {
             <Link<Route> to={Route::Review}> {"Review"} </Link<Route>> {" "}
             <Link<Route> to={Route::Play}> {"Play"} </Link<Route>> {" "}
             <Link<Route> to={Route::Get}> {"Get"} </Link<Route>> {" "}
+            <Link<Route> to={Route::WS}> {"WS"} </Link<Route>> {" "}
         </div>
     }
 }
