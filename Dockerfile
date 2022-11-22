@@ -9,7 +9,7 @@ ENV RUST_LOG=info
 WORKDIR /app
 COPY . ./
 
-RUN bash -c "cd /app/backend && cargo build"
-RUN bash -c "cd /app/frontend && trunk build"
+RUN bash -c "cd /app/backend && cargo build --release"
+RUN bash -c "cd /app/frontend && trunk build --release"
 
 CMD /app/run.sh

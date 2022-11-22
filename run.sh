@@ -29,7 +29,7 @@ children+=($ACTIX_PROC)
 popd;
 
 pushd frontend;
-trunk serve &
+trunk serve --release &
 YEW_PROCESS=$!
 children+=($YEW_PROCESS)
 popd;
