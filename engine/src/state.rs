@@ -71,6 +71,38 @@ impl State {
         self.history.record_move(piece.to_string(), pos);
     }
 
+    fn shutout(&mut self) {
+        let spawns = self.board.spawnable_positions(&self.turn_color).is_empty();
+        let moves = self.board.moves(&self.turn_color).values().flatten().collect::<Vec<&Position>>().is_empty();
+        if moves && spawns {
+            self.history.record_move(self.turn_color.to_string(), "pass".to_string());
+            self.turn_color = self.turn_color.opposite();
+            self.turn += 1;
+        }
+        self.update_hasher();
+    }
+
+    fn next_turn(&mut self) {
+        self.winner = self.board.winner();
+        if let Some(winner) = self.winner {
+            self.history.record_move(winner.to_string(), "won".to_string());
+            return;
+        }
+        self.turn_color = self.turn_color.opposite();
+        self.turn += 1;
+    }
+
+    fn update_hasher(&mut self) {
+        let mut h = History::new();
+        let mut turn = 0;
+        if self.turn > 0 {
+            turn = self.turn - 1;
+        }
+        h.moves = self.history.moves[0..=turn].to_vec();
+        self.hasher.record_move(&h);
+        self.hasher.record_board_state(&self.board);
+    }
+
     pub fn play_turn(&mut self, piece: Piece, target_position: Position) {
         let moves = self.board.moves(&self.turn_color);
 
@@ -97,7 +129,6 @@ impl State {
                 );
             }
             self.last_turn = Some((current_position, target_position));
-            self.update_history(piece, target_position);
             self.board
                 .move_piece(&piece, &current_position, &target_position);
         } else {
@@ -106,21 +137,15 @@ impl State {
                 panic!("Queen needs to be spawned");
             }
             if self.board.spawnable(&piece.color, &target_position) {
-                self.update_history(piece, target_position);
                 self.board.insert(&target_position, piece);
                 self.last_turn = Some((target_position, target_position));
             } else {
                 panic!("Can't spawn here!");
             }
         }
-        self.winner = self.board.winner();
-        if self.winner.is_none() {
-            self.turn += 1;
-            self.turn_color = self.turn_color.opposite();
-        }
-        let mut h = History::new();
-        h.moves = self.history.moves[0..=((self.turn - 1) as usize)].to_vec();
-        self.hasher.record_move(&h);
-        self.hasher.record_board_state(&self.board);
+        self.update_history(piece, target_position);
+        self.update_hasher();
+        self.next_turn();
+        self.shutout();
     }
 }
