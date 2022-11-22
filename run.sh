@@ -29,7 +29,7 @@ children+=($ACTIX_PROC)
 popd;
 
 pushd frontend;
-trunk serve --address 0.0.0.0 --port $TRUNK_SERVE_PORT --proxy-backend=http://localhost:8081/ --proxy-rewrite=/api/ &
+trunk serve &
 YEW_PROCESS=$!
 children+=($YEW_PROCESS)
 popd;
