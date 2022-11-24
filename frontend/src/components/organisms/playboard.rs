@@ -3,7 +3,6 @@ use crate::components::common::svgpos::SvgPos;
 use crate::components::molecules::destination::{Destination, Level};
 use crate::components::molecules::flatpiece::FlatPiece;
 use crate::components::molecules::lastmove::{LastMove, MoveType};
-use crate::components::molecules::stackedpieces::StackedPieces;
 use crate::components::svgs::bugs::Bugs;
 use crate::stores::gamestate::GameStateStore;
 use web_sys;

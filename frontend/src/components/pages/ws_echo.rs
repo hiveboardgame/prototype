@@ -1,6 +1,3 @@
-use gloo::console::log;
-use gloo_net::http::Request;
-use serde::{Deserialize, Serialize};
 use yew::prelude::*;
 use yew_hooks::prelude::*;
 

@@ -1,9 +1,13 @@
 # flyctl launch added from .gitignore
+.git
 target
-**/*/target/.*
-**/*/target
-**/*/dist/*
-**/cert.pem
-**/key.pem
-**/backend/cert.pem
-**/backend/key.pem
+backend/target
+frontend/target
+engine/target
+*/target/.*
+*/target
+*/dist/*
+*/cert.pem
+*/key.pem
+*/backend/cert.pem
+*/backend/key.pem

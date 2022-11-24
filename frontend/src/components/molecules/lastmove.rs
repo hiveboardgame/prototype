@@ -20,7 +20,6 @@ pub fn lastmove(props: &LastMoveProps) -> Html {
     let center = svg_pos.center();
     let transform = format!("translate({},{})", center.0, center.1);
 
-    let filter = "filter: drop-shadow(0.3px 0.3px 0.3px #000)";
     html! {
         <>
             <g {transform}>

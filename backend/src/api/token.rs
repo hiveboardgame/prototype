@@ -1,10 +1,9 @@
 use actix_web::{post, web::Form, web::Json};
 use oauth2::basic::BasicClient;
 use oauth2::reqwest::async_http_client;
-use oauth2::reqwest::http_client;
 use oauth2::{
-    AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, PkceCodeChallenge,
-    PkceCodeVerifier, RedirectUrl, Scope, TokenResponse, TokenUrl,
+    AuthUrl, AuthorizationCode, ClientId, ClientSecret, 
+    PkceCodeVerifier, RedirectUrl, TokenUrl,
 };
 use serde::{Deserialize, Serialize};
 

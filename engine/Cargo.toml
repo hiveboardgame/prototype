@@ -3,7 +3,6 @@ name = "hive"
 version = "0.1.0"
 edition = "2021"
 
-
 [lib]
 name = "hive_lib"
 path = "src/lib.rs"
@@ -11,8 +10,6 @@ path = "src/lib.rs"
 [[bin]]
 name = "hive_bin"
 path = "src/main.rs" # replace bin.rs with name of your file
-
-
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
@@ -22,6 +19,3 @@ sha2 = "*"
 hex-literal = "*"
 serde_json = "*"
 serde = { version = "*", features = ["derive"] }
-
-[attributes]
-#![feature(is_some_with)]

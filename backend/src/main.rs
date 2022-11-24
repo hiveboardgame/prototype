@@ -1,10 +1,9 @@
 mod api;
 mod websockets;
 
-use actix_cors::Cors;
-use actix_files::{Files, NamedFile};
+use actix_files::NamedFile;
 use actix_web::{
-    get, http::header, middleware, post, web, App, Error, HttpRequest, HttpResponse, HttpServer,
+    get, middleware, post, web, App, Error, HttpRequest, HttpResponse, HttpServer,
     Responder,
 };
 use actix_web_actors::ws;
@@ -66,19 +65,15 @@ async fn main() -> std::io::Result<()> {
     log::info!("starting HTTP server at http://127.0.0.1:8080");
 
     HttpServer::new(|| {
-        //let cors = Cors::default().allowed_origin("http://127.0.0.1:8080");
-
         App::new()
             .wrap(middleware::Compress::default())
             .wrap(middleware::Logger::default())
             .route("/", web::get().to(index))
             .route("/frontend.js", web::get().to(js))
             .route("/frontend_bg.wasm", web::get().to(wasm))
-            //.service(Files::new("/dist", ".").index_file("index.html"))
             .service(web::resource("/ws/").route(web::get().to(echo_ws)))
             .service(
                 web::scope("/api")
-                    //.wrap(cors)
                     .service(history)
                     .service(hello)
                     .service(echo),

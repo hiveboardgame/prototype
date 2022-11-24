@@ -1,6 +1,4 @@
-use crate::components::common::piecetype::PieceType;
 use crate::components::common::svgpos::SvgPos;
-use crate::components::molecules::flatpiece::FlatPiece;
 use crate::stores::gamestate::GameStateStore;
 use gloo::console::log;
 use hive_lib::position::Position;
