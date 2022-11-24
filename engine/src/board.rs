@@ -246,15 +246,17 @@ impl Board {
             if self.top_piece(pos).is_color(color) {
                 // let's make sure pieces that were just moved cannot be moved again
                 if let Some(last_moved) = self.last_moved {
-                    if last_moved != (self.top_piece(pos), *pos) {
-                        // get all the moves
-                        for (start_pos, target_positions) in Bug::available_moves(pos, self) {
-                            moves
-                                .entry((self.top_piece(&start_pos), start_pos))
-                                .or_default()
-                                .append(&mut target_positions.clone());
-                        }
+                    if last_moved == (self.top_piece(pos), *pos) {
+                        // now we skip it
+                        continue;
                     }
+                }
+                // get all the moves
+                for (start_pos, target_positions) in Bug::available_moves(pos, self) {
+                    moves
+                        .entry((self.top_piece(&start_pos), start_pos))
+                        .or_default()
+                        .append(&mut target_positions.clone());
                 }
             }
         }

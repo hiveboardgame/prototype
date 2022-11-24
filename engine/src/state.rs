@@ -56,9 +56,18 @@ impl State {
     fn update_history(&mut self, piece: Piece, target_position: Position) {
         // if there's no piece on the board yet use "."
         let mut pos = ".".to_string();
-        if let Some(pieces) = self.board.board.get(&target_position) {
-            // there's a piece already at the position, so it must be a climb
-            pos = pieces.last().unwrap().to_string();
+        if self
+            .board
+            .board
+            .get(&target_position)
+            .unwrap_or(&vec![])
+            .len()
+            > 1
+        {
+            let pieces = self.board.board.get(&target_position).unwrap();
+            let len = pieces.len();
+            let second_to_last = pieces[len - 2];
+            pos = second_to_last.to_string();
         } else {
             // no piece at the current position, so it's a spawn or a move
             if let Some(neighbor_pos) = self.board.positions_taken_around(&target_position).get(0) {
@@ -68,16 +77,25 @@ impl State {
                 pos = dir.to_history_string(neighbor_piece.to_string());
             }
         }
+        println!("{} {}", piece.to_string(), pos);
         self.history.record_move(piece.to_string(), pos);
     }
 
     fn shutout(&mut self) {
-        let spawns = self.board.spawnable_positions(&self.turn_color).is_empty();
-        let moves = self.board.moves(&self.turn_color).values().flatten().collect::<Vec<&Position>>().is_empty();
-        if moves && spawns {
-            self.history.record_move(self.turn_color.to_string(), "pass".to_string());
+        let no_spawns = self.board.spawnable_positions(&self.turn_color).is_empty();
+        let no_moves = self
+            .board
+            .moves(&self.turn_color)
+            .values()
+            .flatten()
+            .collect::<Vec<&Position>>()
+            .is_empty();
+        if no_moves && no_spawns {
+            self.history
+                .record_move(self.turn_color.to_string(), "pass".to_string());
             self.turn_color = self.turn_color.opposite();
             self.turn += 1;
+            self.board.last_moved = None;
         }
         self.update_hasher();
     }
@@ -85,7 +103,8 @@ impl State {
     fn next_turn(&mut self) {
         self.winner = self.board.winner();
         if let Some(winner) = self.winner {
-            self.history.record_move(winner.to_string(), "won".to_string());
+            self.history
+                .record_move(winner.to_string(), "won".to_string());
             return;
         }
         self.turn_color = self.turn_color.opposite();
