@@ -8,7 +8,7 @@ use yew_hooks::prelude::*;
 pub fn web_socket() -> Html {
     let history = use_list(vec![]);
 
-    let ws = use_web_socket("ws://127.0.0.1:8081/ws/".to_string());
+    let ws = use_web_socket("ws://127.0.0.1:8080/ws/".to_string());
     let onclick = {
         let ws = ws.clone();
         let history = history.clone();

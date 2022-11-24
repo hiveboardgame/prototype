@@ -7,13 +7,15 @@ edition = "2021"
 crate-type = ["cdylib", "rlib"]
 
 [profile.release]
-lto = true
+lto = "fat"
 opt-level = 'z'
 codegen-units = 1
+panic = "abort"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+wee_alloc = "0.4"
 yew = "*"
 gloo = "*"
 serde = "*"

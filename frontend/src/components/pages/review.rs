@@ -8,6 +8,14 @@ use hive_lib::history::History;
 use yew::prelude::*;
 use yewdux::prelude::*;
 
+async fn req<T: for<'de>::serde::Deserialize<'de>>(url: &str) -> Result<T, gloo_net::Error> {
+    Request::get(url)
+        .send()
+        .await?
+        .json::<T>()
+        .await
+}
+
 #[function_component(Review)]
 pub fn review() -> Html {
     let history = use_state(|| History::default());
@@ -17,14 +25,9 @@ pub fn review() -> Html {
         Callback::from(move |_| {
             let history = history.clone();
             wasm_bindgen_futures::spawn_local(async move {
-                let resp = Request::get("http://127.0.0.1:8081/api/history")
-                    .send()
-                    .await
-                    .unwrap()
-                    .json::<History>()
-                    .await
-                    .unwrap();
-                history.set(resp);
+                if let Ok(hist) = req::<History>("http://127.0.0.1:8080/api/history").await {
+                    history.set(hist)
+                }
             });
         })
     };
