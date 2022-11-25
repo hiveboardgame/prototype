@@ -2,6 +2,7 @@ mod api;
 mod websockets;
 
 use actix_files::NamedFile;
+use actix_files::Files;
 use actix_web::{
     get, middleware, post, web, App, Error, HttpRequest, HttpResponse, HttpServer,
     Responder,
@@ -43,21 +44,6 @@ async fn echo_ws(req: HttpRequest, stream: web::Payload) -> Result<HttpResponse,
     ws::start(Echo::new(), &req, stream)
 }
 
-async fn index(_req: HttpRequest) -> Result<NamedFile, Error> {
-    let path: PathBuf = "./dist/index.html".parse().unwrap();
-    Ok(NamedFile::open(path)?)
-}
-
-async fn js(_req: HttpRequest) -> Result<NamedFile, Error> {
-    let path: PathBuf = "./dist/frontend.js".parse().unwrap();
-    Ok(NamedFile::open(path)?)
-}
-
-async fn wasm(_req: HttpRequest) -> Result<NamedFile, Error> {
-    let path: PathBuf = "./dist/frontend_bg.wasm".parse().unwrap();
-    Ok(NamedFile::open(path)?)
-}
-
 #[actix_web::main] // or #[tokio::main]
 async fn main() -> std::io::Result<()> {
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
@@ -68,9 +54,6 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .wrap(middleware::Compress::default())
             .wrap(middleware::Logger::default())
-            .route("/", web::get().to(index))
-            .route("/frontend.js", web::get().to(js))
-            .route("/frontend_bg.wasm", web::get().to(wasm))
             .service(web::resource("/ws/").route(web::get().to(echo_ws)))
             .service(
                 web::scope("/api")
@@ -78,6 +61,7 @@ async fn main() -> std::io::Result<()> {
                     .service(hello)
                     .service(echo),
             )
+            .service(Files::new("/", "dist/").index_file("index.html"))
         //.service(token)
     })
     .workers(2)

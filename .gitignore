@@ -1,7 +1,10 @@
 /target
 */target/.*
 */target/
-*/dist/*
+frontend/dist/*
+backend/dist/frontend_bg.wasm
+backend/dist/index.html
+backend/dist/frontend.js
 cert.pem
 key.pem
 backend/cert.pem

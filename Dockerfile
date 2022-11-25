@@ -9,8 +9,8 @@ ENV RUST_LOG=info
 
 FROM base AS builder
 
-RUN git clone https://github.com/klautcomputing/hive.git
 WORKDIR /hive
+COPY . .
 RUN cd backend; cargo build --release;
 RUN cd frontend; trunk build --release --filehash=false; cp -rv dist/* ../backend/dist;
 CMD cd backend; cargo run --release --bin backend

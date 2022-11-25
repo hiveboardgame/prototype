@@ -25,7 +25,7 @@ pub fn review() -> Html {
         Callback::from(move |_| {
             let history = history.clone();
             wasm_bindgen_futures::spawn_local(async move {
-                if let Ok(hist) = req::<History>("http://127.0.0.1:8080/api/history").await {
+                if let Ok(hist) = req::<History>("/api/history").await {
                     history.set(hist)
                 }
             });

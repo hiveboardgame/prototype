@@ -5,3 +5,6 @@ members = [
     "frontend",
     "backend",
 ]
+
+[build.package.frontend]
+target = "wasm32-unknown-unknown"
