@@ -3,7 +3,7 @@ use crate::components::common::svgpos::SvgPos;
 use crate::stores::gamestate::GameStateStore;
 use gloo::console::log;
 use hive_lib::{piece::Piece, position::Position};
-use stylist::{style, yew::styled_component};
+use stylist::{css, yew::styled_component};
 use yew::prelude::*;
 use yewdux::prelude::*;
 
@@ -55,7 +55,7 @@ pub fn flatpiece(props: &FlatPieceProps) -> Html {
         }
     };
 
-    let stylesheet = style!(
+    let class = css!(
         r#"
             @keyframes blink {
                 100%,
@@ -89,8 +89,7 @@ pub fn flatpiece(props: &FlatPieceProps) -> Html {
                 opacity: 1.0;
             }
         "#
-    )
-    .expect("FlatPiece styling failed");
+    );
 
     let mut piecetype = props.piecetype.to_string();
     if let Some(active) = store.active {
@@ -105,7 +104,7 @@ pub fn flatpiece(props: &FlatPieceProps) -> Html {
     }
     html! {
         <>
-        <g class={stylesheet}>
+        <g class={class}>
             <g id={piecetype.clone()} onclick={onclick_log.clone()} {transform} style={filter}>
                     <use href={format!("#{}", props.piece.color.name())} transform="scale(0.56, 0.56) translate(-45, -50)" />
                     <use href={format!("#{}", props.piece.bug.name())} transform="scale(0.56, 0.56) translate(-50, -45)"/>

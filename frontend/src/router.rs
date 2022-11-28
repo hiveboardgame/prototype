@@ -17,7 +17,7 @@ pub enum Route {
     WS,
 }
 
-pub fn switch(route: &Route) -> Html {
+pub fn switch(route: Route) -> Html {
     return match route {
         Route::Home => html! { <Home /> },
         Route::Review => html! { <Review /> },

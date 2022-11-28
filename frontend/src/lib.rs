@@ -20,7 +20,7 @@ pub fn app() -> Html {
     <div>
         <BrowserRouter>
             <Navbar />
-            <Switch<Route> render={Switch::render(switch)} />
+            <Switch<Route> render={switch} />
         </BrowserRouter>
     </div>
     }
