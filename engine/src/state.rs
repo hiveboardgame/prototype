@@ -48,9 +48,16 @@ impl State {
     }
 
     pub fn play_turn_from_notation(&mut self, piece: &str, position: &str) {
-        let piece = Piece::from_string(piece);
-        let target_position = Position::from_string(position, &self.board);
-        self.play_turn(piece, target_position);
+        match piece {
+            "pass" => {
+                self.shutout();
+            }
+            _ => {
+                let piece = Piece::from_string(piece);
+                let target_position = Position::from_string(position, &self.board);
+                self.play_turn(piece, target_position);
+            }
+        }
     }
 
     fn update_history(&mut self, piece: Piece, target_position: Position) {
@@ -77,12 +84,12 @@ impl State {
                 pos = dir.to_history_string(neighbor_piece.to_string());
             }
         }
-        println!("{} {}", piece.to_string(), pos);
+        // println!("{} {}", piece.to_string(), pos);
         self.history.record_move(piece.to_string(), pos);
     }
 
     fn shutout(&mut self) {
-        let no_spawns = self.board.spawnable_positions(&self.turn_color).is_empty();
+        let no_spawns = !self.board.spawns_left(&self.turn_color);
         let no_moves = self
             .board
             .moves(&self.turn_color)
@@ -141,6 +148,7 @@ impl State {
                 &current_position,
                 &target_position,
             ) {
+                println!("Board state is: \n{}", self.board);
                 panic!(
                     "Not a legal move! \n Turn is {:?} color is {:?}\n Trying to move {piece} from {current_position} to
                        {target_position} \n But valid target positions are only: {:?}\n All valid moves are: {:?}",

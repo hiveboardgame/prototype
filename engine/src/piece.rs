@@ -35,7 +35,7 @@ impl fmt::Display for Piece {
         if let Some(order) = self.order {
             write!(f, "{}{}{}", self.color, self.bug, order)
         } else {
-            write!(f, "{}{}", self.color, self.bug)
+            write!(f, "{}{} ", self.color, self.bug)
         }
     }
 }

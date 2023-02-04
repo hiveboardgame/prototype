@@ -62,7 +62,6 @@ async fn main() -> std::io::Result<()> {
                     .service(echo),
             )
             .service(Files::new("/", "dist/").index_file("index.html"))
-        //.service(token)
     })
     .workers(2)
     .bind(("0.0.0.0", 8080))?

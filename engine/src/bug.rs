@@ -311,30 +311,62 @@ impl Bug {
     }
 
     fn spider_moves(position: &Position, board: &Board) -> Vec<Position> {
-        let first: HashSet<Position> = HashSet::from_iter(Bug::crawl(position, board));
+        let mut moves = vec![vec![position.clone()]];
         let mut board = board.clone();
-        board.board.remove(position);
-        let second: HashSet<Position> = first
+        for i in 0..3 {
+            moves = moves
+                .iter()
+                .flat_map(|positions| {
+                    Bug::crawl(positions.last().unwrap(), &board)
+                        .iter()
+                        .map(|p| {
+                            let mut pos = positions.clone();
+                            pos.push(p.clone());
+                            pos
+                        })
+                        .collect::<Vec<Vec<Position>>>()
+                })
+                .collect::<Vec<Vec<Position>>>();
+                if i == 0 {
+                    board.board.remove(position);
+                }
+        }
+        moves.retain(|positions| {
+            let len = positions.len();
+            let mut sorted = positions.clone();
+            sorted.sort_unstable();
+            sorted.dedup();
+            len == sorted.len()
+        });
+        let positions = moves
             .iter()
-            .flat_map(|pos| {
-                Bug::crawl(pos, &board)
-                    .iter()
-                    .filter(|pos| *pos != position && !first.contains(pos))
-                    .cloned()
-                    .collect::<HashSet<Position>>()
-            })
-            .collect::<HashSet<Position>>();
-        let third: HashSet<Position> = second
-            .iter()
-            .flat_map(|pos| {
-                Bug::crawl(pos, &board)
-                    .iter()
-                    .filter(|pos| *pos != position && !first.contains(pos) && !second.contains(pos))
-                    .cloned()
-                    .collect::<HashSet<Position>>()
-            })
-            .collect::<HashSet<Position>>();
-        return third.iter().cloned().collect();
+            .map(|positions| positions.last().unwrap().clone())
+            .collect::<Vec<Position>>();
+        // let first: HashSet<Position> = HashSet::from_iter(Bug::crawl(position, board));
+        // let mut board = board.clone();
+        // board.board.remove(position);
+        // let second: HashSet<Position> = first
+        //     .iter()
+        //     .flat_map(|pos| {
+        //         Bug::crawl(pos, &board)
+        //             .iter()
+        //             .filter(|pos| *pos != position && !first.contains(pos))
+        //             .cloned()
+        //             .collect::<HashSet<Position>>()
+        //     })
+        //     .collect::<HashSet<Position>>();
+        // let third: HashSet<Position> = second
+        //     .iter()
+        //     .flat_map(|pos| {
+        //         Bug::crawl(pos, &board)
+        //             .iter()
+        //             .filter(|pos| *pos != position && !first.contains(pos) && !second.contains(pos))
+        //             .cloned()
+        //             .collect::<HashSet<Position>>()
+        //     })
+        //     .collect::<HashSet<Position>>();
+        // return third.iter().cloned().collect();
+        return positions;
     }
 }
 

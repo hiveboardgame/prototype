@@ -1,21 +1,28 @@
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::{self, BufRead};
 
+use crate::color::Color;
+
 #[derive(Debug, Clone, Serialize, Default, Deserialize, PartialEq, Eq)]
 pub struct History {
     pub moves: Vec<(String, String)>,
+    pub winner: Option<Color>,
 }
 
 impl History {
     pub fn new() -> Self {
-        History { moves: Vec::new() }
+        History {
+            moves: Vec::new(),
+            winner: None,
+        }
     }
 
     pub fn to_string(&self) -> String {
         let mut his = String::new();
         for (i, (piece, pos)) in self.moves.iter().enumerate() {
-            his += &format!("{}. {} {}", i+1, piece, pos);
+            his += &format!("{}. {} {}", i + 1, piece, pos);
         }
         his
     }
@@ -26,13 +33,37 @@ impl History {
 
     pub fn from_filepath(str: &str) -> Self {
         let mut history = History::new();
+        let header = Regex::new(r"\[.*").unwrap();
+        let turn = Regex::new(r"\d+").unwrap();
+        let result = Regex::new(r"\[Result").unwrap();
         if let Ok(file) = File::open(str) {
             for line in io::BufReader::new(file).lines().flatten() {
-                let mov = line.split_whitespace().collect::<Vec<&str>>();
-                history.moves.push((
-                    mov.first().unwrap().to_string(),
-                    mov.last().unwrap().to_string(),
-                ));
+                let tokens = line.split_whitespace().collect::<Vec<&str>>();
+                if line.len() == 0 {
+                    continue;
+                }
+                if result.is_match(tokens.first().unwrap()) {
+                    match tokens.get(1) {
+                        Some(&"\"1-0\"]") => history.winner = Some(Color::White),
+                        Some(&"\"0-1\"]") => history.winner = Some(Color::Black),
+                        _ => {}
+                    }
+                }
+                if header.is_match(tokens.first().unwrap()) {
+                    continue;
+                }
+                if turn.is_match(tokens.first().unwrap()) {
+                    if history.moves.is_empty() && tokens.get(2).is_none() {
+                        history
+                            .moves
+                            .push((tokens.get(1).unwrap().to_string(), ".".to_string()));
+                    } else {
+                        history.moves.push((
+                            tokens.get(1).unwrap().to_string(),
+                            tokens.get(2).unwrap_or(&"").to_string(),
+                        ));
+                    }
+                }
             }
         }
         history

@@ -339,6 +339,13 @@ impl Board {
             .collect();
     }
 
+    pub fn spawns_left(&self, color: &Color) -> bool {
+        if self.reserve(color).iter().filter(|(_, v)| **v > 0).collect::<HashMap<&Bug, &i8>>().is_empty() || self.spawnable_positions(color).is_empty() {
+            return false;
+        }
+        return true;
+    }
+
     pub fn reserve(&self, color: &Color) -> HashMap<Bug, i8> {
         let mut bugs = Bug::bugs_count();
         for pieces in self.board.values() {
