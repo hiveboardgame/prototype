@@ -1,4 +1,5 @@
 use hive_lib::history::History;
+use hive_lib::game_result::GameResult;
 use hive_lib::state::State;
 use std::env;
 
@@ -8,19 +9,29 @@ fn main() {
         println!("{}", game);
         let history = History::from_filepath(game);
         let state = State::new_from_history(&history);
-        // println!("Board:");
-        // println!("{}", state.board);
-        if let Some(_winner) = state.winner {
-            //println!("State says {} won!", winner);
+        if let GameResult::Winner(winner) = state.game_result {
+            println!("State says {} won!", winner);
         }
-        if let Some(_winner) = history.winner {
-            //println!("History says {} won!", winner);
+        if GameResult::Draw == state.game_result {
+            println!("State says it's a draw");
         }
-        if let Some(hw) = history.winner {
-            if let Some(sw) = state.winner {
+        if let GameResult::Winner(winner) = history.result {
+            println!("History says {} won!", winner);
+        }
+        if let GameResult::Winner(hw) = history.result {
+            if let GameResult::Winner(sw) = state.game_result {
                 if sw != hw {
                     println!("winners don't match");
                 }
+            }
+            if let GameResult::Draw = state.game_result {
+                println!("winners don't match");
+            }
+        }
+        if let GameResult::Draw = history.result {
+            println!("History says game ended in a draw");
+            if let GameResult::Winner(_) = state.game_result {
+                panic!("State says there is a winner");
             }
         }
     } else {

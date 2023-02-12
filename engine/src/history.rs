@@ -4,18 +4,19 @@ use std::fs::File;
 use std::io::{self, BufRead};
 
 use crate::color::Color;
+use crate::game_result::GameResult;
 
 #[derive(Debug, Clone, Serialize, Default, Deserialize, PartialEq, Eq)]
 pub struct History {
     pub moves: Vec<(String, String)>,
-    pub winner: Option<Color>,
+    pub result: GameResult,
 }
 
 impl History {
     pub fn new() -> Self {
         History {
             moves: Vec::new(),
-            winner: None,
+            result: GameResult::Unknown,
         }
     }
 
@@ -44,9 +45,10 @@ impl History {
                 }
                 if result.is_match(tokens.first().unwrap()) {
                     match tokens.get(1) {
-                        Some(&"\"1-0\"]") => history.winner = Some(Color::White),
-                        Some(&"\"0-1\"]") => history.winner = Some(Color::Black),
-                        _ => {}
+                        Some(&"\"1-0\"]") => history.result = GameResult::Winner(Color::White),
+                        Some(&"\"0-1\"]") => history.result = GameResult::Winner(Color::Black),
+                        Some(&"\"1/2-1/2\"]") => history.result = GameResult::Draw,
+                        _ => history.result = GameResult::Unknown,
                     }
                 }
                 if header.is_match(tokens.first().unwrap()) {

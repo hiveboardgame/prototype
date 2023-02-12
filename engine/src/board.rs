@@ -8,6 +8,7 @@ use crate::color::Color;
 use crate::piece::Piece;
 use crate::position::Direction;
 use crate::position::Position;
+use crate::game_result::GameResult;
 
 #[derive(Deserialize, Serialize, Clone, Default, Debug, Eq, PartialEq)]
 pub struct Board {
@@ -19,7 +20,7 @@ impl fmt::Display for Board {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut positions = self.board.keys().cloned().collect::<Vec<Position>>();
         positions.sort_by(|a, b| a.1.cmp(&b.1).then(a.0.cmp(&b.0)));
-        let ((min_x, min_y), (max_x, max_y)) = self.mix_max_positions();
+        let ((min_x, min_y), (max_x, max_y)) = self.min_max_positions();
         let mut s = "".to_string();
         for y in min_y..=max_y {
             if y.rem_euclid(2) == 1 {
@@ -62,7 +63,7 @@ impl Board {
         })
     }
 
-    pub fn mix_max_positions(&self) -> ((i8, i8), (i8, i8)) {
+    pub fn min_max_positions(&self) -> ((i8, i8), (i8, i8)) {
         let mut positions = self.board.keys().cloned().collect::<Vec<Position>>();
         positions.sort_by(|a, b| a.1.cmp(&b.1).then(a.0.cmp(&b.0)));
         let min_x = positions
@@ -92,20 +93,19 @@ impl Board {
         return ((min_x, min_y), (max_x, max_y));
     }
 
-    pub fn winner(&self) -> Option<Color> {
-        if self
+    pub fn game_result(&self) -> GameResult {
+        let black = self
             .position_of_piece(&Piece::new(Bug::Queen, Color::White, None))
-            .is_some_and(|pos| self.neighbors(&pos).len() == 6)
-        {
-            return Some(Color::Black);
-        }
-        if self
+            .is_some_and(|pos| self.neighbors(&pos).len() == 6);
+        let white = self
             .position_of_piece(&Piece::new(Bug::Queen, Color::Black, None))
-            .is_some_and(|pos| self.neighbors(&pos).len() == 6)
-        {
-            return Some(Color::White);
-        }
-        None
+            .is_some_and(|pos| self.neighbors(&pos).len() == 6);
+        return match (black, white) {
+            (true, true) =>  GameResult::Draw,
+            (true, false) => GameResult::Winner(Color::Black), 
+            (false, true) => GameResult::Winner(Color::White),
+            _ => GameResult::Unknown,
+        };
     }
 
     pub fn position_of_piece(&self, piece: &Piece) -> Option<Position> {

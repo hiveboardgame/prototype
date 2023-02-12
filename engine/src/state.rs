@@ -6,18 +6,33 @@ use crate::history::History;
 use crate::piece::Piece;
 use crate::player::Player;
 use crate::position::Position;
+use crate::game_result::GameResult;
 use serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+pub enum LastTurn {
+    Pass,
+    Shutout,
+    Move(Position, Position),
+    None
+}
+
+impl Default for LastTurn {
+ fn default() -> Self {
+        LastTurn::None
+    }
+}
 
 #[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq)]
 pub struct State {
     pub board: Board,
     pub history: History,
     pub hasher: Hasher,
-    pub last_turn: Option<(Position, Position)>,
+    pub last_turn: LastTurn,
     pub turn: usize,
     pub turn_color: Color,
     pub players: (Player, Player),
-    pub winner: Option<Color>,
+    pub game_result: GameResult,
 }
 
 impl State {
@@ -26,11 +41,11 @@ impl State {
             board: Board::new(),
             history: History::new(),
             hasher: Hasher::new(),
-            last_turn: None,
+            last_turn: LastTurn::None,
             turn: 0,
             turn_color: Color::White,
             players: (Player::new(Color::White), Player::new(Color::Black)),
-            winner: None,
+            game_result: GameResult::Unknown,
         }
     }
 
@@ -50,7 +65,13 @@ impl State {
     pub fn play_turn_from_notation(&mut self, piece: &str, position: &str) {
         match piece {
             "pass" => {
-                self.shutout();
+                if self.last_turn == LastTurn::Shutout {
+                    self.last_turn = LastTurn::Pass;
+                    // we handled this in shutout already
+                    // Don't do anything
+                } else {
+                    panic!("\nProcessing turn: #{}\nThis is not a valid pass!", self.turn);
+                }
             }
             _ => {
                 let piece = Piece::from_string(piece);
@@ -84,7 +105,6 @@ impl State {
                 pos = dir.to_history_string(neighbor_piece.to_string());
             }
         }
-        // println!("{} {}", piece.to_string(), pos);
         self.history.record_move(piece.to_string(), pos);
     }
 
@@ -98,21 +118,32 @@ impl State {
             .collect::<Vec<&Position>>()
             .is_empty();
         if no_moves && no_spawns {
-            self.history
-                .record_move(self.turn_color.to_string(), "pass".to_string());
-            self.turn_color = self.turn_color.opposite();
-            self.turn += 1;
-            self.board.last_moved = None;
+            self.pass();
+            self.last_turn = LastTurn::Shutout;
         }
+    }
+
+    fn pass(&mut self) {
+        self.history
+            .record_move(self.turn_color.to_string(), "pass".to_string());
+        self.turn_color = self.turn_color.opposite();
+        self.turn += 1;
+        self.board.last_moved = None;
         self.update_hasher();
     }
 
     fn next_turn(&mut self) {
-        self.winner = self.board.winner();
-        if let Some(winner) = self.winner {
-            self.history
-                .record_move(winner.to_string(), "won".to_string());
-            return;
+        self.game_result = self.board.game_result();
+        match self.game_result {
+            GameResult::Winner(color) => {
+                self.history .record_move(color.to_string(), "won".to_string());
+                return;
+            }
+            GameResult::Draw => {
+                self.history.record_move("It's a draw".to_string(), "".to_string());
+                return;
+            }
+            _ => {},
         }
         self.turn_color = self.turn_color.opposite();
         self.turn += 1;
@@ -155,7 +186,7 @@ impl State {
                        self.turn, self.turn_color, moves.get(&(piece, current_position)).unwrap_or(&Vec::new()), moves
                 );
             }
-            self.last_turn = Some((current_position, target_position));
+            self.last_turn = LastTurn::Move(current_position, target_position);
             self.board
                 .move_piece(&piece, &current_position, &target_position);
         } else {
@@ -165,7 +196,7 @@ impl State {
             }
             if self.board.spawnable(&piece.color, &target_position) {
                 self.board.insert(&target_position, piece);
-                self.last_turn = Some((target_position, target_position));
+                self.last_turn = LastTurn::Move(target_position, target_position);
             } else {
                 panic!("Can't spawn here!");
             }
