@@ -5,11 +5,13 @@ use std::io::{self, BufRead};
 
 use crate::color::Color;
 use crate::game_result::GameResult;
+use crate::game_type::GameType;
 
 #[derive(Debug, Clone, Serialize, Default, Deserialize, PartialEq, Eq)]
 pub struct History {
     pub moves: Vec<(String, String)>,
     pub result: GameResult,
+    pub game_type: GameType,
 }
 
 impl History {
@@ -17,6 +19,7 @@ impl History {
         History {
             moves: Vec::new(),
             result: GameResult::Unknown,
+            game_type: GameType::default(),
         }
     }
 
@@ -37,11 +40,18 @@ impl History {
         let header = Regex::new(r"\[.*").unwrap();
         let turn = Regex::new(r"\d+").unwrap();
         let result = Regex::new(r"\[Result").unwrap();
+        let game_type = Regex::new(r"\[GameType .(Base[+MLP]+).\]").unwrap();
         if let Ok(file) = File::open(str) {
             for line in io::BufReader::new(file).lines().flatten() {
                 let tokens = line.split_whitespace().collect::<Vec<&str>>();
                 if line.len() == 0 {
                     continue;
+                }
+                if game_type.is_match(&line) {
+                    let caps = game_type.captures(&line).unwrap();
+                    if let Some(mtch) = caps.get(1) {
+                        history.game_type = GameType::from_str(mtch.as_str());
+                    }
                 }
                 if result.is_match(tokens.first().unwrap()) {
                     match tokens.get(1) {

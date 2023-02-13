@@ -1,12 +1,12 @@
-use crate::board::Board;
 use crate::bug::Bug;
 use crate::color::Color;
+use crate::game_result::GameResult;
 use crate::hasher::Hasher;
 use crate::history::History;
 use crate::piece::Piece;
 use crate::player::Player;
 use crate::position::Position;
-use crate::game_result::GameResult;
+use crate::{board::Board, game_type::GameType};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -14,11 +14,11 @@ pub enum LastTurn {
     Pass,
     Shutout,
     Move(Position, Position),
-    None
+    None,
 }
 
 impl Default for LastTurn {
- fn default() -> Self {
+    fn default() -> Self {
         LastTurn::None
     }
 }
@@ -33,10 +33,11 @@ pub struct State {
     pub turn_color: Color,
     pub players: (Player, Player),
     pub game_result: GameResult,
+    pub game_type: GameType,
 }
 
 impl State {
-    pub fn new() -> State {
+    pub fn new(game_type: GameType) -> State {
         State {
             board: Board::new(),
             history: History::new(),
@@ -46,11 +47,12 @@ impl State {
             turn_color: Color::White,
             players: (Player::new(Color::White), Player::new(Color::Black)),
             game_result: GameResult::Unknown,
+            game_type,
         }
     }
 
     pub fn new_from_history(history: &History) -> Self {
-        let mut state = State::new();
+        let mut state = State::new(history.game_type);
         state.history = history.clone();
         for (piece, pos) in history.moves.iter() {
             state.play_turn_from_notation(piece, pos);
@@ -70,7 +72,10 @@ impl State {
                     // we handled this in shutout already
                     // Don't do anything
                 } else {
-                    panic!("\nProcessing turn: #{}\nThis is not a valid pass!", self.turn);
+                    panic!(
+                        "\nProcessing turn: #{}\nThis is not a valid pass!",
+                        self.turn
+                    );
                 }
             }
             _ => {
@@ -109,7 +114,7 @@ impl State {
     }
 
     fn shutout(&mut self) {
-        let no_spawns = !self.board.spawns_left(&self.turn_color);
+        let no_spawns = !self.board.spawns_left(&self.turn_color, self.game_type);
         let no_moves = self
             .board
             .moves(&self.turn_color)
@@ -136,14 +141,16 @@ impl State {
         self.game_result = self.board.game_result();
         match self.game_result {
             GameResult::Winner(color) => {
-                self.history .record_move(color.to_string(), "won".to_string());
+                self.history
+                    .record_move(color.to_string(), "won".to_string());
                 return;
             }
             GameResult::Draw => {
-                self.history.record_move("It's a draw".to_string(), "".to_string());
+                self.history
+                    .record_move("It's a draw".to_string(), "".to_string());
                 return;
             }
-            _ => {},
+            _ => {}
         }
         self.turn_color = self.turn_color.opposite();
         self.turn += 1;

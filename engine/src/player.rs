@@ -1,4 +1,4 @@
-use crate::bug::Bug;
+use crate::{bug::Bug, game_type::GameType};
 use crate::color::Color;
 use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
@@ -13,7 +13,7 @@ impl Player {
     pub fn new(color: Color) -> Player {
         Player {
             color,
-            bugs: Bug::bugs_count(),
+            bugs: Bug::bugs_count(GameType::default()),
         }
     }
 }

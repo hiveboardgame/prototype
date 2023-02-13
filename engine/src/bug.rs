@@ -3,6 +3,7 @@ use std::collections::{HashMap, HashSet};
 use std::fmt;
 
 use crate::board::Board;
+use crate::game_type::GameType;
 use crate::position::{Direction, Position};
 
 #[derive(Hash, Eq, PartialEq, Clone, Copy, Serialize, Deserialize, Debug)]
@@ -83,17 +84,38 @@ impl Bug {
         }
     }
 
-    pub fn bugs_count() -> HashMap<Bug, i8> {
-        HashMap::from([
+    pub fn bugs_count(game_type: GameType) -> HashMap<Bug, i8> {
+        let mut bugs = HashMap::from([
             (Bug::Ant, 3),
             (Bug::Beetle, 2),
             (Bug::Grasshopper, 3),
-            (Bug::Ladybug, 1),
-            (Bug::Mosquito, 1),
-            (Bug::Pillbug, 1),
             (Bug::Queen, 1),
             (Bug::Spider, 2),
-        ])
+        ]);
+        match game_type {
+            GameType::Base => {},
+            GameType::M => {bugs.insert(Bug::Mosquito, 1);}
+            GameType::L => {bugs.insert(Bug::Ladybug, 1);}
+            GameType::P => {bugs.insert(Bug::Pillbug, 1);}
+            GameType::ML => {
+                bugs.insert(Bug::Mosquito, 1);
+                bugs.insert(Bug::Ladybug, 1);
+            }
+            GameType::MP => {
+                bugs.insert(Bug::Mosquito, 1);
+                bugs.insert(Bug::Pillbug, 1);
+            }
+            GameType::LP => {
+                bugs.insert(Bug::Ladybug, 1);
+                bugs.insert(Bug::Pillbug, 1);
+            }
+            GameType::MLP => {
+                bugs.insert(Bug::Mosquito, 1);
+                bugs.insert(Bug::Ladybug, 1);
+                bugs.insert(Bug::Pillbug, 1);
+            }
+        }
+        return bugs;
     }
 
     pub fn available_moves(position: &Position, board: &Board) -> HashMap<Position, Vec<Position>> {
@@ -327,9 +349,9 @@ impl Bug {
                         .collect::<Vec<Vec<Position>>>()
                 })
                 .collect::<Vec<Vec<Position>>>();
-                if i == 0 {
-                    board.board.remove(position);
-                }
+            if i == 0 {
+                board.board.remove(position);
+            }
         }
         moves.retain(|positions| {
             let len = positions.len();

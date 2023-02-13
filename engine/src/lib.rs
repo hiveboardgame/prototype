@@ -11,3 +11,4 @@ pub mod player;
 pub mod position;
 pub mod state;
 pub mod game_result;
+pub mod game_type;

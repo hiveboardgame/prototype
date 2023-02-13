@@ -9,6 +9,7 @@ use crate::piece::Piece;
 use crate::position::Direction;
 use crate::position::Position;
 use crate::game_result::GameResult;
+use crate::game_type::GameType;
 
 #[derive(Deserialize, Serialize, Clone, Default, Debug, Eq, PartialEq)]
 pub struct Board {
@@ -339,15 +340,15 @@ impl Board {
             .collect();
     }
 
-    pub fn spawns_left(&self, color: &Color) -> bool {
-        if self.reserve(color).iter().filter(|(_, v)| **v > 0).collect::<HashMap<&Bug, &i8>>().is_empty() || self.spawnable_positions(color).is_empty() {
+    pub fn spawns_left(&self, color: &Color, game_type: GameType) -> bool {
+        if self.reserve(color, game_type).iter().filter(|(_, v)| **v > 0).collect::<HashMap<&Bug, &i8>>().is_empty() || self.spawnable_positions(color).is_empty() {
             return false;
         }
         return true;
     }
 
-    pub fn reserve(&self, color: &Color) -> HashMap<Bug, i8> {
-        let mut bugs = Bug::bugs_count();
+    pub fn reserve(&self, color: &Color, game_type: GameType) -> HashMap<Bug, i8> {
+        let mut bugs = Bug::bugs_count(game_type);
         for pieces in self.board.values() {
             for piece in pieces {
                 if piece.is_color(color) {
