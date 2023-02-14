@@ -1,5 +1,5 @@
 use crate::{components::molecules::stackedpieces::StackedPieces, stores::gamestate::GameStateStore};
-use hive_lib::{board::Board, bug::Bug, color::Color, piece::Piece, position::Position};
+use hive_lib::{board::Board, bug::Bug, color::Color, piece::Piece, position::Position, game_type::GameType};
 use web_sys;
 use yew::prelude::*;
 use yewdux::prelude::*;
@@ -21,7 +21,7 @@ pub struct ReserveProps {
 
 #[function_component(Reserve)]
 pub fn reserve(props: &ReserveProps) -> Html {
-    let reserve = props.board.reserve(&props.color);
+    let reserve = props.board.reserve(&props.color, GameType::default());
     let len = reserve.iter().fold(0, |acc, (_, amount)| acc + amount);
     let (store, _dispatch) = use_store::<GameStateStore>();
     let pos_pieces = Bug::all()

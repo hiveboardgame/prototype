@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 actix = "*"
 actix-cors = "*"
-actix-web = { version = "4.2.1", features = ["openssl"] }
+actix-web = { version = "4.2.1" }
 actix-web-actors = "*"
 frontend = { path = "../frontend" }
 env_logger = "*"
@@ -16,7 +16,6 @@ log = "*"
 actix-files = "*"
 oauth2 = "4.2.3"
 serde = { version = "*", features = ["derive"] }
-openssl = "0.10.42"
 jsonwebtoken-google = "0.1.6"
 diesel = { version = "2.0.0", features = ["postgres"] }
 dotenvy = "0.15"

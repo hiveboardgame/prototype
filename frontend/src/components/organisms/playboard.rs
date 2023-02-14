@@ -8,6 +8,7 @@ use crate::stores::gamestate::GameStateStore;
 use web_sys;
 use yew::prelude::*;
 use yewdux::prelude::*;
+use hive_lib::state::LastTurn;
 
 #[function_component(PlayBoard)]
 pub fn playboard() -> Html {
@@ -31,14 +32,19 @@ pub fn playboard() -> Html {
         <svg viewBox={vb} >
             <Bugs />
             {
-                for store.state.last_turn.iter().map(|(from, to)| {
+                if let LastTurn::Move(from, to) = store.state.last_turn {
                     html_nested! {
                         <>
-                            <LastMove pos={*from} m={MoveType::From}/>
-                            <LastMove pos={*to} m={MoveType::To}/>
+                            <LastMove pos={from} m={MoveType::From}/>
+                            <LastMove pos={to} m={MoveType::To}/>
                         </>
                     }
-                })
+                } else {
+                    html_nested! {
+                    <>
+                    </>
+                    }
+                }
             }
             // TODO: one for before one for after
             {

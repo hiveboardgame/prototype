@@ -8,37 +8,34 @@ use actix_web::{
     Responder,
 };
 use actix_web_actors::ws;
-use hive_lib::history::History;
+use hive_lib::{history::History, state::State};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use websockets::echo::Echo;
-
-#[derive(Serialize, Deserialize)]
-struct Greeting {
-    en: String,
-    de: String,
-}
-
-#[get("/hello")]
-async fn hello() -> impl Responder {
-    let hello = Greeting {
-        en: "hello".to_owned(),
-        de: "Hallo".to_owned(),
-    };
-    web::Json(hello)
-}
-
-#[get("/history")]
-async fn history() -> impl Responder {
-    let history = History::from_filepath("../engine/game.txt");
-    web::Json(history)
-}
 
 #[post("/echo")]
 async fn echo(req_body: String) -> impl Responder {
     HttpResponse::Ok().body(req_body)
 }
 
+#[post("/board/{id}/move/{move}")]
+async fn board_record_move(path: web::Path<(u32, String)>) -> impl Responder {
+    let (board_id, board_move) = path.into_inner();
+    println!("board_id: {}, move: {}", board_id, board_move);
+    let game = "game.txt";
+    let history = History::from_filepath(game);
+    println!("{:?}", history);
+    let mut state = State::new_from_history(&history);
+    // TODO this is hacky af
+    let tokens = board_move.split_whitespace().collect::<Vec<&str>>();
+    let piece = *tokens.get(0).unwrap();
+    let position = *tokens.get(1).unwrap();
+    state.play_turn_from_notation(piece, position);
+    state.history.write_move(game, state.turn, board_move);
+    println!("{}", state.board);
+    HttpResponse::Ok()
+}
+ 
 /// WebSocket handshake and start `Echo` actor.
 async fn echo_ws(req: HttpRequest, stream: web::Payload) -> Result<HttpResponse, Error> {
     ws::start(Echo::new(), &req, stream)
@@ -57,13 +54,12 @@ async fn main() -> std::io::Result<()> {
             .service(web::resource("/ws/").route(web::get().to(echo_ws)))
             .service(
                 web::scope("/api")
-                    .service(history)
-                    .service(hello)
-                    .service(echo),
+                    .service(echo)
+                    .service(board_record_move),
             )
             .service(Files::new("/", "dist/").index_file("index.html"))
     })
-    .workers(2)
+    .workers(4)
     .bind(("0.0.0.0", 8080))?
     .run()
     .await
