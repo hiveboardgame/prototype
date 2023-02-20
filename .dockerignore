@@ -1,0 +1,12 @@
+.git
+target
+backend/target
+frontend/target
+engine/target
+*/target/.*
+*/target
+*/dist/*
+*/cert.pem
+*/key.pem
+*/backend/cert.pem
+*/backend/key.pem
