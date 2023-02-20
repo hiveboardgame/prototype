@@ -34,10 +34,11 @@ pub struct State {
     pub players: (Player, Player),
     pub game_result: GameResult,
     pub game_type: GameType,
+    pub tournament: bool,
 }
 
 impl State {
-    pub fn new(game_type: GameType) -> State {
+    pub fn new(game_type: GameType, tournament: bool) -> State {
         State {
             board: Board::new(),
             history: History::new(),
@@ -48,11 +49,27 @@ impl State {
             players: (Player::new(Color::White), Player::new(Color::Black)),
             game_result: GameResult::Unknown,
             game_type,
+            tournament,
         }
     }
 
     pub fn new_from_history(history: &History) -> Self {
-        let mut state = State::new(history.game_type);
+        let mut tournament = true;
+        // Did white open with a Queen?
+        if let Some((piece_str, _)) = history.moves.get(0) {
+            let piece = Piece::from_string(piece_str);
+            if piece.bug == Bug::Queen {
+                tournament = false;
+            }
+        }
+        // Did black open with a Queen?
+        if let Some((piece_str, _)) = history.moves.get(1) {
+            let piece = Piece::from_string(piece_str);
+            if piece.bug == Bug::Queen {
+                tournament = false;
+            }
+        }
+        let mut state = State::new(history.game_type, tournament);
         state.history = history.clone();
         for (piece, pos) in history.moves.iter() {
             state.play_turn_from_notation(piece, pos);
@@ -61,7 +78,7 @@ impl State {
     }
 
     pub fn queen_allowed(&self) -> bool {
-        self.turn > 1
+        self.turn > 1 || !self.tournament
     }
 
     pub fn play_turn_from_notation(&mut self, piece: &str, position: &str) {

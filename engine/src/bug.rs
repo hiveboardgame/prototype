@@ -360,34 +360,12 @@ impl Bug {
             sorted.dedup();
             len == sorted.len()
         });
-        let positions = moves
+        let mut positions = moves
             .iter()
             .map(|positions| positions.last().unwrap().clone())
             .collect::<Vec<Position>>();
-        // let first: HashSet<Position> = HashSet::from_iter(Bug::crawl(position, board));
-        // let mut board = board.clone();
-        // board.board.remove(position);
-        // let second: HashSet<Position> = first
-        //     .iter()
-        //     .flat_map(|pos| {
-        //         Bug::crawl(pos, &board)
-        //             .iter()
-        //             .filter(|pos| *pos != position && !first.contains(pos))
-        //             .cloned()
-        //             .collect::<HashSet<Position>>()
-        //     })
-        //     .collect::<HashSet<Position>>();
-        // let third: HashSet<Position> = second
-        //     .iter()
-        //     .flat_map(|pos| {
-        //         Bug::crawl(pos, &board)
-        //             .iter()
-        //             .filter(|pos| *pos != position && !first.contains(pos) && !second.contains(pos))
-        //             .cloned()
-        //             .collect::<HashSet<Position>>()
-        //     })
-        //     .collect::<HashSet<Position>>();
-        // return third.iter().cloned().collect();
+        positions.sort_unstable();
+        positions.dedup();
         return positions;
     }
 }
@@ -794,6 +772,7 @@ mod tests {
         );
         board.insert(&Position(1, 0), Piece::new(Bug::Ant, Color::Black, Some(1)));
         let positions = Bug::spider_moves(&Position(0, 0), &board);
+        println!("Positions: {:?}", positions);
         assert_eq!(positions.len(), 1);
         assert!(positions.contains(&Position(2, 0)));
     }
