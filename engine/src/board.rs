@@ -97,14 +97,14 @@ impl Board {
     pub fn game_result(&self) -> GameResult {
         let black = self
             .position_of_piece(&Piece::new(Bug::Queen, Color::White, None))
-            .is_some_and(|pos| self.neighbors(&pos).len() == 6);
+            .map(|pos| self.neighbors(&pos).len() == 6);
         let white = self
             .position_of_piece(&Piece::new(Bug::Queen, Color::Black, None))
-            .is_some_and(|pos| self.neighbors(&pos).len() == 6);
+            .map(|pos| self.neighbors(&pos).len() == 6);
         return match (black, white) {
-            (true, true) =>  GameResult::Draw,
-            (true, false) => GameResult::Winner(Color::Black), 
-            (false, true) => GameResult::Winner(Color::White),
+            (Some(true), Some(true)) =>  GameResult::Draw,
+            (Some(true), Some(false)) => GameResult::Winner(Color::Black), 
+            (Some(false), Some(true)) => GameResult::Winner(Color::White),
             _ => GameResult::Unknown,
         };
     }
@@ -199,8 +199,10 @@ impl Board {
 
     pub fn gated(&self, level: usize, from: &Position, to: &Position) -> bool {
         let (pos1, pos2) = from.common_adjacent_positions(to);
-        self.board.get(&pos1).is_some_and(|v| v.len() >= level)
-            && self.board.get(&pos2).is_some_and(|v| v.len() >= level)
+        match (self.board.get(&pos1), self.board.get(&pos2)) {
+            (Some(p1), Some(p2)) => p1.len() >= level && p2.len() >= level,
+            _ => false,
+        }
     }
 
     pub fn positions_taken_around(&self, position: &Position) -> Vec<Position> {

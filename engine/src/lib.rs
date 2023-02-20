@@ -1,4 +1,3 @@
-#![feature(is_some_and)]
 // #[serde(rename_all = "camelCase")]
 
 pub mod board;
