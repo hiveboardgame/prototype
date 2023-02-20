@@ -10,7 +10,6 @@ actix = "*"
 actix-cors = "*"
 actix-web = { version = "4.2.1" }
 actix-web-actors = "*"
-frontend = { path = "../frontend" }
 env_logger = "*"
 log = "*"
 actix-files = "*"
