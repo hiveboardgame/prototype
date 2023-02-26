@@ -17,9 +17,13 @@ oauth2 = "4.2.3"
 serde = { version = "*", features = ["derive"] }
 jsonwebtoken-google = "0.1.6"
 diesel = { version = "2.0.0", features = ["postgres"] }
+diesel-async = { version = "0.2.0", features = ["postgres", "bb8"] }
+bb8 = { version = "0.8.0" }
 dotenvy = "0.15"
 hive = { path = "../engine/" }
 futures-util = { version = "*", default-features = false, features = ["std", "sink"] }
 uuid = { version = "*", features = ["v4", "v7", "serde"] }
 tokio = { version = "*", features = ["full"] }
 tokio-stream = "*"
+reqwest = "0.11.14"
+alcoholic_jwt = "4091.0.0"
