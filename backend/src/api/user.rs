@@ -42,7 +42,7 @@ pub async fn create_guest_user(
     let user = User {
         uid: auth_user.uid,
         username: "Guest".to_string(), // TODO: random guest names
-        is_guest: false,
+        is_guest: true,
     };
     user.insert(&pool).await
         .map(|_| web::Json(user))

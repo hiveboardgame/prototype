@@ -26,6 +26,7 @@ impl FromRequest for AuthenticatedUser {
     }
 }
 
+// TODO: cache google's cert more intelligently
 async fn validate_and_fetch_uid(token: &str) -> Result<String, Error> {
     let authority = "https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com";
     let jwks: JWKS = fetch_jwks(authority)
