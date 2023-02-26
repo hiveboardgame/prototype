@@ -1,4 +1,4 @@
-import { HTMLAttributes, useEffect, useState } from 'react';
+import { HTMLAttributes, useState } from 'react';
 import {
   Game,
   getBlackUsername,
@@ -9,14 +9,11 @@ import {
   getLastPlayDate,
   getMoveCount,
   getWhiteUsername,
-  sortByLastPlayed,
-  watchPublicGames
 } from 'hive-db';
 import { HiveIcon } from '../common/HiveIcon';
 import { Header, HeaderItem } from './Header';
 import { Row, RowItem } from './Row';
 import { useRouter } from 'next/router';
-import { FirestoreError } from 'firebase/firestore';
 import { PlayerItem } from './items/PlayerItem';
 import { ElapsedTimeItem } from './items/ElapsedTimeItem';
 import { ExpansionsItem } from './items/ExpansionsItem';
@@ -59,17 +56,7 @@ interface ListPublicGamesProps extends HTMLAttributes<HTMLDivElement> {
 const ListPublicGames = (props: ListPublicGamesProps) => {
   const { maxGames, className, ...rest } = props;
   const [games, setGames] = useState<Game[]>([]);
-  const [error, setError] = useState<FirestoreError>();
-
-  useEffect(() => {
-    return watchPublicGames(
-      maxGames,
-      (games) => {
-        setGames(games.sort(sortByLastPlayed));
-      },
-      setError
-    );
-  }, [maxGames]);
+  const [error, setError] = useState<Error>();
 
   if (error) return null;
 

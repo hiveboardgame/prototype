@@ -1,5 +1,4 @@
-import { doc, setDoc } from 'firebase/firestore';
-import { usersCollection } from './collections';
+import { postJSON } from '../api';
 
 /**
  * Update a user's username, creating the user's profile if it doesn't exist.
@@ -9,5 +8,5 @@ import { usersCollection } from './collections';
  * @returns A promise that resolves to void.
  */
 export function updateUsername(uid: string, username: string): Promise<void> {
-  return setDoc(doc(usersCollection, uid), { uid, username }, { merge: true });
+  return postJSON(`/api/user/username`, { uid: uid, username: username }, true);
 }

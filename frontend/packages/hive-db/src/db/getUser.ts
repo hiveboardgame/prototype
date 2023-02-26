@@ -1,6 +1,5 @@
+import { postJSON, getJSON } from '../api';
 import { UserData } from '../user/user';
-import { usersCollection } from './collections';
-import { getDoc, doc } from 'firebase/firestore';
 
 /**
  * Get a single user.
@@ -8,6 +7,14 @@ import { getDoc, doc } from 'firebase/firestore';
  * @param uid The user's uid.
  * @return A promise that resolves to the user's data.
  */
-export function getUser(uid: string): Promise<UserData> {
-  return getDoc(doc(usersCollection, uid)).then((snapshot) => snapshot.data());
+export async function getUser(uid: string): Promise<UserData | null> {
+  return getJSON(`/api/user/${uid}`);
+}
+
+export async function createUser(username: String): Promise<UserData> {
+  return postJSON(`/api/user`, { username: username }, true);
+}
+
+export async function createGuestUser(): Promise<UserData> {
+  return postJSON(`/api/guest-user`, {}, true);
 }

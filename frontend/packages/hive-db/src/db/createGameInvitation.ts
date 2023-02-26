@@ -3,8 +3,6 @@ import { GamePlayers, newGamePlayers } from '../game/players';
 import { Game, newGameWithFieldValues } from '../game/game';
 import { UserData } from '../user/user';
 import { newGameOptions } from '../game/options';
-import { gamesCollection } from './collections';
-import { addDoc, DocumentReference } from 'firebase/firestore';
 
 export type ColorChoice = 'Black' | 'White' | 'Random';
 export type OpeningChoice = 'Normal' | 'Tournament';
@@ -29,7 +27,7 @@ export function createGameInvitation(
   color: ColorChoice,
   expansions: ExpansionsChoice,
   opening: OpeningChoice
-): Promise<DocumentReference<Game>> {
+): Promise<Game> {
   const isPublic = visibility === 'Public';
   const players = createGamePlayers(color, creator, opponent);
   const options = newGameOptions(
@@ -38,10 +36,8 @@ export function createGameInvitation(
     expansions.pillbug,
     opening === 'Tournament'
   );
-  return addDoc(
-    gamesCollection,
-    newGameWithFieldValues(creator.uid, isPublic, players, options)
-  );
+  // TODO(wgreenberg): implement invitations
+  return Promise.reject('unimplemented');
 }
 
 /**

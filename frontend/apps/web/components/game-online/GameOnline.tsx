@@ -9,7 +9,7 @@ import {
   selectBoardCentered,
   selectDisplayBoardStacks,
   selectSelectedTileId,
-  selectValidMoves
+  selectValidMovesForTile
 } from '../../state/game-online/selectors';
 import {
   ghostClicked,
@@ -23,7 +23,7 @@ const GameOnline = ({ uid, game }: { uid: string | null; game: Game }) => {
   const tilePadding = 3;
   const dispatch = useGameDispatch();
   const stacks = useGameSelector(selectDisplayBoardStacks);
-  const ghosts = useGameSelector(selectValidMoves);
+  const ghosts = useGameSelector(selectValidMovesForTile);
   const selectedTileId = useGameSelector(selectSelectedTileId);
   const boardCentered = useGameSelector(selectBoardCentered);
 

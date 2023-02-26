@@ -10,6 +10,8 @@ export interface GameProps {
   game: Game | null;
   // a flag to indicate that the game data has been updated but updates have not been viewed
   newMovesToView: boolean;
+  // a list of valid next moves
+  validNextMoves: Move[],
   // the proposed move that the player is currently viewing
   proposedMove: Move | null;
   // the coordinate of the proposed move
@@ -26,6 +28,7 @@ export function initializeGame(): GameProps {
     boardCentered: '',
     game: null,
     newMovesToView: false,
+    validNextMoves: [],
     proposedMove: null,
     proposedMoveCoordinate: null,
     selectedTileId: null,

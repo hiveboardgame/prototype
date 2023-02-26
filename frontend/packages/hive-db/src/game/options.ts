@@ -1,5 +1,4 @@
 import { GameOptions } from 'hive-lib';
-import { DocumentData } from 'firebase/firestore';
 
 /**
  * Create a new game options object.
@@ -22,16 +21,6 @@ export const newGameOptions = (
     pillbug,
     tournament
   };
-};
-
-/**
- * Parse game options document data from Firestore and build a GameOptions object.
- *
- * @param data A DocumentData object from a Firestore query.
- * @return A GameOptions object.
- */
-export const parseGameOptionsDocument = (data: DocumentData): GameOptions => {
-  return data as GameOptions;
 };
 
 /**

@@ -33,12 +33,12 @@ const useNotifications = () => {
 };
 
 function useNotificationsState(): NotificationsContextProps {
-  const { uid, activeGames } = usePlayer();
+  const { user, activeGames } = usePlayer();
   const [state, dispatch] = useReducer(notificationReducer, initialState());
 
   useEffect(() => {
-    dispatch({ type: 'games', data: { uid, games: activeGames } });
-  }, [uid, activeGames]);
+    dispatch({ type: 'games', data: { user: user, games: activeGames } });
+  }, [user, activeGames]);
 
   return {
     notifications: state.notifications,

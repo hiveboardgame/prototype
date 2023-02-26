@@ -1,15 +1,7 @@
-import {
-  DocumentData,
-  PartialWithFieldValue,
-  serverTimestamp,
-  Timestamp,
-  WithFieldValue
-} from 'firebase/firestore';
-
 export interface GameMeta {
   // flag indicating whether the game is public
   public: boolean;
-  // the uid of the player who created the game
+ // the uid of the player who created the game
   creator: string;
   // flag indicating whether game invitation has been accepted
   isStarted: boolean;
@@ -63,17 +55,17 @@ export const newGameMeta = (
 export const newGameMetaWithFieldValues = (
   creatorUid: string,
   isPublic: boolean
-): WithFieldValue<GameMeta> => {
+): GameMeta => {
   return {
     public: isPublic,
     creator: creatorUid,
     isStarted: false,
     isEnded: false,
     result: '',
-    createdDate: serverTimestamp(),
-    acceptedDate: new Timestamp(0, 0),
-    playedDate: new Timestamp(0, 0),
-    endedDate: new Timestamp(0, 0)
+    createdDate: '',
+    acceptedDate: '',
+    playedDate: '',
+    endedDate: '',
   };
 };
 
@@ -83,34 +75,9 @@ export const newGameMetaWithFieldValues = (
  * Firestore operations.
  */
 export const newPartialGameMetaWithFieldValues =
-  (): PartialWithFieldValue<GameMeta> => {
+  (): Partial<GameMeta> => {
     return {};
   };
-
-/**
- * Parse game meta document data from Firestore and build a GameMeta object.
- *
- * @param data A DocumentData object from a Firestore query.
- * @return A GameMeta object.
- */
-export const parseGameMetaDocument = (data: DocumentData): GameMeta => {
-  const createdTS = data.createdDate as Timestamp;
-  const acceptedTS = data.acceptedDate as Timestamp;
-  const playedTS = data.playedDate as Timestamp;
-  const endedTS = data.endedDate as Timestamp;
-  const unset = new Timestamp(0, 0);
-  return {
-    public: data.public,
-    creator: data.creator,
-    isStarted: data.isStarted,
-    isEnded: data.isEnded,
-    result: data.result,
-    createdDate: createdTS.isEqual(unset) ? '' : createdTS.toDate().toJSON(),
-    acceptedDate: acceptedTS.isEqual(unset) ? '' : acceptedTS.toDate().toJSON(),
-    playedDate: playedTS.isEqual(unset) ? '' : playedTS.toDate().toJSON(),
-    endedDate: endedTS.isEqual(unset) ? '' : endedTS.toDate().toJSON()
-  };
-};
 
 /**
  * Get the flag indicating whether the game is visible to the public.

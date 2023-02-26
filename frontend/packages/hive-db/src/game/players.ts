@@ -1,5 +1,4 @@
 import { UserData } from '../user/user';
-import { DocumentData } from 'firebase/firestore';
 
 export interface GamePlayers {
   // the uids of the players in the game
@@ -26,16 +25,6 @@ export const newGamePlayers = (
     black,
     white
   };
-};
-
-/**
- * Parse game player document data from Firestore and build a GamePlayers object.
- *
- * @param data A DocumentData object from a Firestore query.
- * @return A GamePlayers object.
- */
-export const parseGamePlayersDocument = (data: DocumentData): GamePlayers => {
-  return data as GamePlayers;
 };
 
 /**
