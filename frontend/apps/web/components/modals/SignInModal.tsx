@@ -9,7 +9,7 @@ import {
 } from '@chakra-ui/react';
 import { useState } from 'react';
 import { GoogleButton } from '../forms/GoogleButton';
-import { SignInEmailForm } from '../forms/SignInEmailForm';
+import { GuestButton } from '../forms/GuestButton';
 
 interface SignInModalProps extends Omit<ModalProps, 'children'> {}
 
@@ -54,17 +54,17 @@ const SignInModal = (props: SignInModalProps) => {
               >
                 Sign in with Google
               </GoogleButton>
-            </div>
-            <div className='py-4'>
-              <SignInEmailForm
+              <GuestButton
                 disabled={disabled}
                 onPending={onPending}
                 onSuccess={onSuccess}
-                onFailure={(message) => {
+                onFailure={() => {
                   setDisabled(false);
-                  errorToast(message || 'Unable to sign in with email');
+                  errorToast('Unable to sign in as guest');
                 }}
-              />
+              >
+                Sign in as guest
+              </GuestButton>
             </div>
           </div>
         </ModalBody>

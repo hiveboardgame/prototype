@@ -1,20 +1,20 @@
-import { Game, getTurnUid } from 'hive-db';
+import { Game, getTurnUid, UserData } from 'hive-db';
 import { keyBy } from 'lodash';
 import { turnNotification, Notification } from './notification';
 
 interface State {
-  uid: string | null;
+  user: UserData | null;
   notifications: Notification[];
   unread: number;
 }
 
-type ActionGames = { type: 'games'; data: { uid: string; games: Game[] } };
+type ActionGames = { type: 'games'; data: { user: UserData; games: Game[] } };
 type ActionRead = { type: 'mark-read'; notifications: Notification[] };
 type Action = ActionGames | ActionRead;
 
 function initialState(): State {
   return {
-    uid: null,
+    user: null,
     notifications: [],
     unread: 0
   };
@@ -31,19 +31,19 @@ function notificationReducer(state: State, action: Action): State {
 }
 
 function handleGames(state: State, action: ActionGames): State {
-  const { uid, games } = action.data;
+  const { user, games } = action.data;
 
   // if the user is signed out then there cannot be any notifications
-  if (uid === null) {
+  if (user === null) {
     return initialState();
   }
 
   // if the user changes, start with any empty list of notifications, otherwise
   // use existing notifications
-  const notifications = uid !== state.uid ? [] : state.notifications;
+  const notifications = user !== state.user ? [] : state.notifications;
 
   // get the games where it's the user's turn and map games by their ids
-  const turnGames = games.filter((g) => getTurnUid(g) === uid);
+  const turnGames = games.filter((g) => getTurnUid(g) === user.uid);
   const byId = keyBy(turnGames, (g) => g.gid);
 
   // get the ids of games we already have notifications for and of all current games
@@ -56,7 +56,7 @@ function handleGames(state: State, action: ActionGames): State {
 
   // create the new list of notifications
   const newNotifications = [
-    ...Array.from(toAdd).map((gid) => turnNotification(uid, byId[gid])),
+    ...Array.from(toAdd).map((gid) => turnNotification(user.uid, byId[gid])),
     ...notifications.filter((n) => !toRemove.has(n.id))
   ];
 
@@ -64,7 +64,7 @@ function handleGames(state: State, action: ActionGames): State {
   const unread = newNotifications.filter((n) => !n.read).length;
 
   return {
-    uid,
+    user,
     unread,
     notifications: newNotifications
   };

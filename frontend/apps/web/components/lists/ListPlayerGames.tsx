@@ -10,7 +10,8 @@ import {
   getOpponentColor,
   getOpponentUsername,
   getTurnUid,
-  sortByLastPlayed
+  sortByLastPlayed,
+  UserData
 } from 'hive-db';
 import { HiveIcon } from '../common/HiveIcon';
 import { Header, HeaderItem } from './Header';
@@ -20,12 +21,13 @@ import { PlayerItem } from './items/PlayerItem';
 import { Row, RowItem } from './Row';
 
 interface PlayerGameRowProps {
-  uid: string;
+  user: UserData;
   game: Game;
 }
 
-const PlayerGameRow = ({ uid, game }: PlayerGameRowProps) => {
+const PlayerGameRow = ({ user, game }: PlayerGameRowProps) => {
   const router = useRouter();
+  const uid = user.uid;
   const opponent = getOpponentUsername(game, uid);
   const opponentColor = getOpponentColor(game, uid);
   const ladybug = getIsLadybugUsed(game);
@@ -50,12 +52,12 @@ const PlayerGameRow = ({ uid, game }: PlayerGameRowProps) => {
 };
 
 interface ListPlayerGamesProps extends HTMLAttributes<HTMLDivElement> {
-  uid: string;
+  user: UserData;
   games: Game[];
 }
 
 const ListPlayerGames = (props: ListPlayerGamesProps) => {
-  const { uid, games, className, ...rest } = props;
+  const { user, games, className, ...rest } = props;
   const sorted = games.sort(sortByLastPlayed);
 
   return (
@@ -74,7 +76,7 @@ const ListPlayerGames = (props: ListPlayerGamesProps) => {
         <HeaderItem>Expansions</HeaderItem>
       </Header>
       {sorted.map((game) => {
-        return <PlayerGameRow key={game.gid} uid={uid} game={game} />;
+        return <PlayerGameRow key={game.gid} user={user} game={game} />;
       })}
     </div>
   );

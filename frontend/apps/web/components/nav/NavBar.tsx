@@ -11,21 +11,18 @@ import { Username } from './Username';
 
 const NavBarUsername = (props: NavBarProps) => {
   const { hideFinishProfile } = props;
-  const { uid, user, incompleteProfile, signout } = usePlayer();
-  if (!uid) {
-    return <SignInLink />;
+  const { user, incompleteProfile, signout } = usePlayer();
+
+  if (user) {
+    return <Username user={user} signout={signout} />;
   }
-  if (!incompleteProfile) {
-    if (!user) {
-      return <Spinner />;
-    } else {
-      return <Username user={user} signout={signout} />;
-    }
-  }
-  if (!hideFinishProfile) {
+
+  if (incompleteProfile && !hideFinishProfile) {
     return <FinishProfileLinks />;
   }
-  return null;
+  // TODO when2spin
+
+  return <SignInLink />;
 };
 
 interface NavBarProps extends NavProps {

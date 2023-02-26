@@ -3,35 +3,29 @@ import app from './db/app';
 import {
   createContext,
   ReactNode,
-  useCallback,
   useContext,
   useEffect,
   useState
 } from 'react';
-import { useRouter } from 'next/router';
 import { UserData } from './user/user';
 import {
-  createUserWithEmailAndPassword,
   GoogleAuthProvider,
-  signInWithEmailAndPassword,
   signInWithPopup,
+  signInAnonymously,
   signOut
 } from 'firebase/auth';
-import { FirestoreError } from '@firebase/firestore-types';
-import { watchUser } from './db/watchUser';
-import { Game, getGameIsEnded, getGameIsStarted } from './game/game';
-import { watchUserGames } from './db/watchUserGames';
+import { Game, getGameIsEnded, getGameIsStarted, getUserGames } from './game/game';
+import { createGuestUser, createUser, getUser } from '..';
 
 export interface PlayerContextProps {
-  uid: string | null;
   user: UserData | null;
   incompleteProfile: boolean;
   invitations: Game[];
   activeGames: Game[];
   completedGames: Game[];
-  signInWithEmail: (email: string, password: string) => Promise<void>;
+  usernameChanged: (username: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
-  signUpWithEmail: (email: string, password: string) => Promise<void>;
+  signInAsGuest: () => Promise<void>;
   signout: (redirect: string) => Promise<void>;
 }
 
@@ -52,92 +46,84 @@ const usePlayer = () => {
 };
 
 function usePlayerState(): PlayerContextProps {
-  const [uid, setUid] = useState<string | null>(null);
   const [user, setUser] = useState<UserData | null>(null);
+  const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [incompleteProfile, setIncompleteProfile] = useState<boolean>(false);
   const [invitations, setInvitations] = useState<Game[]>([]);
   const [activeGames, setActiveGames] = useState<Game[]>([]);
   const [completedGames, setCompletedGames] = useState<Game[]>([]);
-  const router = useRouter();
-
-  /**
-   * Handle an error from Firebase.
-   */
-  const handleFirebaseError = useCallback((error: FirestoreError) => {
-    console.error(error.message);
-  }, []);
-
-  /**
-   * Handle a change in the user's data.
-   */
-  const handleFirebaseUser = useCallback(
-    (firebaseUser: FirebaseUser | null) => {
-      setUid(firebaseUser ? firebaseUser.uid : null);
-    },
-    []
-  );
 
   /**
    * Handle a change to the player's games
    */
-  const handleGamesChanged = useCallback((games: Game[]) => {
-    const activeGames = games.filter(
-      (game) => getGameIsStarted(game) && !getGameIsEnded(game)
-    );
-    const completedGames = games.filter((game) => getGameIsEnded(game));
-    const invitations = games.filter((game) => !getGameIsStarted(game));
-    setActiveGames(activeGames);
-    setCompletedGames(completedGames);
-    setInvitations(invitations);
-  }, []);
+  useEffect(() => {
+    if (user === null) return;
+    getUserGames(user)
+      .then((games: Game[]) => {
+        const activeGames = games.filter(
+          (game) => getGameIsStarted(game) && !getGameIsEnded(game)
+        );
+        const completedGames = games.filter((game) => getGameIsEnded(game));
+        const invitations = games.filter((game) => !getGameIsStarted(game));
+        setActiveGames(activeGames);
+        setCompletedGames(completedGames);
+        setInvitations(invitations);
+      });
+  }, [user]);
 
-  /**
-   * Handle a change to the user's data.
-   */
-  const handleUserDataChanged = useCallback(
-    (user: UserData | null) => {
-      setIncompleteProfile(user === null && uid !== null);
+  async function usernameChanged(username: string) {
+    if (!firebaseUser) {
+      return;
+    }
+
+    // TODO: better error handling w/ helpful user-facing messages
+    setUser(await createUser(username));
+    setIncompleteProfile(false);
+  }
+
+  async function handleFirebaseUserChanged() {
+    if (!firebaseUser) {
+      return;
+    }
+
+    const uid = firebaseUser.uid;
+    const isGuest = firebaseUser.isAnonymous;
+
+    // Check if a user already exists for this uid. If so, we're done.
+    // Otherwise, either create a guest account or prompt for a username
+    const user = await getUser(uid);
+    if (user) {
       setUser(user);
-    },
-    [uid]
-  );
+    } else if (isGuest) {
+      setUser(await createGuestUser());
+    } else {
+      setIncompleteProfile(true);
+    }
+  }
+
+  useEffect(() => {
+    handleFirebaseUserChanged();
+  }, [firebaseUser])
 
   /**
    * Sign in using Google.
    */
-  const signInWithGoogle = () => {
+  const signInWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({
       prompt: 'select_account'
     });
-    return signInWithPopup(auth, provider)
-      .then((creds) => creds.user)
-      .then(handleFirebaseUser);
+    const creds = await signInWithPopup(auth, provider);
+    setFirebaseUser(creds.user);
   };
 
   /**
-   * Sign in using an email and password.
-   *
-   * @param email
-   * @param password
+   * Sign in anonymously.
    */
-  const signInWithEmail = (email: string, password: string) => {
-    return signInWithEmailAndPassword(auth, email, password)
-      .then((creds) => creds.user)
-      .then(handleFirebaseUser);
-  };
-
-  /**
-   * Sign up using an email address.
-   *
-   * @param email
-   * @param password
-   */
-  const signUpWithEmail = (email: string, password: string) => {
-    return createUserWithEmailAndPassword(auth, email, password)
-      .then((creds) => creds.user)
-      .then(handleFirebaseUser);
-  };
+  const signInAsGuest = async () => {
+    const creds = await signInAnonymously(auth);
+    setFirebaseUser(creds.user);
+  }
 
   /**
    * Sign out the current user and optionally redirect to a page.
@@ -146,53 +132,28 @@ function usePlayerState(): PlayerContextProps {
   const signout = (redirect?: string) => {
     return signOut(auth)
       .then(() => {
-        setUid(null);
         setUser(null);
+        setFirebaseUser(null);
         setIncompleteProfile(false);
         setActiveGames([]);
         setCompletedGames([]);
         setInvitations([]);
-        if (redirect) router.push(redirect);
+        if (redirect) { /* router.push(redirect) */ }
       })
       .catch((error) => {
         console.error(error);
       });
   };
 
-  // Listen for auth state changes
-  useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(handleFirebaseUser);
-    return () => {
-      unsubscribe();
-    };
-  }, [handleFirebaseUser]);
-
-  /**
-   * Listen for changes to the user's data
-   */
-  useEffect(() => {
-    const unsubCallbacks: (() => void)[] = [];
-    if (uid) {
-      unsubCallbacks.push(
-        watchUser(uid, handleUserDataChanged, handleFirebaseError)
-      );
-      unsubCallbacks.push(
-        watchUserGames(uid, handleGamesChanged, handleFirebaseError)
-      );
-    }
-    return () => unsubCallbacks.forEach((unsub) => unsub());
-  }, [handleUserDataChanged, handleFirebaseError, handleGamesChanged, uid]);
-
   return {
-    uid,
     user,
     incompleteProfile,
     activeGames,
     completedGames,
     invitations,
-    signInWithEmail,
+    usernameChanged,
     signInWithGoogle,
-    signUpWithEmail,
+    signInAsGuest,
     signout
   };
 }
@@ -200,15 +161,14 @@ function usePlayerState(): PlayerContextProps {
 function defaultPlayerContext(): PlayerContextProps {
   const message = 'Player context not properly initialized.';
   return {
-    uid: null,
     user: null,
     incompleteProfile: false,
     activeGames: [],
     completedGames: [],
     invitations: [],
-    signInWithEmail: () => Promise.reject(message),
+    usernameChanged: (_) => Promise.reject(message),
     signInWithGoogle: () => Promise.reject(message),
-    signUpWithEmail: () => Promise.reject(message),
+    signInAsGuest: () => Promise.reject(message),
     signout: () => Promise.reject(message)
   };
 }

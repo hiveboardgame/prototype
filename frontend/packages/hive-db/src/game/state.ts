@@ -1,5 +1,4 @@
 import { getGameMoves, ColorKey } from 'hive-lib';
-import { DocumentData } from 'firebase/firestore';
 
 export interface GameState {
   // the game notation, defining the current state of the game board
@@ -24,16 +23,6 @@ export const newGameState = (notation?: string): GameState => {
     turn: moves.length % 2 === 0 ? 'w' : 'b',
     moveCount: moves.length
   };
-};
-
-/**
- * Parse game state data from Firestore and build a GameState object.
- *
- * @param data A DocumentData object from a Firestore query.
- * @return A GameState object.
- */
-export const parseGameStateDocument = (data: DocumentData): GameState => {
-  return data as GameState;
 };
 
 /**

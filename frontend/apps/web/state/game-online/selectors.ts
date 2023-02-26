@@ -1,15 +1,15 @@
 import { GameState } from './store';
 import {
   buildBoard,
+  findTileCoordinate,
   GameBoard,
   getGameMoves,
   getStacks,
   getStacksInHand,
-  getValidCoordinates,
   HexCoordinate,
-  hexesEqual,
   isMovePass,
   Move,
+  relativeHexCoordinate,
   TileId
 } from 'hive-lib';
 import { createSelector } from '@reduxjs/toolkit';
@@ -35,6 +35,11 @@ export const selectBoardCentered = (state: GameState): string =>
  * Get the Game object from the store.
  */
 export const selectGame = (state: GameState): Game | null => state.game;
+
+/**
+ * Get the set of valid next moves
+ */
+export const selectValidMoves = (state: GameState): Move[] | null => state.validNextMoves;
 
 /**
  * Get the id of the currently selected tile.
@@ -194,30 +199,32 @@ export const selectLastTilePlayed = createSelector(
  * Get an array of coordinates where the current player could move the currently
  * selected tile.
  */
-export const selectValidMoves = createSelector(
+export const selectValidMovesForTile = createSelector(
   [
+    selectValidMoves,
     selectGame,
     selectGameBoard,
     selectIsViewingHistory,
     selectColorTurn,
     selectSelectedTileId,
-    selectLastTilePlayed,
-    selectProposedMoveCoordinate
   ],
   (
+    moves,
     game,
     board,
     isHistory,
     player,
     selected,
-    last,
-    proposed
   ): HexCoordinate[] => {
     if (!game || isHistory || !selected || !player) return [];
-    const options = getGameOptions(game);
-    return getValidCoordinates(board, player, selected, options, last).filter(
-      (coord) => !hexesEqual(coord, proposed || undefined)
-    );
+    return moves.filter(move => move.tileId === selected)
+      .map(move => {
+        if (move.refId === 'x') {
+          return { r: 0, q: 0 };
+        } else {
+          return relativeHexCoordinate(findTileCoordinate(board, move.refId), move.dir)
+        }
+      });
   }
 );
 

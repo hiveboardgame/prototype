@@ -1,6 +1,3 @@
-import { deleteDoc, doc } from 'firebase/firestore';
-import { gamesCollection } from './collections';
-
 /**
  * Reject a game invitation.
  *
@@ -9,5 +6,6 @@ import { gamesCollection } from './collections';
  * @param gid The game ID of the invitation to reject.
  */
 export function rejectGameInvitation(gid: string): Promise<void> {
-  return deleteDoc(doc(gamesCollection, gid));
+  // TODO(wgreenberg): implement invitations
+  return Promise.reject("unimplemented");
 }

@@ -7,7 +7,7 @@ import { NavBar } from '../components/nav/NavBar';
 import { useTitle } from '../hooks/useTitle';
 
 const Profile = () => {
-  const { uid, incompleteProfile } = usePlayer();
+  const { incompleteProfile, usernameChanged } = usePlayer();
   const title = useTitle();
   const router = useRouter();
 
@@ -22,7 +22,7 @@ const Profile = () => {
       </Head>
       <NavBar hideFinishProfile />
       <div className='prose mx-auto my-16'>
-        {uid && incompleteProfile && <FinishProfileForm uid={uid} />}
+        {incompleteProfile && <FinishProfileForm usernameChanged={usernameChanged} />}
       </div>
     </>
   );

@@ -6,7 +6,6 @@ import { Body } from '../components/common/Body';
 import { Footer } from '../components/common/Footer';
 import { ListPlayerCompleted } from '../components/lists/ListPlayerCompleted';
 import { ListPlayerGames } from '../components/lists/ListPlayerGames';
-import { ListPlayerInvitations } from '../components/lists/ListPlayerInvitations';
 import { NavBar } from '../components/nav/NavBar';
 import { useTitle } from '../hooks/useTitle';
 
@@ -15,8 +14,7 @@ const None = () => {
 };
 
 const Games = () => {
-  const { uid, incompleteProfile, activeGames, completedGames, invitations } =
-    usePlayer();
+  const { user, incompleteProfile, activeGames, completedGames } = usePlayer();
   const title = useTitle();
   const router = useRouter();
 
@@ -24,7 +22,7 @@ const Games = () => {
     if (incompleteProfile) router.push('/profile');
   }, [incompleteProfile, router]);
 
-  if (!uid) {
+  if (!user) {
     return null;
   }
 
@@ -37,24 +35,14 @@ const Games = () => {
       <Body className='my-12'>
         <div className='prose prose-xl mb-2 font-semibold'>Active Games</div>
         <div className='bg-slate-50 rounded'>
-          <ListPlayerGames uid={uid} games={activeGames} />
-        </div>
-        <div className='prose prose-xl mt-8 mb-2 font-semibold'>
-          Invitations
-        </div>
-        <div className='bg-slate-50 rounded'>
-          {invitations.length > 0 ? (
-            <ListPlayerInvitations uid={uid} games={invitations} />
-          ) : (
-            <None />
-          )}
+          <ListPlayerGames user={user} games={activeGames} />
         </div>
         <div className='prose prose-xl mt-8 mb-2 font-semibold'>
           Completed Games
         </div>
         <div className='bg-slate-50 rounded'>
           {completedGames.length > 0 ? (
-            <ListPlayerCompleted uid={uid} games={completedGames} />
+            <ListPlayerCompleted user={user} games={completedGames} />
           ) : (
             <None />
           )}

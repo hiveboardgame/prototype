@@ -8,7 +8,8 @@ import {
   getMoveCount,
   getOpponentColor,
   getOpponentUsername,
-  sortByLastPlayed
+  sortByLastPlayed,
+  UserData
 } from 'hive-db';
 import { HTMLAttributes } from 'react';
 import { HiveIcon } from '../common/HiveIcon';
@@ -18,12 +19,13 @@ import { PlayerItem } from './items/PlayerItem';
 import { Row, RowItem } from './Row';
 
 interface PlayerCompletedRowProps {
-  uid: string;
+  user: UserData;
   game: Game;
 }
 
-const PlayerCompletedRow = ({ uid, game }: PlayerCompletedRowProps) => {
+const PlayerCompletedRow = ({ user, game }: PlayerCompletedRowProps) => {
   const router = useRouter();
+  const uid = user.uid;
   const opponent = getOpponentUsername(game, uid);
   const opponentColor = getOpponentColor(game, uid);
   const result = getGameResult(game);
@@ -47,12 +49,12 @@ const PlayerCompletedRow = ({ uid, game }: PlayerCompletedRowProps) => {
 };
 
 interface ListPlayerCompletedProps extends HTMLAttributes<HTMLDivElement> {
-  uid: string;
+  user: UserData;
   games: Game[];
 }
 
 const ListPlayerCompleted = (props: ListPlayerCompletedProps) => {
-  const { uid, games, className, ...rest } = props;
+  const { user, games, className, ...rest } = props;
   const sorted = games.sort(sortByLastPlayed);
 
   return (
@@ -71,7 +73,7 @@ const ListPlayerCompleted = (props: ListPlayerCompletedProps) => {
         <HeaderItem>Expansions</HeaderItem>
       </Header>
       {sorted.map((game) => {
-        return <PlayerCompletedRow key={game.gid} uid={uid} game={game} />;
+        return <PlayerCompletedRow key={game.gid} user={user} game={game} />;
       })}
     </div>
   );

@@ -7,13 +7,9 @@ import * as options from './options';
 import * as players from './players';
 import * as state from './state';
 import { UserData } from '../user/user';
-import {
-  DocumentData,
-  PartialWithFieldValue,
-  WithFieldValue
-} from 'firebase/firestore';
 import { newGameMeta, newGameMetaWithFieldValues } from './meta';
 import { newGameState } from './state';
+import { getJSON } from '../api';
 
 export interface Game {
   gid: string;
@@ -61,7 +57,7 @@ export function newGameWithFieldValues(
   isPublic: boolean,
   players: GamePlayers,
   options: GameOptions
-): WithFieldValue<Game> {
+): Game {
   return {
     gid: '',
     options,
@@ -71,30 +67,23 @@ export function newGameWithFieldValues(
   };
 }
 
+export function getUserGames(user: UserData): Promise<Game[]> {
+  return getJSON<Game[]>(`/api/user/${user.uid}/games`)
+    .then(maybeGames => {
+      if (!maybeGames) {
+        throw new Error(`no games found for that user`)
+      }
+      return maybeGames;
+    });
+}
+
 /**
  * Create a new partial game object, allowing for FieldValue objects to be used
  * as field values. Objects created using this method can be used in Firestore
  * operations.
  */
-export function newPartialGameWithFieldValues(): PartialWithFieldValue<Game> {
+export function newPartialGameWithFieldValues(): Partial<Game> {
   return {};
-}
-
-/**
- * Parse game document data from Firestore and build a Game object.
- *
- * @param gid The document ID associated with the game data.
- * @param data A DocumentData object from a Firestore query.
- * @return A Game object.
- */
-export function parseGameDocument(gid: string, data: DocumentData): Game {
-  return {
-    gid: gid,
-    meta: meta.parseGameMetaDocument(data.meta),
-    options: options.parseGameOptionsDocument(data.options),
-    players: players.parseGamePlayersDocument(data.players),
-    state: state.parseGameStateDocument(data.state)
-  };
 }
 
 /**

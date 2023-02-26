@@ -16,7 +16,6 @@ import {
   Stack
 } from '@chakra-ui/react';
 import { useRouter } from 'next/router';
-import { updateUsername, getUsernameAvailable } from 'hive-db';
 
 interface UsernameFormValues {
   username: string;
@@ -71,7 +70,12 @@ const SubmitButton = () => {
   );
 };
 
-const FinishProfileForm = ({ uid }: { uid: string }) => {
+interface FinishProfileFormProps {
+  usernameChanged: (username: string) => Promise<void>;
+}
+
+function FinishProfileForm(props: FinishProfileFormProps) {
+  const { usernameChanged } = props;
   const initialValues: UsernameFormValues = { username: '' };
   const router = useRouter();
   const handleSubmit = (
@@ -79,18 +83,11 @@ const FinishProfileForm = ({ uid }: { uid: string }) => {
     helpers: FormikHelpers<UsernameFormValues>
   ) => {
     helpers.setSubmitting(true);
-    getUsernameAvailable(values.username)
-      .then((available) => {
-        if (available) {
-          updateUsername(uid, values.username).then(() => router.push('/'));
-        } else {
-          helpers.setSubmitting(false);
-          helpers.setFieldError('username', 'Username is taken');
-        }
-      })
+    usernameChanged(values.username).then(() => router.push('/'))
       .catch((err) => {
+        console.log(`failed to create user with username "${values.username}": ${err}`);
         helpers.setSubmitting(false);
-        helpers.setFieldError('username', 'Error checking username');
+        helpers.setFieldError('username', 'Error setting username');
       });
   };
   return (
@@ -109,6 +106,6 @@ const FinishProfileForm = ({ uid }: { uid: string }) => {
       </Form>
     </Formik>
   );
-};
+}
 
 export { FinishProfileForm };
