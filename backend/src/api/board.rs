@@ -1,4 +1,4 @@
-use actix_web::{ post, web, HttpResponse, Responder };
+use actix_web::{post, web, HttpResponse, Responder};
 use hive_lib::{history::History, state::State};
 
 #[post("/board/{id}/move/{move}")]

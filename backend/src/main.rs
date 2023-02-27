@@ -1,25 +1,23 @@
 mod api;
-mod websockets;
+mod db;
 mod extractors;
 mod model;
-mod db;
+mod websockets;
 
 use actix_files::Files;
 use actix_web::web;
-use actix_web::{
-    middleware, App, Error, HttpRequest, HttpResponse, HttpServer,
-};
+use actix_web::{middleware, App, Error, HttpRequest, HttpResponse, HttpServer};
 use actix_web_actors::ws;
 use diesel_async::{
-  pg::AsyncPgConnection,
-  pooled_connection::{bb8::Pool, AsyncDieselConnectionManager},
+    pg::AsyncPgConnection,
+    pooled_connection::{bb8::Pool, AsyncDieselConnectionManager},
 };
 use websockets::echo::Echo;
 
 use crate::api::board;
-use crate::db::util::{get_database_url_from_env, DbPool};
 use crate::api::user;
- 
+use crate::db::util::{get_database_url_from_env, DbPool};
+
 /// WebSocket handshake and start `Echo` actor.
 async fn echo_ws(req: HttpRequest, stream: web::Payload) -> Result<HttpResponse, Error> {
     ws::start(Echo::new(), &req, stream)
@@ -49,7 +47,7 @@ async fn main() -> std::io::Result<()> {
                     .service(board::record_move)
                     .service(user::get_user)
                     .service(user::create_user)
-                    .service(user::create_guest_user)
+                    .service(user::create_guest_user),
             )
             .service(Files::new("/", "dist/").index_file("index.html"))
     })

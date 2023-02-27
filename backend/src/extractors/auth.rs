@@ -1,9 +1,9 @@
-use alcoholic_jwt::{JWKS, Validation, validate, token_kid};
+use actix_web::error::{Error, ErrorBadRequest, ErrorInternalServerError, ErrorUnauthorized};
+use actix_web::FromRequest;
+use alcoholic_jwt::{token_kid, validate, Validation, JWKS};
+use reqwest;
 use std::future::Future;
 use std::pin::Pin;
-use actix_web::FromRequest;
-use actix_web::error::{ Error, ErrorBadRequest, ErrorUnauthorized, ErrorInternalServerError };
-use reqwest;
 
 pub struct AuthenticatedUser {
     pub uid: String,
@@ -13,13 +13,20 @@ impl FromRequest for AuthenticatedUser {
     type Error = Error;
     type Future = Pin<Box<dyn Future<Output = Result<Self, Self::Error>>>>;
 
-    fn from_request(req: &actix_web::HttpRequest, _payload: &mut actix_web::dev::Payload) -> Self::Future {
+    fn from_request(
+        req: &actix_web::HttpRequest,
+        _payload: &mut actix_web::dev::Payload,
+    ) -> Self::Future {
         let req_clone = req.clone(); // req is cheap to clone, and we must to avoid lifetime issues
         Box::pin(async move {
-            let auth_token = req_clone.headers().get("X-Authentication")
+            let auth_token = req_clone
+                .headers()
+                .get("X-Authentication")
                 .ok_or(ErrorUnauthorized("Must include X-Authentication header"))?
                 .to_str()
-                .map_err(|err| ErrorBadRequest(format!("couldn't read X-Authentication header: {}", err)))?;
+                .map_err(|err| {
+                    ErrorBadRequest(format!("couldn't read X-Authentication header: {}", err))
+                })?;
             let uid = validate_and_fetch_uid(auth_token).await?;
             Ok(AuthenticatedUser { uid })
         })
@@ -28,11 +35,15 @@ impl FromRequest for AuthenticatedUser {
 
 // TODO: cache google's cert more intelligently
 async fn validate_and_fetch_uid(token: &str) -> Result<String, Error> {
-    let authority = "https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com";
+    let authority =
+        "https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com";
     let jwks: JWKS = fetch_jwks(authority)
         .await
         .map_err(|err| ErrorInternalServerError(format!("failed to fetch JWKS: {}", err)))?;
-    let validations = vec![Validation::Issuer(authority.to_string()), Validation::SubjectPresent];
+    let validations = vec![
+        Validation::Issuer(authority.to_string()),
+        Validation::SubjectPresent,
+    ];
     let kid = token_kid(&token)
         .map_err(|err| ErrorBadRequest(format!("failed to decode KID: {}", err)))?
         .ok_or(ErrorBadRequest("no KID in JWT"))?;
@@ -42,7 +53,7 @@ async fn validate_and_fetch_uid(token: &str) -> Result<String, Error> {
             Some(value) => Ok(value.to_string()),
             _ => Err(ErrorBadRequest("couldn't find subject in JWT claims")),
         },
-        Err(err) => Err(ErrorUnauthorized(format!("invalid token: {}", err)))
+        Err(err) => Err(ErrorUnauthorized(format!("invalid token: {}", err))),
     }
 }
 
