@@ -5,7 +5,7 @@ use diesel::{result::Error, Identifiable, Insertable, QueryDsl, Queryable};
 use diesel_async::RunQueryDsl;
 use serde::{Deserialize, Serialize};
 
-const MAX_USERNAME_LENGTH: usize = 20;
+const MAX_USERNAME_LENGTH: usize = 40;
 const VALID_USERNAME_CHARS: &str = "-_";
 
 #[derive(Debug)]
