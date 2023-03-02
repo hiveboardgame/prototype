@@ -1,0 +1,18 @@
+{
+  "name": "lihive",
+  "version": "0.0.0",
+  "private": true,
+  "workspaces": [
+    "config",
+    "scripts",
+    "tsconfig",
+    "frontend",
+    "hive-lib",
+    "hive-db"
+  ],
+  "engines": {
+    "npm": ">=7.0.0",
+    "node": ">=14.0.0"
+  },
+  "license": "AGPL-3.0-or-later"
+}
