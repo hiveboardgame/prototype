@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
-use actix_files::{NamedFile, Files};
-use actix_web::{dev::{ServiceRequest, ServiceResponse, fn_service}};
+use actix_files::{Files, NamedFile};
+use actix_web::dev::{fn_service, ServiceRequest, ServiceResponse};
 
 fn get_static_path_for_uri(path: &str) -> &'static str {
     if path.starts_with("/game/") {

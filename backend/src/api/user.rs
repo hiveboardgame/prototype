@@ -1,4 +1,4 @@
-use actix_web::error::{ErrorInternalServerError, ErrorNotFound, ErrorBadRequest};
+use actix_web::error::{ErrorBadRequest, ErrorInternalServerError, ErrorNotFound};
 use actix_web::{get, post, web, Responder};
 use serde::Deserialize;
 

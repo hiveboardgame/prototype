@@ -1,10 +1,10 @@
 mod api;
+mod config;
 mod db;
 mod extractors;
 mod model;
-mod websockets;
-mod config;
 mod static_files;
+mod websockets;
 
 use actix_web::web;
 use actix_web::{middleware, App, Error, HttpRequest, HttpResponse, HttpServer};
@@ -14,7 +14,7 @@ use websockets::echo::Echo;
 use crate::api::board;
 use crate::api::user;
 use crate::config::ServerConfig;
-use crate::db::util::{DbPool, get_pool};
+use crate::db::util::{get_pool, DbPool};
 
 /// WebSocket handshake and start `Echo` actor.
 async fn echo_ws(req: HttpRequest, stream: web::Payload) -> Result<HttpResponse, Error> {

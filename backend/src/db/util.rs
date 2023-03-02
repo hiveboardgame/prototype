@@ -9,9 +9,7 @@ pub type DbPool = Pool<AsyncPgConnection>;
 
 pub async fn get_pool(db_uri: &str) -> Result<DbPool, PoolError> {
     let manager = AsyncDieselConnectionManager::<AsyncPgConnection>::new(db_uri);
-    Pool::builder()
-        .build(manager)
-        .await
+    Pool::builder().build(manager).await
 }
 
 pub async fn get_conn(

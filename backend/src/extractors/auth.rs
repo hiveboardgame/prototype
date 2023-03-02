@@ -21,7 +21,8 @@ impl FromRequest for AuthenticatedUser {
     ) -> Self::Future {
         let req_clone = req.clone(); // req is cheap to clone, and we must to avoid lifetime issues
         Box::pin(async move {
-            let config = req_clone.app_data::<ServerConfig>()
+            let config = req_clone
+                .app_data::<ServerConfig>()
                 .expect("couldn't retrieve server config");
             let auth_token = req_clone
                 .headers()
@@ -50,18 +51,11 @@ async fn validate_and_fetch_uid(token: &str, config: &ServerConfig) -> Result<St
         .map_err(|err| ErrorBadRequest(format!("failed to decode KID: {}", err)))?
         .ok_or(ErrorBadRequest("no KID in JWT"))?;
     let jwk = jwks.find(&kid).expect("Specified key not found in set");
-    match validate(token, jwk, validations) {
-        Ok(jwt) => match jwt.claims.get("sub") {
-            Some(value) => {
-                let token =  value.as_str()
-                    .ok_or(ErrorBadRequest("JWT subject must be a string"))?
-                    .to_owned();
-                Ok(token)
-            },
-            _ => Err(ErrorBadRequest("couldn't find subject in JWT claims")),
-        },
-        Err(err) => Err(ErrorUnauthorized(format!("invalid token: {}", err))),
-    }
+    validate(token, jwk, validations)
+        .map_err(|err| ErrorUnauthorized(format!("invalid token: {}", err)))
+        .and_then(|jwt| jwt.claims.get("sub").ok_or(ErrorBadRequest("couldn't find subject in JWT claims"))
+            .and_then(|subject| subject.as_str().ok_or(ErrorBadRequest("JWT subject must be a string")))
+            .and_then(|token| Ok(token.to_owned())))
 }
 
 async fn fetch_jwks(uri: &str) -> Result<JWKS, Box<dyn std::error::Error>> {
