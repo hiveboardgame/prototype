@@ -24,7 +24,7 @@ async fn echo_ws(req: HttpRequest, stream: web::Payload) -> Result<HttpResponse,
 #[actix_web::main] // or #[tokio::main]
 async fn main() -> std::io::Result<()> {
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
-    let config = ServerConfig::from_env().unwrap();
+    let config = ServerConfig::from_env().expect("Not all env vars are set");
 
     log::info!("starting HTTP server at http://127.0.0.1:8080");
 
