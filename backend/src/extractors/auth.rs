@@ -5,6 +5,8 @@ use reqwest;
 use std::future::Future;
 use std::pin::Pin;
 
+const FIREBASE_JWT_AUTHORITY: &str = "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com";
+
 use crate::config::ServerConfig;
 
 pub struct AuthenticatedUser {
@@ -40,7 +42,7 @@ impl FromRequest for AuthenticatedUser {
 
 // TODO: cache google's cert more intelligently
 async fn validate_and_fetch_uid(token: &str, config: &ServerConfig) -> Result<String, Error> {
-    let jwks: JWKS = fetch_jwks(&config.firebase_jwt_authority)
+    let jwks: JWKS = fetch_jwks()
         .await
         .map_err(|err| ErrorInternalServerError(format!("failed to fetch JWKS: {}", err)))?;
     let validations = vec![
@@ -58,8 +60,8 @@ async fn validate_and_fetch_uid(token: &str, config: &ServerConfig) -> Result<St
             .and_then(|token| Ok(token.to_owned())))
 }
 
-async fn fetch_jwks(uri: &str) -> Result<JWKS, Box<dyn std::error::Error>> {
-    let res = reqwest::get(uri).await?;
+async fn fetch_jwks() -> Result<JWKS, Box<dyn std::error::Error>> {
+    let res = reqwest::get(FIREBASE_JWT_AUTHORITY).await?;
     let val = res.json::<JWKS>().await?;
     return Ok(val);
 }

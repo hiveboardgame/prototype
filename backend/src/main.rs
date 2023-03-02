@@ -28,7 +28,7 @@ async fn main() -> std::io::Result<()> {
 
     log::info!("starting HTTP server at http://127.0.0.1:8080");
 
-    let pool: DbPool = get_pool(&config.database_uri)
+    let pool: DbPool = get_pool(&config.database_url)
         .await
         .expect("failed to open connection to database");
 
