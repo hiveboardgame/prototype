@@ -5,6 +5,8 @@ use reqwest;
 use std::future::Future;
 use std::pin::Pin;
 
+use crate::config::ServerConfig;
+
 pub struct AuthenticatedUser {
     pub uid: String,
 }
@@ -19,6 +21,8 @@ impl FromRequest for AuthenticatedUser {
     ) -> Self::Future {
         let req_clone = req.clone(); // req is cheap to clone, and we must to avoid lifetime issues
         Box::pin(async move {
+            let config = req_clone.app_data::<ServerConfig>()
+                .expect("couldn't retrieve server config");
             let auth_token = req_clone
                 .headers()
                 .get("X-Authentication")
@@ -27,21 +31,19 @@ impl FromRequest for AuthenticatedUser {
                 .map_err(|err| {
                     ErrorBadRequest(format!("couldn't read X-Authentication header: {}", err))
                 })?;
-            let uid = validate_and_fetch_uid(auth_token).await?;
+            let uid = validate_and_fetch_uid(auth_token, &config).await?;
             Ok(AuthenticatedUser { uid })
         })
     }
 }
 
 // TODO: cache google's cert more intelligently
-async fn validate_and_fetch_uid(token: &str) -> Result<String, Error> {
-    let authority =
-        "https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com";
-    let jwks: JWKS = fetch_jwks(authority)
+async fn validate_and_fetch_uid(token: &str, config: &ServerConfig) -> Result<String, Error> {
+    let jwks: JWKS = fetch_jwks(&config.firebase_jwt_authority)
         .await
         .map_err(|err| ErrorInternalServerError(format!("failed to fetch JWKS: {}", err)))?;
     let validations = vec![
-        Validation::Issuer(authority.to_string()),
+        Validation::Issuer(config.firebase_jwt_issuer.to_string()),
         Validation::SubjectPresent,
     ];
     let kid = token_kid(&token)
@@ -50,7 +52,12 @@ async fn validate_and_fetch_uid(token: &str) -> Result<String, Error> {
     let jwk = jwks.find(&kid).expect("Specified key not found in set");
     match validate(token, jwk, validations) {
         Ok(jwt) => match jwt.claims.get("sub") {
-            Some(value) => Ok(value.to_string()),
+            Some(value) => {
+                let token =  value.as_str()
+                    .ok_or(ErrorBadRequest("JWT subject must be a string"))?
+                    .to_owned();
+                Ok(token)
+            },
             _ => Err(ErrorBadRequest("couldn't find subject in JWT claims")),
         },
         Err(err) => Err(ErrorUnauthorized(format!("invalid token: {}", err))),
