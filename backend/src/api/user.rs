@@ -1,4 +1,4 @@
-use actix_web::error::{ErrorInternalServerError, ErrorNotFound};
+use actix_web::error::{ErrorBadRequest, ErrorInternalServerError, ErrorNotFound};
 use actix_web::{get, post, web, Responder};
 use serde::Deserialize;
 
@@ -25,11 +25,8 @@ pub async fn create_user(
     auth_user: AuthenticatedUser,
     pool: web::Data<DbPool>,
 ) -> impl Responder {
-    let user = User {
-        uid: auth_user.uid,
-        username: user.username.clone(),
-        is_guest: false,
-    };
+    let user = User::new(&auth_user.uid, &user.username, false)
+        .map_err(|err| ErrorBadRequest(format!("bad user fields: {:?}", err)))?;
     user.insert(&pool)
         .await
         .map(|_| web::Json(user))
@@ -42,11 +39,9 @@ pub async fn create_guest_user(
     auth_user: AuthenticatedUser,
     pool: web::Data<DbPool>,
 ) -> impl Responder {
-    let user = User {
-        uid: auth_user.uid,
-        username: "Guest".to_string(), // TODO: random guest names
-        is_guest: true,
-    };
+    // TODO random guest names
+    let user = User::new(&auth_user.uid, "Guest", true)
+        .map_err(|err| ErrorBadRequest(format!("bad user fields: {:?}", err)))?;
     user.insert(&pool)
         .await
         .map(|_| web::Json(user))

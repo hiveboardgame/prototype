@@ -3,7 +3,7 @@
 diesel::table! {
     users (uid) {
         uid -> Text,
-        username -> Text,
+        username -> Varchar,
         is_guest -> Bool,
     }
 }
