@@ -10,3 +10,4 @@ key.pem
 backend/cert.pem
 backend/key.pem
 .env
+.vscode
