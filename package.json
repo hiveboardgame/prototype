@@ -3,12 +3,12 @@
   "version": "0.0.0",
   "private": true,
   "workspaces": [
-    "config",
-    "scripts",
-    "tsconfig",
-    "frontend",
-    "hive-lib",
-    "hive-db"
+    "js/config",
+    "js/scripts",
+    "js/tsconfig",
+    "js/frontend",
+    "js/hive-lib",
+    "js/hive-db"
   ],
   "engines": {
     "npm": ">=7.0.0",
