@@ -62,6 +62,7 @@ impl History {
         }
         Ok(())
     }
+
     fn parse_turn(&mut self, tokens: &Vec<&str>) -> Result<(), GameError> {
         let turn = Regex::new(r"\d+").expect("This regex should compile");
         if let Some(token) = tokens.get(0) {
