@@ -2,67 +2,10 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
-use crate::{board::Board, piece::Piece};
+use crate::{board::Board, direction::Direction, game_error::GameError, piece::Piece};
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord, Deserialize, Serialize)]
 pub struct Position(pub i8, pub i8);
-
-pub enum Direction {
-    NW,
-    NE,
-    E,
-    SE,
-    SW,
-    W,
-}
-
-impl fmt::Display for Direction {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Direction::NW => write!(f, "NorthWest"),
-            Direction::NE => write!(f, "NorthEast"),
-            Direction::E => write!(f, "East"),
-            Direction::SE => write!(f, "SouthEast"),
-            Direction::SW => write!(f, "SouthWest"),
-            Direction::W => write!(f, "West"),
-        }
-    }
-}
-
-impl Direction {
-    pub fn all() -> Vec<Direction> {
-        vec![
-            Direction::NW,
-            Direction::NE,
-            Direction::E,
-            Direction::SE,
-            Direction::SW,
-            Direction::W,
-        ]
-    }
-
-    pub fn adjacent_directions(&self) -> (Direction, Direction) {
-        match self {
-            Direction::NW => (Direction::W, Direction::NE),
-            Direction::NE => (Direction::NW, Direction::E),
-            Direction::E => (Direction::NE, Direction::SE),
-            Direction::SE => (Direction::E, Direction::SW),
-            Direction::SW => (Direction::SE, Direction::W),
-            Direction::W => (Direction::SW, Direction::NW),
-        }
-    }
-
-    pub fn to_history_string(&self, piece: String) -> String {
-        match self {
-            Direction::NE => piece + "/",
-            Direction::E => piece + "-",
-            Direction::SE => piece + "\\",
-            Direction::NW => "\\".to_string() + &piece,
-            Direction::SW => "/".to_string() + &piece,
-            Direction::W => "-".to_string() + &piece,
-        }
-    }
-}
 
 impl fmt::Display for Position {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -86,6 +29,8 @@ impl Position {
                 (0, 1) => Direction::SE,
                 (-1, 1) => Direction::SW,
                 (-1, 0) => Direction::W,
+                // This panic is okay, because if it ever gets called with an invalid move, it
+                // implies there is a problem with the engine itself, not with user input
                 (x, y) => panic!(
                     "(even) Direction of movement unknown, from: {} to: {} ({x},{y})",
                     self, to
@@ -100,6 +45,8 @@ impl Position {
             (1, 1) => Direction::SE,
             (0, 1) => Direction::SW,
             (-1, 0) => Direction::W,
+            // This panic is okay, because if it ever gets called with an invalid move, it
+            // implies there is a problem with the engine itself, not with user input
             (x, y) => panic!(
                 "(odd) Direction of movement unknown, from: {} to: {} ({x},{y})",
                 self, to
@@ -135,48 +82,59 @@ impl Position {
         }
     }
 
-    pub fn from_string(s: &str, board: &Board) -> Position {
+    pub fn from_string(s: &str, board: &Board) -> Result<Position, GameError> {
         if s.starts_with('.') {
-            return Position(0, 0);
+            return Ok(Position(0, 0));
         }
 
-        let re = Regex::new(r"([-/\\]?)([wb][ABGMLPSQ]\d?)([-/\\]?)").unwrap();
-        let cap = re.captures(s).unwrap();
-        let piece = Piece::from_string(&cap[2]);
-        let mut position = board.position(&piece);
-        if !cap[1].is_empty() {
-            match &cap[1] {
-                "\\" => {
-                    position = position.to(&Direction::NW);
+        let re = Regex::new(r"([-/\\]?)([wb][ABGMLPSQ]\d?)([-/\\]?)")
+            .expect("This regex should compile");
+        if let Some(cap) = re.captures(s) {
+            let piece = Piece::from_string(&cap[2])?;
+            if let Some(mut position) = board.position(&piece) {
+                if !cap[1].is_empty() {
+                    match &cap[1] {
+                        "\\" => {
+                            position = position.to(&Direction::NW);
+                        }
+                        "-" => {
+                            position = position.to(&Direction::W);
+                        }
+                        "/" => {
+                            position = position.to(&Direction::SW);
+                        }
+                        any => {
+                            return Err(GameError::InvalidDirection {
+                                direction: any.to_string(),
+                            })
+                        }
+                    }
                 }
-                "-" => {
-                    position = position.to(&Direction::W);
+                if !cap[3].is_empty() {
+                    match &cap[3] {
+                        "/" => {
+                            position = position.to(&Direction::NE);
+                        }
+                        "-" => {
+                            position = position.to(&Direction::E);
+                        }
+                        "\\" => {
+                            position = position.to(&Direction::SE);
+                        }
+                        any => {
+                            return Err(GameError::InvalidDirection {
+                                direction: any.to_string(),
+                            })
+                        }
+                    }
                 }
-                "/" => {
-                    position = position.to(&Direction::SW);
-                }
-                _ => {
-                    panic!("Not a valid direction");
-                }
+                return Ok(position);
             }
         }
-        if !cap[3].is_empty() {
-            match &cap[3] {
-                "/" => {
-                    position = position.to(&Direction::NE);
-                }
-                "-" => {
-                    position = position.to(&Direction::E);
-                }
-                "\\" => {
-                    position = position.to(&Direction::SE);
-                }
-                _ => {
-                    panic!("Not a valid direction");
-                }
-            }
-        }
-        position
+        return Err(GameError::ParsingError {
+            found: s.to_string(),
+            typ: "position".to_string(),
+        });
     }
 }
 

@@ -1,3 +1,4 @@
+use crate::game_error::GameError;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
@@ -8,7 +9,9 @@ pub enum Color {
 }
 
 impl Default for Color {
-    fn default() -> Self { Color::White }
+    fn default() -> Self {
+        Color::White
+    }
 }
 
 impl Color {
@@ -26,11 +29,14 @@ impl Color {
         }
     }
 
-    pub fn from_str(s: &str) -> Color {
+    pub fn from_str(s: &str) -> Result<Color, GameError> {
         match s {
-            "w" => Color::White,
-            "b" => Color::Black,
-            _ => panic!("That's not a color!"),
+            "w" => Ok(Color::White),
+            "b" => Ok(Color::Black),
+            any => Err(GameError::ParsingError {
+                found: any.to_string(),
+                typ: "color string".to_string(),
+            }),
         }
     }
 
