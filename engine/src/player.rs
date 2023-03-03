@@ -1,7 +1,7 @@
-use crate::{bug::Bug, game_type::GameType};
 use crate::color::Color;
+use crate::{bug::Bug, game_type::GameType};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use serde::{Serialize, Deserialize};
 
 #[derive(Deserialize, Serialize, Clone, Default, Debug, PartialEq, Eq)]
 pub struct Player {

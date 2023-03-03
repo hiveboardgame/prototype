@@ -19,3 +19,4 @@ sha2 = "*"
 hex-literal = "*"
 serde_json = "*"
 serde = { version = "*", features = ["derive"] }
+thiserror = "*"

@@ -5,11 +5,12 @@ use std::fmt::Write;
 
 use crate::bug::Bug;
 use crate::color::Color;
-use crate::piece::Piece;
-use crate::position::Direction;
-use crate::position::Position;
+use crate::direction::Direction;
+use crate::game_error::GameError;
 use crate::game_result::GameResult;
 use crate::game_type::GameType;
+use crate::piece::Piece;
+use crate::position::Position;
 
 #[derive(Deserialize, Serialize, Clone, Default, Debug, Eq, PartialEq)]
 pub struct Board {
@@ -29,9 +30,12 @@ impl fmt::Display for Board {
             }
             for x in min_x..=max_x {
                 match self.board.get(&Position(x, y)) {
-                    Some(piece) => write!(s, "{} ", piece.last().unwrap())?,
-                    None => write!(s, "    ")?,
-                };
+                    Some(piece) => match piece.last() {
+                        Some(last) => write!(s, "{} ", last),
+                        None => unreachable!("Found a piece key but no value"),
+                    },
+                    None => write!(s, "    "),
+                }?
             }
             writeln!(s)?;
         }
@@ -45,23 +49,6 @@ impl Board {
             board: HashMap::new(),
             last_moved: None,
         }
-    }
-
-    pub fn level_iter<'b>(&'b self) -> impl Iterator<Item = (Position, Piece, usize, bool)> + 'b {
-        let len = self
-            .board
-            .iter()
-            .map(|(_, pieces)| pieces.len())
-            .max()
-            .unwrap_or(0) as usize;
-        (0..len).flat_map(|lvl| {
-            self.board.iter().filter_map(move |(pos, pieces)| {
-                let more = pieces.get(lvl + 1).is_some();
-                pieces
-                    .get(lvl)
-                    .map(|piece| (pos.clone(), piece.clone(), lvl.clone(), more))
-            })
-        })
     }
 
     pub fn min_max_positions(&self) -> ((i8, i8), (i8, i8)) {
@@ -102,8 +89,8 @@ impl Board {
             .position_of_piece(&Piece::new(Bug::Queen, Color::Black, None))
             .map(|pos| self.neighbors(&pos).len() == 6);
         return match (black, white) {
-            (Some(true), Some(true)) =>  GameResult::Draw,
-            (Some(true), Some(false)) => GameResult::Winner(Color::Black), 
+            (Some(true), Some(true)) => GameResult::Draw,
+            (Some(true), Some(false)) => GameResult::Winner(Color::Black),
             (Some(false), Some(true)) => GameResult::Winner(Color::White),
             _ => GameResult::Unknown,
         };
@@ -118,15 +105,37 @@ impl Board {
         None
     }
 
-    pub fn move_piece(&mut self, piece: &Piece, current: &Position, target: &Position) {
+    pub fn move_piece(
+        &mut self,
+        piece: &Piece,
+        current: &Position,
+        target: &Position,
+        turn: usize,
+    ) -> Result<(), GameError> {
         if !self.is_top_piece(piece, current) {
-            panic!("Tried to move non top piece!");
+            return Err(GameError::InvalidMove {
+                piece: piece.to_string(),
+                from: current.to_string(),
+                to: target.to_string(),
+                turn,
+                reason: "Trying to move a covered piece".to_string(),
+            });
         }
-        let piece = self.board.get_mut(current).unwrap().pop().unwrap();
-        if self.board.get(current).unwrap().is_empty() {
-            self.board.remove(current);
+        if let Some(vec) = self.board.get_mut(current) {
+            if let Some(piece) = vec.pop() {
+                if vec.is_empty() {
+                    self.board.remove(current);
+                }
+                self.insert(target, piece);
+                return Ok(());
+            }
         }
-        self.insert(target, piece);
+        panic!(
+            "Trying to move {} from {} to {} which should have been a legal move",
+            piece.to_string(),
+            current.to_string(),
+            target.to_string()
+        );
     }
 
     pub fn neighbor_is_a(&self, position: &Position, bug: Bug) -> bool {
@@ -135,17 +144,14 @@ impl Board {
             .any(|piece| piece.bug == bug)
     }
 
-    pub fn position(&self, piece: &Piece) -> Position {
-        self.board
-            .iter()
-            .find_map(|(pos, pieces)| {
-                if pieces.contains(piece) {
-                    Some(*pos)
-                } else {
-                    None
-                }
-            })
-            .unwrap()
+    pub fn position(&self, piece: &Piece) -> Option<Position> {
+        self.board.iter().find_map(|(pos, pieces)| {
+            if pieces.contains(piece) {
+                Some(*pos)
+            } else {
+                None
+            }
+        })
     }
 
     pub fn piece_already_played(&self, piece: &Piece) -> bool {
@@ -154,16 +160,15 @@ impl Board {
 
     pub fn positions_for_color(&self, color: &Color) -> Vec<Position> {
         self.board
-            .keys()
-            .filter(|pos| {
-                self.board
-                    .get(pos)
-                    .unwrap() // unwrap here is safe because we are got pos from board.keys
-                    .last()
-                    .unwrap_or_else(|| panic!("Could not find a piece at pos: {}", pos))
-                    .is_color(color)
+            .iter()
+            .filter_map(|(pos, pieces)| {
+                if let Some(piece) = pieces.last() {
+                    if piece.is_color(color) {
+                        return Some(*pos);
+                    }
+                }
+                None
             })
-            .cloned()
             .collect()
     }
 
@@ -185,16 +190,25 @@ impl Board {
         };
     }
 
+    pub fn top_piece(&self, position: &Position) -> Option<Piece> {
+        if let Some(piece) = self.board.get(position).unwrap_or(&Vec::new()).last() {
+            return Some(*piece);
+        }
+        None
+    }
+
     pub fn is_top_piece(&self, piece: &Piece, position: &Position) -> bool {
-        self.board.get(position).unwrap().last().unwrap() == piece
+        if let Some(found) = self.top_piece(position) {
+            return piece == &found;
+        }
+        false
     }
 
-    pub fn top_piece(&self, position: &Position) -> Piece {
-        *self.board.get(position).unwrap().last().unwrap()
-    }
-
-    pub fn top_bug(&self, position: &Position) -> Bug {
-        self.board.get(position).unwrap().last().unwrap().bug
+    pub fn top_bug(&self, position: &Position) -> Option<Bug> {
+        if let Some(piece) = self.top_piece(position) {
+            return Some(piece.bug);
+        }
+        None
     }
 
     pub fn gated(&self, level: usize, from: &Position, to: &Position) -> bool {
@@ -203,6 +217,17 @@ impl Board {
             (Some(p1), Some(p2)) => p1.len() >= level && p2.len() >= level,
             _ => false,
         }
+    }
+
+    pub fn get_neighbor(&self, position: &Position) -> Option<(Piece, Position)> {
+        for pos in self.positions_around(position).iter() {
+            if let Some(pieces) = self.board.get(pos) {
+                if let Some(piece) = pieces.last() {
+                    return Some((*piece, *pos));
+                }
+            }
+        }
+        None
     }
 
     pub fn positions_taken_around(&self, position: &Position) -> Vec<Position> {
@@ -245,21 +270,27 @@ impl Board {
         let mut moves: HashMap<(Piece, Position), Vec<Position>> = HashMap::new();
         // for all pieces on the board
         for pos in self.board.keys() {
-            // that are the correct color
-            if self.top_piece(pos).is_color(color) {
-                // let's make sure pieces that were just moved cannot be moved again
-                if let Some(last_moved) = self.last_moved {
-                    if last_moved == (self.top_piece(pos), *pos) {
-                        // now we skip it
-                        continue;
+            // because the only unkown input here is it is okay to use top_piece_trusted here
+            // color, everthing else in known to be correct,
+            if let Some(piece) = self.top_piece(pos) {
+                // that are the correct color
+                if piece.is_color(color) {
+                    // let's make sure pieces that were just moved cannot be moved again
+                    if let Some(last_moved) = self.last_moved {
+                        if last_moved == (piece, *pos) {
+                            // now we skip it
+                            continue;
+                        }
                     }
-                }
-                // get all the moves
-                for (start_pos, target_positions) in Bug::available_moves(pos, self) {
-                    moves
-                        .entry((self.top_piece(&start_pos), start_pos))
-                        .or_default()
-                        .append(&mut target_positions.clone());
+                    // get all the moves
+                    for (start_pos, target_positions) in Bug::available_moves(pos, self) {
+                        if let Some(piece) = self.top_piece(&start_pos) {
+                            moves
+                                .entry((piece, start_pos))
+                                .or_default()
+                                .append(&mut target_positions.clone());
+                        }
+                    }
                 }
             }
         }
@@ -343,10 +374,11 @@ impl Board {
     }
 
     pub fn spawns_left(&self, color: &Color, game_type: GameType) -> bool {
-        if self.reserve(color, game_type).iter().filter(|(_, v)| **v > 0).collect::<HashMap<&Bug, &i8>>().is_empty() || self.spawnable_positions(color).is_empty() {
-            return false;
-        }
-        return true;
+        let reserve_bugs_count = self
+            .reserve(color, game_type)
+            .iter()
+            .fold(0, |acc, (_bug, count)| acc + count);
+        self.spawnable_positions(color).len() > 0 && reserve_bugs_count > 0
     }
 
     pub fn reserve(&self, color: &Color, game_type: GameType) -> HashMap<Bug, i8> {
@@ -440,12 +472,18 @@ mod tests {
             Piece::new(Bug::Queen, Color::Black, Some(1)),
         );
         let mut pieces = vec![Piece::new(Bug::Ant, Color::Black, Some(1))];
-        board.insert(&Position(1, 0), *pieces.last().unwrap());
+        board.insert(
+            &Position(1, 0),
+            *pieces.last().expect("This is in test neighbors"),
+        );
         let neighbors = board.neighbors(&Position(0, 0));
         assert_eq!(neighbors, vec![pieces.clone()]);
 
         pieces.push(Piece::new(Bug::Beetle, Color::Black, Some(1)));
-        board.insert(&Position(1, 0), *pieces.last().unwrap());
+        board.insert(
+            &Position(1, 0),
+            *pieces.last().expect("This is in test neighbors"),
+        );
         let neighbors = board.neighbors(&Position(0, 0));
         assert_eq!(neighbors, vec![pieces.clone()]);
 
