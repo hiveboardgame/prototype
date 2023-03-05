@@ -50,7 +50,6 @@ $ diesel migration run
 
 ```
 $ cd backend
-$ source .env
 $ cargo run
 ```
 
