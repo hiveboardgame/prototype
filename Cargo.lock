@@ -400,6 +400,7 @@ dependencies = [
  "oauth2",
  "reqwest",
  "serde",
+ "thiserror",
  "tokio",
  "tokio-stream",
  "uuid",

@@ -5,6 +5,7 @@ mod extractors;
 mod model;
 mod static_files;
 mod websockets;
+mod server_error;
 
 use actix_web::web;
 use actix_web::{middleware, App, Error, HttpRequest, HttpResponse, HttpServer};
