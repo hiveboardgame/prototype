@@ -1,3 +1,4 @@
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::fmt;
@@ -49,6 +50,45 @@ impl Board {
             board: HashMap::new(),
             last_moved: None,
         }
+    }
+
+    pub fn new_from_entomology(input: &str) -> Result<Self, GameError> {
+        let mut board = Self {
+            board: HashMap::new(),
+            last_moved: None,
+        };
+
+        let re_ento = Regex::new(r"(([wb][ABGSLPMQ][1-3]?){1,7})([+-]\d)([+-]\d)").unwrap();
+        let re_pieces = Regex::new(r"([wb][ABGSLPMQ][1-3]?)").unwrap();
+        for ento_cap in re_ento.captures_iter(input) {
+            let mut pieces = Vec::new();
+            for piece_cap in re_pieces.captures_iter(&ento_cap[1]) {
+                let piece = Piece::from_string(&piece_cap[1])?;
+                pieces.push(piece);
+            }
+            pieces.reverse();
+
+            let mut x =
+                ento_cap[3]
+                    .to_string()
+                    .parse::<i8>()
+                    .map_err(|_| GameError::ParsingError {
+                        found: ento_cap[3].to_string(),
+                        typ: "Position(x,_)".to_string(),
+                    })?;
+            let y = ento_cap[4]
+                .to_string()
+                .parse::<i8>()
+                .map_err(|_| GameError::ParsingError {
+                    found: ento_cap[4].to_string(),
+                    typ: "Position(_,y)".to_string(),
+                })?;
+            x = x + (y - 1).div_ceil(2);
+            let position = Position(x, y);
+            board.board.insert(position, pieces);
+        }
+        println!("{}", board);
+        Ok(board)
     }
 
     pub fn min_max_positions(&self) -> ((i8, i8), (i8, i8)) {
@@ -638,5 +678,16 @@ mod tests {
                 assert!(!board.pinned(pos));
             };
         }
+    }
+
+    #[test]
+    fn tests_new_from_entomology() {
+        assert!(Board::new_from_entomology(
+            "bL+0+0wL+1-1bB1wQ+2-1bA2+3-1bM+3-2wMbQ-1+0wA3-1-1wA1-2+0wA2-2+1wB1-3+1bA1-4+1"
+        )
+        .is_ok());
+        assert!(Board::new_from_entomology("wL+0+0wP+0-1bP+1+0bA1+1+1wM+1-1wA1+2+1wB1bQ+2-1wA3+3-1wA2+3-2bB1-1+1wQ-1-1bA3-1-2bA2-2+0bG1-2-1").is_ok());
+        assert!(Board::new_from_entomology("bG3+0+0wQ+0-2bA2+0-3bS1+1+0bG1+1-3bB2+2-1wP+2-3wA1+3-1bS2+4-1wA2+5-1bG2-1+1bQ-1+2bA3-1+3wL-1+4bA1-1-1wS1-1-3wB2bB1-2+0wB1bP-2+1wA3-2+3wMbM-3+2bL-3+3").is_ok());
+        assert!(Board::new_from_entomology("wG1bG2+0+0wQ+0+1bB2+0-2wB2+1+1bB1+1-1bS1+1-2wA1+2+1bS2+2-1bG2+2-3bG3+2-4wA2+3+1bQ+3-1bA3+3-5bG1+4-1wG2-1+0wS1-1+2wS2-1+3bA1-1-2wG3-2+0wA3-2+4bA2-2-2wB1-3+0").is_ok());
     }
 }

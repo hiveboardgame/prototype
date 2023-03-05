@@ -1,4 +1,5 @@
 // #[serde(rename_all = "camelCase")]
+#![feature(int_roundings)]
 
 pub mod board;
 pub mod bug;
