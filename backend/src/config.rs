@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 use std::{env, env::VarError};
+use dotenvy::dotenv;
 
 #[derive(Clone, Debug)]
 pub struct ServerConfig {
@@ -10,6 +11,7 @@ pub struct ServerConfig {
 
 impl ServerConfig {
     pub fn from_env() -> Result<ServerConfig, VarError> {
+        dotenv().ok();
         Ok(ServerConfig {
             database_url: env::var("DATABASE_URL")?,
             firebase_jwt_issuer: env::var("FIREBASE_JWT_ISSUER")?,
