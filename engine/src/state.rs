@@ -219,7 +219,19 @@ impl State {
             self.board
                 .move_piece(&piece, &current_position, &target_position, self.turn)?;
         } else {
-            // let's spawn the piece
+            // Handle spawns
+            if !piece.is_color(&self.turn_color) {
+                return Err(GameError::InvalidMove {
+                    piece: piece.to_string(),
+                    from: "NA".to_string(),
+                    to: target_position.to_string(),
+                    turn: self.turn,
+                    reason: format!(
+                        "It is {}'s turn, but {} tried to spawn a piece",
+                        self.turn_color, piece.color
+                    ),
+                });
+            }
             if piece.bug != Bug::Queen && self.board.queen_required(self.turn, &piece.color) {
                 return Err(GameError::InvalidSpawn {
                     piece: piece.to_string(),
