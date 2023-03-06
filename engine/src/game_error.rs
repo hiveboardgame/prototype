@@ -2,18 +2,11 @@ use crate::game_result::GameResult;
 
 #[derive(thiserror::Error, Debug)]
 pub enum GameError {
-    #[error("Invalid or illegal move on turn {turn}, moving piece {piece} from {from} to {to}")]
+    #[error("Not a valid game move: {reason} turn: {turn}, piece: {piece}, current_position: {from}, target_position: {to}.")]
     InvalidMove {
         piece: String,
         from: String,
         to: String,
-        turn: usize,
-        reason: String,
-    },
-    #[error("Invalid spawn of piece {piece} at position {position} on turn {turn}")]
-    InvalidSpawn {
-        piece: String,
-        position: String,
         turn: usize,
         reason: String,
     },

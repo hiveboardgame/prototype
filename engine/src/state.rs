@@ -233,20 +233,22 @@ impl State {
                 });
             }
             if piece.bug != Bug::Queen && self.board.queen_required(self.turn, &piece.color) {
-                return Err(GameError::InvalidSpawn {
+                return Err(GameError::InvalidMove {
                     piece: piece.to_string(),
-                    position: target_position.to_string(),
+                    from: "Reserve".to_string(),
+                    to: target_position.to_string(),
                     turn: self.turn,
-                    reason: "Queen is required".to_string(),
+                    reason: "Can't spawn another piece. Queen is required".to_string(),
                 });
             }
             if self.board.spawnable(&piece.color, &target_position) {
                 self.board.insert(&target_position, piece);
                 self.last_turn = LastTurn::Move(target_position, target_position);
             } else {
-                return Err(GameError::InvalidSpawn {
+                return Err(GameError::InvalidMove { 
                     piece: piece.to_string(),
-                    position: target_position.to_string(),
+                    from: "Reserve".to_string(),
+                    to: target_position.to_string(),
                     turn: self.turn,
                     reason: format!("{} is not allowed to spawn here", self.turn_color),
                 });
