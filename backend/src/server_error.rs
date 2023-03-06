@@ -14,7 +14,7 @@ pub struct ErrorResponse {
 pub enum ServerError {
     #[error("Access forbidden")]
     Forbidden,
-    #[error("Not a valid game move: {message}")]
+    #[error("{message}")]
     GameError { message: String },
     #[error("Not found")]
     NotFound,
