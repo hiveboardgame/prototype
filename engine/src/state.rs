@@ -9,6 +9,7 @@ use crate::player::Player;
 use crate::position::Position;
 use crate::{board::Board, game_type::GameType};
 use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub enum LastTurn {
@@ -58,14 +59,14 @@ impl State {
         let mut tournament = true;
         // Did white open with a Queen?
         if let Some((piece_str, _)) = history.moves.get(0) {
-            let piece = Piece::from_string(piece_str)?;
+            let piece = Piece::from_str(piece_str)?;
             if piece.bug == Bug::Queen {
                 tournament = false;
             }
         }
         // Did black open with a Queen?
         if let Some((piece_str, _)) = history.moves.get(1) {
-            let piece = Piece::from_string(piece_str)?;
+            let piece = Piece::from_str(piece_str)?;
             if piece.bug == Bug::Queen {
                 tournament = false;
             }
@@ -104,7 +105,7 @@ impl State {
                 }
             }
             _ => {
-                let piece = Piece::from_string(piece)?;
+                let piece = Piece::from_str(piece)?;
                 let target_position = Position::from_string(position, &self.board)?;
                 self.play_turn(piece, target_position)?;
             }

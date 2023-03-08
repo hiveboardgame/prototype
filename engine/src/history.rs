@@ -1,14 +1,15 @@
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use std::fs::File;
-use std::io::{self, BufRead};
+use std::{
+    fs::{File, OpenOptions},
+    io::{self, BufRead, prelude::*},
+    str::FromStr,
+};
 
 use crate::color::Color;
 use crate::game_error::GameError;
 use crate::game_result::GameResult;
 use crate::game_type::GameType;
-use std::fs::OpenOptions;
-use std::io::prelude::*;
 
 #[derive(Debug, Clone, Serialize, Default, Deserialize, PartialEq, Eq)]
 pub struct History {

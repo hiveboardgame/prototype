@@ -1,10 +1,12 @@
-use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet};
-use std::fmt;
-
 use crate::{
     board::Board, direction::Direction, game_error::GameError, game_type::GameType,
     position::Position,
+};
+use serde::{Deserialize, Serialize};
+use std::{
+    collections::{HashMap, HashSet},
+    fmt,
+    str::FromStr,
 };
 
 #[derive(Hash, Eq, PartialEq, Clone, Copy, Serialize, Deserialize, Debug)]
@@ -22,6 +24,27 @@ pub enum Bug {
 impl fmt::Display for Bug {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.as_str())
+    }
+}
+
+impl FromStr for Bug {
+    type Err = GameError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "A" => Ok(Bug::Ant),
+            "B" => Ok(Bug::Beetle),
+            "G" => Ok(Bug::Grasshopper),
+            "L" => Ok(Bug::Ladybug),
+            "M" => Ok(Bug::Mosquito),
+            "P" => Ok(Bug::Pillbug),
+            "Q" => Ok(Bug::Queen),
+            "S" => Ok(Bug::Spider),
+            any => Err(GameError::ParsingError {
+                found: any.to_string(),
+                typ: "bug string".to_string(),
+            }),
+        }
     }
 }
 
@@ -69,23 +92,6 @@ impl Bug {
         }
         .clone()
         .to_string()
-    }
-
-    pub fn from_str(s: &str) -> Result<Bug, GameError> {
-        match s {
-            "A" => Ok(Bug::Ant),
-            "B" => Ok(Bug::Beetle),
-            "G" => Ok(Bug::Grasshopper),
-            "L" => Ok(Bug::Ladybug),
-            "M" => Ok(Bug::Mosquito),
-            "P" => Ok(Bug::Pillbug),
-            "Q" => Ok(Bug::Queen),
-            "S" => Ok(Bug::Spider),
-            any => Err(GameError::ParsingError {
-                found: any.to_string(),
-                typ: "bug string".to_string(),
-            }),
-        }
     }
 
     pub fn bugs_count(game_type: GameType) -> HashMap<Bug, i8> {

@@ -1,6 +1,7 @@
 use crate::game_error::GameError;
 use serde::{Deserialize, Serialize};
 use std::fmt;
+use std::str::FromStr;
 
 #[derive(Serialize, Deserialize, Hash, Eq, PartialEq, Clone, Copy, Debug)]
 pub enum Color {
@@ -11,6 +12,21 @@ pub enum Color {
 impl Default for Color {
     fn default() -> Self {
         Color::White
+    }
+}
+
+impl FromStr for Color {
+    type Err = GameError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "w" => Ok(Color::White),
+            "b" => Ok(Color::Black),
+            any => Err(GameError::ParsingError {
+                found: any.to_string(),
+                typ: "color string".to_string(),
+            }),
+        }
     }
 }
 
@@ -26,17 +42,6 @@ impl Color {
         match self {
             Self::Black => "black",
             Self::White => "white",
-        }
-    }
-
-    pub fn from_str(s: &str) -> Result<Color, GameError> {
-        match s {
-            "w" => Ok(Color::White),
-            "b" => Ok(Color::Black),
-            any => Err(GameError::ParsingError {
-                found: any.to_string(),
-                typ: "color string".to_string(),
-            }),
         }
     }
 
