@@ -3,6 +3,7 @@ use hive_lib::game_result::GameResult;
 use hive_lib::history::History;
 use hive_lib::state::State;
 use std::env;
+use std::fs;
 
 fn play_game_from_file(file_path: &String) -> Result<(), GameError> {
     let history = History::from_filepath(file_path)?;
@@ -58,6 +59,15 @@ fn main() {
 }
 
 #[test]
-fn test_play_game_from_file(){
-    // assert!(play_game_from_file(with all the different files).is_ok());
+fn test_play_games_from_files(){
+    for entry in fs::read_dir("./test_pgns/valid/").expect("Should be valid directory") {
+        let entry= entry.expect("PGN").path().display().to_string();
+        assert!(play_game_from_file(&entry).is_ok());
+     
+        }
+    for entry in fs::read_dir("./test_pgns/invalid/").expect("Should be valid directory") {
+        let entry= entry.expect("PGN").path().display().to_string();
+        assert!(play_game_from_file(&entry).is_err());
+
+    }
 }
