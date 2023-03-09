@@ -3,15 +3,12 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::str::FromStr;
 
-#[derive(Serialize, Deserialize, Hash, Eq, PartialEq, Clone, Copy, Debug)]
-#[derive(Default)]
+#[derive(Serialize, Deserialize, Hash, Eq, PartialEq, Clone, Copy, Debug, Default)]
 pub enum Color {
     #[default]
     White,
     Black,
 }
-
-
 
 impl FromStr for Color {
     type Err = GameError;

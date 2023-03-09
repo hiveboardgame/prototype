@@ -10,8 +10,7 @@ use crate::position::Position;
 use crate::{board::Board, game_type::GameType};
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-#[derive(Default)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Default)]
 pub enum LastTurn {
     Pass,
     Shutout,
@@ -19,8 +18,6 @@ pub enum LastTurn {
     #[default]
     None,
 }
-
-
 
 #[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq)]
 pub struct State {
@@ -243,7 +240,7 @@ impl State {
                 self.board.insert(&target_position, piece);
                 self.last_turn = LastTurn::Move(target_position, target_position);
             } else {
-                return Err(GameError::InvalidMove { 
+                return Err(GameError::InvalidMove {
                     piece: piece.to_string(),
                     from: "Reserve".to_string(),
                     to: target_position.to_string(),

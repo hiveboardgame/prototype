@@ -131,10 +131,7 @@ impl Board {
             }
         }
         panic!(
-            "Trying to move {} from {} to {} which should have been a legal move",
-            piece,
-            current,
-            target
+            "Trying to move {piece} from {current} to {target} which should have been a legal move"
         );
     }
 
@@ -403,10 +400,7 @@ impl Board {
                 all_neighbors.insert(pos);
             }
         }
-        all_neighbors
-            .difference(&taken)
-            .cloned()
-            .collect()
+        all_neighbors.difference(&taken).cloned().collect()
     }
 
     pub fn spawnable(&self, color: &Color, position: &Position) -> bool {

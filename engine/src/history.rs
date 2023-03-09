@@ -2,7 +2,7 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::{
     fs::{File, OpenOptions},
-    io::{self, BufRead, prelude::*},
+    io::{self, prelude::*, BufRead},
 };
 
 use crate::color::Color;
@@ -63,7 +63,7 @@ impl History {
         Ok(())
     }
 
-    fn parse_turn(&mut self, tokens: &Vec<&str>) -> Result<(), GameError> {
+    fn parse_turn(&mut self, tokens: &[&str]) -> Result<(), GameError> {
         let turn = Regex::new(r"\d+").expect("This regex should compile");
         if let Some(token) = tokens.first() {
             if turn.is_match(token) {

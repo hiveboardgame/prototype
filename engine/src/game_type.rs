@@ -3,8 +3,7 @@ use crate::game_error::GameError;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Copy)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Copy, Default)]
 pub enum GameType {
     #[default]
     Base,
@@ -16,8 +15,6 @@ pub enum GameType {
     MP,
     MLP,
 }
-
-
 
 impl FromStr for GameType {
     type Err = GameError;

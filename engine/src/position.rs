@@ -31,9 +31,9 @@ impl Position {
                 (-1, 0) => Direction::W,
                 // This panic is okay, because if it ever gets called with an invalid move, it
                 // implies there is a problem with the engine itself, not with user input
-                (x, y) => panic!(
-                    "(even) Direction of movement unknown, from: {self} to: {to} ({x},{y})"
-                ),
+                (x, y) => {
+                    panic!("(even) Direction of movement unknown, from: {self} to: {to} ({x},{y})")
+                }
             };
         }
         // odd rows
@@ -46,9 +46,9 @@ impl Position {
             (-1, 0) => Direction::W,
             // This panic is okay, because if it ever gets called with an invalid move, it
             // implies there is a problem with the engine itself, not with user input
-            (x, y) => panic!(
-                "(odd) Direction of movement unknown, from: {self} to: {to} ({x},{y})"
-            ),
+            (x, y) => {
+                panic!("(odd) Direction of movement unknown, from: {self} to: {to} ({x},{y})")
+            }
         }
     }
 
