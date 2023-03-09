@@ -90,7 +90,7 @@ impl Position {
         let re = Regex::new(r"([-/\\]?)([wb][ABGMLPSQ]\d?)([-/\\]?)")
             .expect("This regex should compile");
         if let Some(cap) = re.captures(s) {
-            let piece = Piece::from_string(&cap[2])?;
+            let piece: Piece = (&cap[2]).parse()?;
             if let Some(mut position) = board.position(&piece) {
                 if !cap[1].is_empty() {
                     match &cap[1] {

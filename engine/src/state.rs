@@ -58,14 +58,14 @@ impl State {
         let mut tournament = true;
         // Did white open with a Queen?
         if let Some((piece_str, _)) = history.moves.get(0) {
-            let piece = Piece::from_string(piece_str)?;
+            let piece: Piece = piece_str.parse()?;
             if piece.bug == Bug::Queen {
                 tournament = false;
             }
         }
         // Did black open with a Queen?
         if let Some((piece_str, _)) = history.moves.get(1) {
-            let piece = Piece::from_string(piece_str)?;
+            let piece: Piece = piece_str.parse()?;
             if piece.bug == Bug::Queen {
                 tournament = false;
             }
@@ -104,7 +104,7 @@ impl State {
                 }
             }
             _ => {
-                let piece = Piece::from_string(piece)?;
+                let piece = piece.parse()?;
                 let target_position = Position::from_string(position, &self.board)?;
                 self.play_turn(piece, target_position)?;
             }

@@ -3,6 +3,7 @@ use crate::color::Color;
 use crate::game_error::GameError;
 use serde::{Deserialize, Serialize};
 use std::fmt;
+use std::str::FromStr;
 
 #[derive(Serialize, Deserialize, PartialEq, Clone, Hash, Eq, Copy)]
 pub struct Piece {
@@ -11,16 +12,14 @@ pub struct Piece {
     pub order: Option<i8>,
 }
 
-impl Piece {
-    pub fn new(bug: Bug, color: Color, order: Option<i8>) -> Piece {
-        Piece { bug, color, order }
-    }
+impl FromStr for Piece {
+    type Err = GameError;
 
-    pub fn from_string(s: &str) -> Result<Piece, GameError> {
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         if let Some(c_chars) = s.chars().next() {
-            let color = Color::from_str(&c_chars.to_string())?;
+            let color: Color = c_chars.to_string().parse()?;
             if let Some(b_chars) = s.chars().nth(1) {
-                let bug = Bug::from_str(&b_chars.to_string())?;
+                let bug: Bug = b_chars.to_string().parse()?;
                 let mut order = None;
                 if let Some(ch) = s.chars().nth(2) {
                     if let Ok(ord) = ch.to_string().parse() {
@@ -34,6 +33,12 @@ impl Piece {
             found: s.to_string(),
             typ: "piece".to_string(),
         });
+    }
+}
+
+impl Piece {
+    pub fn new(bug: Bug, color: Color, order: Option<i8>) -> Piece {
+        Piece { bug, color, order }
     }
 
     pub fn is_color(&self, color: &Color) -> bool {
