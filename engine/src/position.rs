@@ -1,7 +1,6 @@
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::fmt;
-use std::str::FromStr;
 
 use crate::{board::Board, direction::Direction, game_error::GameError, piece::Piece};
 
@@ -91,7 +90,7 @@ impl Position {
         let re = Regex::new(r"([-/\\]?)([wb][ABGMLPSQ]\d?)([-/\\]?)")
             .expect("This regex should compile");
         if let Some(cap) = re.captures(s) {
-            let piece = Piece::from_str(&cap[2])?;
+            let piece: Piece = (&cap[2]).parse()?;
             if let Some(mut position) = board.position(&piece) {
                 if !cap[1].is_empty() {
                     match &cap[1] {

@@ -3,7 +3,6 @@ use serde::{Deserialize, Serialize};
 use std::{
     fs::{File, OpenOptions},
     io::{self, BufRead, prelude::*},
-    str::FromStr,
 };
 
 use crate::color::Color;
@@ -53,7 +52,7 @@ impl History {
             .expect("This regex should compile");
         if let Some(caps) = game_type.captures(&line) {
             if let Some(mtch) = caps.get(1) {
-                self.game_type = GameType::from_str(mtch.as_str())?;
+                self.game_type = mtch.as_str().parse()?;
             }
         } else {
             return Err(GameError::ParsingError {
