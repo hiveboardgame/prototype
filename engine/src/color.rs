@@ -4,16 +4,14 @@ use std::fmt;
 use std::str::FromStr;
 
 #[derive(Serialize, Deserialize, Hash, Eq, PartialEq, Clone, Copy, Debug)]
+#[derive(Default)]
 pub enum Color {
+    #[default]
     White,
     Black,
 }
 
-impl Default for Color {
-    fn default() -> Self {
-        Color::White
-    }
-}
+
 
 impl FromStr for Color {
     type Err = GameError;
@@ -59,6 +57,6 @@ impl fmt::Display for Color {
             Color::White => "w",
             Color::Black => "b",
         };
-        write!(f, "{}", color)
+        write!(f, "{color}")
     }
 }

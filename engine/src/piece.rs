@@ -29,10 +29,10 @@ impl FromStr for Piece {
                 return Ok(Piece::new(bug, color, order));
             }
         }
-        return Err(GameError::ParsingError {
+        Err(GameError::ParsingError {
             found: s.to_string(),
             typ: "piece".to_string(),
-        });
+        })
     }
 }
 

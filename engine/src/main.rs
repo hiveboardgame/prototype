@@ -4,17 +4,17 @@ use hive_lib::history::History;
 use hive_lib::state::State;
 use std::env;
 
-fn play_game_from_file(file_path: &String) -> Result<(), GameError> {
+fn play_game_from_file(file_path: &str) -> Result<(), GameError> {
     let history = History::from_filepath(file_path)?;
     let state = State::new_from_history(&history)?;
     if let GameResult::Winner(winner) = state.game_result {
-        println!("State says {} won!", winner);
+        println!("State says {winner} won!");
     }
     if GameResult::Draw == state.game_result {
         println!("State says it's a draw");
     }
     if let GameResult::Winner(winner) = history.result {
-        println!("History says {} won!", winner);
+        println!("History says {winner} won!");
     }
     if let GameResult::Winner(hw) = history.result {
         if let GameResult::Winner(sw) = state.game_result {
@@ -47,10 +47,10 @@ fn play_game_from_file(file_path: &String) -> Result<(), GameError> {
 fn main() {
     let game: Vec<String> = env::args().collect();
     if let Some(game) = game.get(1) {
-        println!("{}", game);
+        println!("{game}");
         match play_game_from_file(game) {
             Ok(_) => {}
-            Err(e) => eprintln!("{}", e),
+            Err(e) => eprintln!("{e}"),
         }
     } else {
         eprint!("{}", GameError::NoPgnFile);

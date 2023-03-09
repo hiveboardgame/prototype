@@ -31,7 +31,7 @@ impl fmt::Display for Board {
             for x in min_x..=max_x {
                 match self.board.get(&Position(x, y)) {
                     Some(piece) => match piece.last() {
-                        Some(last) => write!(s, "{} ", last),
+                        Some(last) => write!(s, "{last} "),
                         None => unreachable!("Found a piece key but no value"),
                     },
                     None => write!(s, "    "),
@@ -39,7 +39,7 @@ impl fmt::Display for Board {
             }
             writeln!(s)?;
         }
-        write!(f, "{}", s)
+        write!(f, "{s}")
     }
 }
 
@@ -78,7 +78,7 @@ impl Board {
             .unwrap_or(&Position(0, 0))
             .1;
 
-        return ((min_x, min_y), (max_x, max_y));
+        ((min_x, min_y), (max_x, max_y))
     }
 
     pub fn game_result(&self) -> GameResult {
@@ -88,12 +88,12 @@ impl Board {
         let white = self
             .position_of_piece(&Piece::new(Bug::Queen, Color::Black, None))
             .map(|pos| self.neighbors(&pos).len() == 6);
-        return match (black, white) {
+        match (black, white) {
             (Some(true), Some(true)) => GameResult::Draw,
             (Some(true), Some(false)) => GameResult::Winner(Color::Black),
             (Some(false), Some(true)) => GameResult::Winner(Color::White),
             _ => GameResult::Unknown,
-        };
+        }
     }
 
     pub fn position_of_piece(&self, piece: &Piece) -> Option<Position> {
@@ -132,9 +132,9 @@ impl Board {
         }
         panic!(
             "Trying to move {} from {} to {} which should have been a legal move",
-            piece.to_string(),
-            current.to_string(),
-            target.to_string()
+            piece,
+            current,
+            target
         );
     }
 
@@ -326,7 +326,7 @@ impl Board {
         if turn == 7 && color == &Color::Black && !self.queen_played(&Color::Black) {
             return true;
         }
-        return false;
+        false
     }
 
     fn walk_board(
@@ -378,7 +378,7 @@ impl Board {
             .reserve(color, game_type)
             .iter()
             .fold(0, |acc, (_bug, count)| acc + count);
-        self.spawnable_positions(color).len() > 0 && reserve_bugs_count > 0
+        !self.spawnable_positions(color).is_empty() && reserve_bugs_count > 0
     }
 
     pub fn reserve(&self, color: &Color, game_type: GameType) -> HashMap<Bug, i8> {
@@ -405,7 +405,6 @@ impl Board {
         }
         all_neighbors
             .difference(&taken)
-            .into_iter()
             .cloned()
             .collect()
     }
@@ -424,7 +423,7 @@ impl Board {
     }
 
     pub fn insert(&mut self, position: &Position, piece: Piece) {
-        self.last_moved = Some((piece.clone(), position.clone()));
+        self.last_moved = Some((piece, *position));
         self.board
             .entry(*position)
             .and_modify(|v| v.push(piece))

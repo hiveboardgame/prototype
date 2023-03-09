@@ -50,7 +50,7 @@ impl History {
     fn parse_game_type(&mut self, line: &str) -> Result<(), GameError> {
         let game_type = Regex::new(r#"\[GameType "(Base([+MLP]{2,4})?)"\]"#)
             .expect("This regex should compile");
-        if let Some(caps) = game_type.captures(&line) {
+        if let Some(caps) = game_type.captures(line) {
             if let Some(mtch) = caps.get(1) {
                 self.game_type = mtch.as_str().parse()?;
             }
@@ -65,7 +65,7 @@ impl History {
 
     fn parse_turn(&mut self, tokens: &Vec<&str>) -> Result<(), GameError> {
         let turn = Regex::new(r"\d+").expect("This regex should compile");
-        if let Some(token) = tokens.get(0) {
+        if let Some(token) = tokens.first() {
             if turn.is_match(token) {
                 if let Some(piece) = tokens.get(1) {
                     if let Some(position) = tokens.get(2) {
@@ -81,7 +81,7 @@ impl History {
                             any => {
                                 return Err(GameError::ParsingError {
                                     found: any.to_owned(),
-                                    typ: format!("move, in self on turn {}", token),
+                                    typ: format!("move, in self on turn {token}"),
                                 })
                             }
                         }
@@ -100,13 +100,13 @@ impl History {
         match File::open(file_path) {
             Ok(file) => {
                 for line in io::BufReader::new(file).lines().flatten() {
-                    if line.len() == 0 {
+                    if line.is_empty() {
                         continue;
                     }
                     let tokens = line.split_whitespace().collect::<Vec<&str>>();
                     if result.is_match(&line) {
                         if let Some(game_result) = tokens.get(1) {
-                            history.parse_game_result(&game_result);
+                            history.parse_game_result(game_result);
                         }
                     }
                     if game_type_line.is_match(&line) {
@@ -119,7 +119,7 @@ impl History {
                 }
             }
             Err(e) => {
-                println!("Couldn't open file because: {}", e);
+                println!("Couldn't open file because: {e}");
             }
         }
         Ok(history)
@@ -130,7 +130,7 @@ impl History {
             .append(true)
             .open(file_name)
             .expect("game.txt cannot be written to");
-        if let Err(e) = write!(file, "{}. {}\n", turn, board_move) {
+        if let Err(e) = writeln!(file, "{turn}. {board_move}") {
             //TODO not sure what to do with this one
             panic!("{}", e);
         }
@@ -139,7 +139,7 @@ impl History {
     pub fn write_file(&self, file_name: String) {
         // TODO rewrite this to not open the file for every single line
         for (i, (piece, pos)) in self.moves.iter().enumerate() {
-            let mov = format!("{} {}", piece, pos);
+            let mov = format!("{piece} {pos}");
             self.write_move(&file_name, i, mov);
         }
     }
