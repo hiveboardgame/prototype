@@ -1,21 +1,48 @@
-use actix_web::error::{Error, ErrorBadRequest, ErrorInternalServerError, ErrorUnauthorized};
 use actix_web::FromRequest;
-use alcoholic_jwt::{token_kid, validate, Validation, JWKS};
+use alcoholic_jwt::{token_kid, validate, Validation, JWKS, ValidationError};
 use reqwest;
 use std::future::Future;
 use std::pin::Pin;
+use thiserror::Error;
 
 const FIREBASE_JWT_AUTHORITY: &str =
     "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com";
 
 use crate::config::ServerConfig;
+use crate::server_error::ServerError;
+
+#[derive(Error, Debug)]
+pub enum AuthenticationError {
+    #[error("user did not provide an X-Authorization header")]
+    MissingToken,
+    #[error("user with not authorized for resource")]
+    Forbidden,
+    #[error("JWT in X-Authorization header was malformed: {0}")]
+    MalformedJWT(String),
+    #[error("JWT in X-Authorization was invalid: {0}")]
+    InvalidJWT(#[from] ValidationError),
+    #[error("JWT is missing valid subject string")]
+    MissingSubject,
+    #[error("internal error: {0}")]
+    InternalError(String),
+}
 
 pub struct AuthenticatedUser {
     pub uid: String,
 }
 
+impl AuthenticatedUser {
+    pub fn authorize(&self, expected_uid: &str) -> Result<(), AuthenticationError> {
+        if self.uid == expected_uid {
+            Ok(())
+        } else {
+            Err(AuthenticationError::Forbidden)
+        }
+    }
+}
+
 impl FromRequest for AuthenticatedUser {
-    type Error = Error;
+    type Error = ServerError;
     type Future = Pin<Box<dyn Future<Output = Result<Self, Self::Error>>>>;
 
     fn from_request(
@@ -30,10 +57,10 @@ impl FromRequest for AuthenticatedUser {
             let auth_token = req_clone
                 .headers()
                 .get("X-Authentication")
-                .ok_or(ErrorUnauthorized("Must include X-Authentication header"))?
+                .ok_or(AuthenticationError::MissingToken)?
                 .to_str()
                 .map_err(|err| {
-                    ErrorBadRequest(format!("couldn't read X-Authentication header: {}", err))
+                    AuthenticationError::MalformedJWT(format!("couldn't read X-Authentication header: {}", err))
                 })?;
             let uid = validate_and_fetch_uid(auth_token, config).await?;
             Ok(AuthenticatedUser { uid })
@@ -42,31 +69,23 @@ impl FromRequest for AuthenticatedUser {
 }
 
 // TODO: cache google's cert more intelligently
-async fn validate_and_fetch_uid(token: &str, config: &ServerConfig) -> Result<String, Error> {
+async fn validate_and_fetch_uid(token: &str, config: &ServerConfig) -> Result<String, AuthenticationError> {
     let jwks: JWKS = fetch_jwks()
         .await
-        .map_err(|err| ErrorInternalServerError(format!("failed to fetch JWKS: {}", err)))?;
+        .map_err(|err| AuthenticationError::InternalError(format!("failed to fetch JWKS: {}", err)))?;
     let validations = vec![
         Validation::Issuer(config.firebase_jwt_issuer.to_string()),
         Validation::SubjectPresent,
     ];
-    let kid = token_kid(token)
-        .map_err(|err| ErrorBadRequest(format!("failed to decode KID: {}", err)))?
-        .ok_or(ErrorBadRequest("no KID in JWT"))?;
+    let kid = token_kid(&token)?
+        .ok_or(AuthenticationError::MalformedJWT("no KID in JWT".to_string()))?;
     let jwk = jwks.find(&kid).expect("Specified key not found in set");
-    validate(token, jwk, validations)
-        .map_err(|err| ErrorUnauthorized(format!("invalid token: {}", err)))
-        .and_then(|jwt| {
-            jwt.claims
-                .get("sub")
-                .ok_or(ErrorBadRequest("couldn't find subject in JWT claims"))
-                .and_then(|subject| {
-                    subject
-                        .as_str()
-                        .ok_or(ErrorBadRequest("JWT subject must be a string"))
-                })
-                .map(|token| token.to_owned())
-        })
+    let jwt = validate(token, jwk, validations)?;
+    let subject = jwt.claims.get("sub")
+        .ok_or(AuthenticationError::MissingSubject)?
+        .as_str()
+        .ok_or(AuthenticationError::MissingSubject)?;
+    Ok(subject.to_string())
 }
 
 async fn fetch_jwks() -> Result<JWKS, Box<dyn std::error::Error>> {

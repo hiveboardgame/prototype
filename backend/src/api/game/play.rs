@@ -30,7 +30,7 @@ pub async fn game_play(
         GameRequest::Turn((piece, pos)) => play_turn(state, piece, pos),
         GameRequest::GameControl(any) => {
             println!("{} to be implemented", any);
-            return Err(ServerError::Unknown);
+            return Err(ServerError::Unimplemented);
         }
     }?;
     Ok(web::Json(resp))
