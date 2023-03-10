@@ -2,7 +2,6 @@ use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::fmt;
 use std::fmt::Write;
-
 use crate::bug::Bug;
 use crate::color::Color;
 use crate::direction::Direction;
