@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::{
     fs::{File, OpenOptions},
     io::{self, prelude::*, BufRead},
+    fmt,
 };
 
 use crate::color::Color;
@@ -17,6 +18,16 @@ pub struct History {
     pub game_type: GameType,
 }
 
+impl fmt::Display for History {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut his = String::new();
+        for (i, (piece, pos)) in self.moves.iter().enumerate() {
+            his += &format!("{}. {piece} {pos}", i + 1);
+        }
+        write!(f, "{his}")
+    }
+}
+
 impl History {
     pub fn new() -> Self {
         History {
@@ -26,16 +37,8 @@ impl History {
         }
     }
 
-    pub fn to_string(&self) -> String {
-        let mut his = String::new();
-        for (i, (piece, pos)) in self.moves.iter().enumerate() {
-            his += &format!("{}. {} {}", i + 1, piece, pos);
-        }
-        his
-    }
-
-    pub fn record_move(&mut self, piece: String, pos: String) {
-        self.moves.push((piece, pos));
+    pub fn record_move(&mut self, piece: &str, pos: &str) {
+        self.moves.push((piece.to_string(), pos.to_string()));
     }
 
     fn parse_game_result(&mut self, str: &str) {

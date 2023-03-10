@@ -31,7 +31,13 @@ impl fmt::Display for Board {
             for x in min_x..=max_x {
                 match self.board.get(&Position(x, y)) {
                     Some(piece) => match piece.last() {
-                        Some(last) => write!(s, "{last} "),
+                        Some(last) => {
+                            if last.to_string().len() < 3 {
+                                write!(s, "{last}  ")
+                            } else {
+                                write!(s, "{last} ")
+                            }
+                        }
                         None => unreachable!("Found a piece key but no value"),
                     },
                     None => write!(s, "    "),
@@ -265,12 +271,11 @@ impl Board {
 
     pub fn moves(&self, color: &Color) -> HashMap<(Piece, Position), Vec<Position>> {
         let mut moves: HashMap<(Piece, Position), Vec<Position>> = HashMap::new();
-        // for all pieces on the board
+        if !self.queen_played(color) {
+            return moves;
+        }
         for pos in self.board.keys() {
-            // because the only unkown input here is it is okay to use top_piece_trusted here
-            // color, everthing else in known to be correct,
             if let Some(piece) = self.top_piece(pos) {
-                // that are the correct color
                 if piece.is_color(color) {
                     // let's make sure pieces that were just moved cannot be moved again
                     if let Some(last_moved) = self.last_moved {
@@ -279,7 +284,6 @@ impl Board {
                             continue;
                         }
                     }
-                    // get all the moves
                     for (start_pos, target_positions) in Bug::available_moves(pos, self) {
                         if let Some(piece) = self.top_piece(&start_pos) {
                             moves

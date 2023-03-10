@@ -2,8 +2,6 @@
 */target/.*
 */target/
 backend/dist
-backend/dist
-backend/dist
 node_modules
 cert.pem
 key.pem

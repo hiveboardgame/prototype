@@ -3,19 +3,18 @@ mod config;
 mod db;
 mod extractors;
 mod model;
+mod server_error;
 mod static_files;
 mod websockets;
-mod server_error;
+
+use crate::api::user;
+use crate::config::ServerConfig;
+use crate::db::util::{get_pool, DbPool};
 
 use actix_web::web;
 use actix_web::{middleware, App, Error, HttpRequest, HttpResponse, HttpServer};
 use actix_web_actors::ws;
 use websockets::echo::Echo;
-
-use crate::api::board;
-use crate::api::user;
-use crate::config::ServerConfig;
-use crate::db::util::{get_pool, DbPool};
 
 /// WebSocket handshake and start `Echo` actor.
 async fn echo_ws(req: HttpRequest, stream: web::Payload) -> Result<HttpResponse, Error> {
@@ -40,14 +39,19 @@ async fn main() -> std::io::Result<()> {
             .wrap(middleware::Compress::default())
             .wrap(middleware::Logger::default())
             .service(web::resource("/ws/").route(web::get().to(echo_ws)))
+            .service(web::scope("/api").route(
+                "/game/{id:\\d+}/play",
+                web::post().to(api::game::play::game_play),
+            ))
             .service(
                 web::scope("/api")
-                    .service(board::record_move)
                     .service(user::get_user)
                     .service(user::create_user)
                     .service(user::create_guest_user),
             )
-            .service(static_files::static_file_service(config.static_files_path.clone()))
+            .service(static_files::static_file_service(
+                config.static_files_path.clone(),
+            ))
     })
     .workers(4)
     .bind(("0.0.0.0", 8080))?
