@@ -1,6 +1,6 @@
 use crate::game_error::GameError;
-
 use serde::{Deserialize, Serialize};
+use std::fmt;
 use std::str::FromStr;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Copy, Default)]
@@ -14,6 +14,22 @@ pub enum GameType {
     LP,
     MP,
     MLP,
+}
+
+impl fmt::Display for GameType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let game_type = match self {
+            GameType::Base => "Base",
+            GameType::M => "Base+M",
+            GameType::L => "Base+L",
+            GameType::P => "Base+P",
+            GameType::ML => "Base+ML",
+            GameType::MP => "Base+MP",
+            GameType::LP => "Base+LP",
+            GameType::MLP => "Base+MLP",
+        };
+        write!(f, "{}", game_type)
+    }
 }
 
 impl FromStr for GameType {
@@ -34,21 +50,5 @@ impl FromStr for GameType {
                 typ: "game type string".to_string(),
             }),
         }
-    }
-}
-
-impl GameType {
-    pub fn to_string(&self) -> String {
-        match self {
-            GameType::Base => "Base",
-            GameType::M => "Base+M",
-            GameType::L => "Base+L",
-            GameType::P => "Base+P",
-            GameType::ML => "Base+ML",
-            GameType::MP => "Base+MP",
-            GameType::LP => "Base+LP",
-            GameType::MLP => "Base+MLP",
-        }
-        .to_string()
     }
 }

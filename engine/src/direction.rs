@@ -48,6 +48,7 @@ impl Direction {
     }
 
     pub fn to_history_string(&self, piece: String) -> String {
+        let piece = piece.replace(' ', "");
         match self {
             Direction::NE => piece + "/",
             Direction::E => piece + "-",

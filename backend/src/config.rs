@@ -1,6 +1,6 @@
+use dotenvy::dotenv;
 use std::path::PathBuf;
 use std::{env, env::VarError};
-use dotenvy::dotenv;
 
 #[derive(Clone, Debug)]
 pub struct ServerConfig {

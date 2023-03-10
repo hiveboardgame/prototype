@@ -10,7 +10,7 @@ use crate::model::user::User;
 pub async fn get_user(uid: web::Path<String>, pool: web::Data<DbPool>) -> impl Responder {
     User::find_by_uid(pool.get_ref(), uid.as_ref())
         .await
-        .map(|user| web::Json(user))
+        .map(web::Json)
         .map_err(|err| ErrorNotFound(format!("couldn't find user: {}", err)))
 }
 

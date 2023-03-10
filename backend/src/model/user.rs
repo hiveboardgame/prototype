@@ -16,16 +16,25 @@ pub enum UserCreationError {
 
 fn validate_uid(uid: &str) -> Result<(), UserCreationError> {
     if !uid.chars().all(|c| c.is_ascii_alphanumeric()) {
-        return Err(UserCreationError::InvalidUid(format!("invalid uid: {:?}", uid)));
+        return Err(UserCreationError::InvalidUid(format!(
+            "invalid uid: {uid:?}"
+        )));
     }
     Ok(())
 }
 
 fn validate_username(username: &str) -> Result<(), UserCreationError> {
-    if !username.chars().all(|c| c.is_ascii_alphanumeric() || VALID_USERNAME_CHARS.contains(c)) {
-        return Err(UserCreationError::InvalidUsername(format!("invalid username characters: {:?}", username)));
+    if !username
+        .chars()
+        .all(|c| c.is_ascii_alphanumeric() || VALID_USERNAME_CHARS.contains(c))
+    {
+        return Err(UserCreationError::InvalidUsername(format!(
+            "invalid username characters: {username:?}"
+        )));
     } else if username.len() > MAX_USERNAME_LENGTH {
-        return Err(UserCreationError::InvalidUsername(format!("username must be <= {} chars", MAX_USERNAME_LENGTH)));
+        return Err(UserCreationError::InvalidUsername(format!(
+            "username must be <= {MAX_USERNAME_LENGTH} chars"
+        )));
     }
     Ok(())
 }
@@ -33,8 +42,8 @@ fn validate_username(username: &str) -> Result<(), UserCreationError> {
 #[derive(Queryable, Identifiable, Insertable, Serialize, Deserialize, Debug)]
 #[diesel(primary_key(uid))]
 pub struct User {
-    uid: String,
-    username: String,
+    pub uid: String,
+    pub username: String,
     pub is_guest: bool,
 }
 
