@@ -4,37 +4,36 @@ use crate::db::util::{get_conn, DbPool};
 use diesel::{result::Error, Identifiable, Insertable, QueryDsl, Queryable};
 use diesel_async::RunQueryDsl;
 use serde::{Deserialize, Serialize};
+use crate::server_error::ServerError;
 
 const MAX_USERNAME_LENGTH: usize = 40;
 const VALID_USERNAME_CHARS: &str = "-_";
 
-#[derive(Debug)]
-pub enum UserCreationError {
-    InvalidUid(String),
-    InvalidUsername(String),
+fn valid_uid_char(c: char) -> bool {
+    c.is_ascii_alphanumeric()
 }
 
-fn validate_uid(uid: &str) -> Result<(), UserCreationError> {
-    if !uid.chars().all(|c| c.is_ascii_alphanumeric()) {
-        return Err(UserCreationError::InvalidUid(format!(
-            "invalid uid: {uid:?}"
-        )));
+fn validate_uid(uid: &str) -> Result<(), ServerError> {
+    if !uid.chars().all(valid_uid_char) {
+        return Err(ServerError::UserInputError {
+            field: "uid".into(),
+            reason: "invalid characters".into(),
+        });
     }
     Ok(())
 }
 
-fn validate_username(username: &str) -> Result<(), UserCreationError> {
-    if !username
-        .chars()
-        .all(|c| c.is_ascii_alphanumeric() || VALID_USERNAME_CHARS.contains(c))
-    {
-        return Err(UserCreationError::InvalidUsername(format!(
-            "invalid username characters: {username:?}"
-        )));
+fn valid_username_char(c: char) -> bool {
+    c.is_ascii_alphanumeric() || VALID_USERNAME_CHARS.contains(c)
+}
+
+fn validate_username(username: &str) -> Result<(), ServerError> {
+    if !username.chars().all(valid_username_char) {
+        let reason = format!("invalid username characters: {:?}", username);
+        return Err(ServerError::UserInputError { field: "username".into(), reason });
     } else if username.len() > MAX_USERNAME_LENGTH {
-        return Err(UserCreationError::InvalidUsername(format!(
-            "username must be <= {MAX_USERNAME_LENGTH} chars"
-        )));
+        let reason = format!("username must be <= {} chars", MAX_USERNAME_LENGTH);
+        return Err(ServerError::UserInputError { field: "username".into(), reason });
     }
     Ok(())
 }
@@ -42,13 +41,13 @@ fn validate_username(username: &str) -> Result<(), UserCreationError> {
 #[derive(Queryable, Identifiable, Insertable, Serialize, Deserialize, Debug)]
 #[diesel(primary_key(uid))]
 pub struct User {
-    pub uid: String,
-    pub username: String,
+    uid: String,
+    username: String,
     pub is_guest: bool,
 }
 
 impl User {
-    pub fn new(uid: &str, username: &str, is_guest: bool) -> Result<User, UserCreationError> {
+    pub fn new(uid: &str, username: &str, is_guest: bool) -> Result<User, ServerError> {
         validate_uid(uid)?;
         validate_username(username)?;
         Ok(User {
