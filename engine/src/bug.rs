@@ -131,7 +131,7 @@ impl Bug {
                 bugs.insert(Bug::Pillbug, 1);
             }
         }
-        return bugs;
+        bugs
     }
 
     pub fn available_moves(position: &Position, board: &Board) -> HashMap<Position, Vec<Position>> {
@@ -352,7 +352,7 @@ impl Bug {
     }
 
     fn spider_moves(position: &Position, board: &Board) -> Vec<Position> {
-        let mut moves = vec![vec![position.clone()]];
+        let mut moves = vec![vec![*position]];
         let mut board = board.clone();
         for i in 0..3 {
             moves = moves
@@ -362,7 +362,7 @@ impl Bug {
                         .iter()
                         .map(|p| {
                             let mut pos = positions.clone();
-                            pos.push(p.clone());
+                            pos.push(*p);
                             pos
                         })
                         .collect::<Vec<Vec<Position>>>()
@@ -381,11 +381,11 @@ impl Bug {
         });
         let mut positions = moves
             .iter()
-            .map(|positions| positions.last().expect("Could not get last piece").clone())
+            .map(|positions| *positions.last().expect("Could not get last piece"))
             .collect::<Vec<Position>>();
         positions.sort_unstable();
         positions.dedup();
-        return positions;
+        positions
     }
 }
 

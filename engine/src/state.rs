@@ -10,18 +10,13 @@ use crate::position::Position;
 use crate::{board::Board, game_type::GameType};
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Default)]
 pub enum LastTurn {
     Pass,
     Shutout,
     Move(Position, Position),
+    #[default]
     None,
-}
-
-impl Default for LastTurn {
-    fn default() -> Self {
-        LastTurn::None
-    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq)]
@@ -115,12 +110,12 @@ impl State {
     fn update_history(&mut self, piece: &Piece, target_position: &Position) {
         // if there's no piece on the board yet use "."
         let mut pos = ".".to_string();
-        if let Some(top_piece) = self.board.top_piece(&target_position) {
+        if let Some(top_piece) = self.board.top_piece(target_position) {
             pos = top_piece.to_string();
         } else {
             // no piece at the current position, so it's a spawn or a move
             if let Some((neighbor_piece, neighbor_pos)) = self.board.get_neighbor(target_position) {
-                let dir = neighbor_pos.direction(&target_position);
+                let dir = neighbor_pos.direction(target_position);
                 pos = dir.to_history_string(neighbor_piece.to_string());
             }
         }
@@ -245,7 +240,7 @@ impl State {
                 self.board.insert(&target_position, piece);
                 self.last_turn = LastTurn::Move(target_position, target_position);
             } else {
-                return Err(GameError::InvalidMove { 
+                return Err(GameError::InvalidMove {
                     piece: piece.to_string(),
                     from: "Reserve".to_string(),
                     to: target_position.to_string(),

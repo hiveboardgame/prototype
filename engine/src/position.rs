@@ -31,10 +31,9 @@ impl Position {
                 (-1, 0) => Direction::W,
                 // This panic is okay, because if it ever gets called with an invalid move, it
                 // implies there is a problem with the engine itself, not with user input
-                (x, y) => panic!(
-                    "(even) Direction of movement unknown, from: {} to: {} ({x},{y})",
-                    self, to
-                ),
+                (x, y) => {
+                    panic!("(even) Direction of movement unknown, from: {self} to: {to} ({x},{y})")
+                }
             };
         }
         // odd rows
@@ -47,10 +46,9 @@ impl Position {
             (-1, 0) => Direction::W,
             // This panic is okay, because if it ever gets called with an invalid move, it
             // implies there is a problem with the engine itself, not with user input
-            (x, y) => panic!(
-                "(odd) Direction of movement unknown, from: {} to: {} ({x},{y})",
-                self, to
-            ),
+            (x, y) => {
+                panic!("(odd) Direction of movement unknown, from: {self} to: {to} ({x},{y})")
+            }
         }
     }
 
@@ -90,7 +88,7 @@ impl Position {
         let re = Regex::new(r"([-/\\]?)([wb][ABGMLPSQ]\d?)([-/\\]?)")
             .expect("This regex should compile");
         if let Some(cap) = re.captures(s) {
-            let piece: Piece = (&cap[2]).parse()?;
+            let piece: Piece = cap[2].parse()?;
             if let Some(mut position) = board.position(&piece) {
                 if !cap[1].is_empty() {
                     match &cap[1] {
@@ -131,10 +129,10 @@ impl Position {
                 return Ok(position);
             }
         }
-        return Err(GameError::ParsingError {
+        Err(GameError::ParsingError {
             found: s.to_string(),
             typ: "position".to_string(),
-        });
+        })
     }
 }
 
