@@ -1,5 +1,5 @@
 use actix_web::FromRequest;
-use alcoholic_jwt::{token_kid, validate, Validation, JWKS, ValidationError};
+use alcoholic_jwt::{token_kid, validate, Validation, ValidationError, JWKS};
 use reqwest;
 use std::future::Future;
 use std::pin::Pin;
@@ -60,7 +60,10 @@ impl FromRequest for AuthenticatedUser {
                 .ok_or(AuthenticationError::MissingToken)?
                 .to_str()
                 .map_err(|err| {
-                    AuthenticationError::MalformedJWT(format!("couldn't read X-Authentication header: {}", err))
+                    AuthenticationError::MalformedJWT(format!(
+                        "couldn't read X-Authentication header: {}",
+                        err
+                    ))
                 })?;
             let uid = validate_and_fetch_uid(auth_token, config).await?;
             Ok(AuthenticatedUser { uid })
@@ -69,19 +72,25 @@ impl FromRequest for AuthenticatedUser {
 }
 
 // TODO: cache google's cert more intelligently
-async fn validate_and_fetch_uid(token: &str, config: &ServerConfig) -> Result<String, AuthenticationError> {
-    let jwks: JWKS = fetch_jwks()
-        .await
-        .map_err(|err| AuthenticationError::InternalError(format!("failed to fetch JWKS: {}", err)))?;
+async fn validate_and_fetch_uid(
+    token: &str,
+    config: &ServerConfig,
+) -> Result<String, AuthenticationError> {
+    let jwks: JWKS = fetch_jwks().await.map_err(|err| {
+        AuthenticationError::InternalError(format!("failed to fetch JWKS: {}", err))
+    })?;
     let validations = vec![
         Validation::Issuer(config.firebase_jwt_issuer.to_string()),
         Validation::SubjectPresent,
     ];
-    let kid = token_kid(&token)?
-        .ok_or(AuthenticationError::MalformedJWT("no KID in JWT".to_string()))?;
+    let kid = token_kid(&token)?.ok_or(AuthenticationError::MalformedJWT(
+        "no KID in JWT".to_string(),
+    ))?;
     let jwk = jwks.find(&kid).expect("Specified key not found in set");
     let jwt = validate(token, jwk, validations)?;
-    let subject = jwt.claims.get("sub")
+    let subject = jwt
+        .claims
+        .get("sub")
         .ok_or(AuthenticationError::MissingSubject)?
         .as_str()
         .ok_or(AuthenticationError::MissingSubject)?;

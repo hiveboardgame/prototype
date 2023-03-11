@@ -1,8 +1,8 @@
+use crate::extractors::auth::AuthenticationError;
 use actix_web::{error::ResponseError, http::StatusCode, HttpResponse};
-use diesel::result::{Error as DieselError};
+use diesel::result::Error as DieselError;
 use hive_lib::game_error::GameError;
 use serde::Serialize;
-use crate::{extractors::auth::AuthenticationError};
 use thiserror::Error;
 
 #[derive(Serialize)]
@@ -16,10 +16,7 @@ pub enum ServerError {
     #[error("Authentication error: {0}")]
     AuthenticationError(#[from] AuthenticationError),
     #[error("invalid field {field}: {reason}")]
-    UserInputError {
-        field: String,
-        reason: String,
-    },
+    UserInputError { field: String, reason: String },
     #[error("Hive game error: {0}")]
     GameError(#[from] GameError),
     #[error("Database error: {0}")]
@@ -35,11 +32,16 @@ impl ResponseError for ServerError {
             Self::AuthenticationError(err) => match err {
                 AuthenticationError::MissingToken => StatusCode::UNAUTHORIZED,
                 AuthenticationError::Forbidden => StatusCode::FORBIDDEN,
-                AuthenticationError::MalformedJWT(_) | AuthenticationError::MissingSubject  => StatusCode::BAD_REQUEST,
+                AuthenticationError::MalformedJWT(_) | AuthenticationError::MissingSubject => {
+                    StatusCode::BAD_REQUEST
+                }
                 AuthenticationError::InternalError(_) => StatusCode::INTERNAL_SERVER_ERROR,
                 AuthenticationError::InvalidJWT(_) => StatusCode::UNAUTHORIZED,
             },
-            Self::UserInputError { field: _, reason: _ } => StatusCode::BAD_REQUEST,
+            Self::UserInputError {
+                field: _,
+                reason: _,
+            } => StatusCode::BAD_REQUEST,
             Self::DatabaseError(err) => match err {
                 DieselError::NotFound => StatusCode::NOT_FOUND,
                 _ => StatusCode::INTERNAL_SERVER_ERROR,
