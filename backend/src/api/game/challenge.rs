@@ -16,7 +16,7 @@ pub struct NewChallengeRequest {
     pub ranked: bool,
 
     // Whether the game follows the "tournament" rules, i.e. the queen
-    // cannot be played first. Always true for now
+    // cannot be played first.
     pub tournament_queen_rule: bool,
 
     pub game_type: GameType,

@@ -43,7 +43,7 @@ impl GameChallenge {
             game_type: game.game_type.to_string(),
             ranked: game.ranked,
             public: game.public,
-            tournament_queen_rule: true, // This is always true for now
+            tournament_queen_rule: game.tournament_queen_rule,
             created_at: Utc::now(),
         };
         new_challenge
