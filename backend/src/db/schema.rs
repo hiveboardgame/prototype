@@ -2,7 +2,7 @@
 
 diesel::table! {
     game_challenges (id) {
-        id -> Int4,
+        id -> Uuid,
         challenger_uid -> Text,
         game_type -> Text,
         ranked -> Bool,
@@ -22,7 +22,4 @@ diesel::table! {
 
 diesel::joinable!(game_challenges -> users (challenger_uid));
 
-diesel::allow_tables_to_appear_in_same_query!(
-    game_challenges,
-    users,
-);
+diesel::allow_tables_to_appear_in_same_query!(game_challenges, users,);
