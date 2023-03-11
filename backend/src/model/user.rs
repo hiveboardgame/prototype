@@ -1,10 +1,10 @@
 use crate::db::schema::users;
 use crate::db::schema::users::dsl::users as users_table;
 use crate::db::util::{get_conn, DbPool};
+use crate::server_error::ServerError;
 use diesel::{result::Error, Identifiable, Insertable, QueryDsl, Queryable};
 use diesel_async::RunQueryDsl;
 use serde::{Deserialize, Serialize};
-use crate::server_error::ServerError;
 
 const MAX_USERNAME_LENGTH: usize = 40;
 const VALID_USERNAME_CHARS: &str = "-_";
@@ -30,10 +30,16 @@ fn valid_username_char(c: char) -> bool {
 fn validate_username(username: &str) -> Result<(), ServerError> {
     if !username.chars().all(valid_username_char) {
         let reason = format!("invalid username characters: {:?}", username);
-        return Err(ServerError::UserInputError { field: "username".into(), reason });
+        return Err(ServerError::UserInputError {
+            field: "username".into(),
+            reason,
+        });
     } else if username.len() > MAX_USERNAME_LENGTH {
         let reason = format!("username must be <= {} chars", MAX_USERNAME_LENGTH);
-        return Err(ServerError::UserInputError { field: "username".into(), reason });
+        return Err(ServerError::UserInputError {
+            field: "username".into(),
+            reason,
+        });
     }
     Ok(())
 }
