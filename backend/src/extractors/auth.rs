@@ -83,7 +83,7 @@ async fn validate_and_fetch_uid(
         Validation::Issuer(config.firebase_jwt_issuer.to_string()),
         Validation::SubjectPresent,
     ];
-    let kid = token_kid(&token)?.ok_or(AuthenticationError::MalformedJWT(
+    let kid = token_kid(token)?.ok_or(AuthenticationError::MalformedJWT(
         "no KID in JWT".to_string(),
     ))?;
     let jwk = jwks.find(&kid).expect("Specified key not found in set");
