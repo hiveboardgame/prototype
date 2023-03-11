@@ -1,4 +1,3 @@
--- Your SQL goes here
 CREATE TABLE users (
     uid text primary key not null,
     username varchar(40) not null unique,
