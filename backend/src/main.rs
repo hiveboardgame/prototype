@@ -14,6 +14,7 @@ use crate::db::util::{get_pool, DbPool};
 use actix_web::web;
 use actix_web::{middleware, App, Error, HttpRequest, HttpResponse, HttpServer};
 use actix_web_actors::ws;
+use api::game::challenge;
 use websockets::echo::Echo;
 
 /// WebSocket handshake and start `Echo` actor.
@@ -45,6 +46,9 @@ async fn main() -> std::io::Result<()> {
             ))
             .service(
                 web::scope("/api")
+                    .service(challenge::create_game_challenge)
+                    .service(challenge::accept_game_challenge)
+                    .service(challenge::delete_game_challenge)
                     .service(user::get_user)
                     .service(user::create_user)
                     .service(user::create_guest_user),
