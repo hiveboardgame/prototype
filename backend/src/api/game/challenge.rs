@@ -33,7 +33,7 @@ pub async fn create_game_challenge(
     auth_user: AuthenticatedUser,
     pool: web::Data<DbPool>,
 ) -> Result<HttpResponse, ServerError> {
-    let challenge = GameChallenge::create(&auth_user.uid, &game, &pool).await?;
+    let challenge = GameChallenge::create(&auth_user, &game, &pool).await?;
     let challenge_url = format!("/game/challenge/{}", challenge.id);
     Ok(HttpResponse::Created().json(NewChallengeResponse { challenge_url }))
 }

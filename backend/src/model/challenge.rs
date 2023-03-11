@@ -1,6 +1,7 @@
 use crate::api::game::challenge::NewChallengeRequest;
 use crate::db::schema::{game_challenges, users};
 use crate::db::util::{get_conn, DbPool};
+use crate::extractors::auth::AuthenticatedUser;
 use crate::model::user::User;
 use chrono::prelude::*;
 use diesel::prelude::*;
@@ -33,13 +34,13 @@ pub struct GameChallenge {
 
 impl GameChallenge {
     pub async fn create(
-        challenger_uid: &str,
+        challenger: &AuthenticatedUser,
         game: &NewChallengeRequest,
         pool: &DbPool,
     ) -> Result<GameChallenge, Error> {
         let conn = &mut get_conn(pool).await?;
         let new_challenge = NewGameChallenge {
-            challenger_uid: challenger_uid.to_string(),
+            challenger_uid: challenger.uid.to_string(),
             game_type: game.game_type.to_string(),
             ranked: game.ranked,
             public: game.public,
