@@ -11,12 +11,12 @@ use crate::model::user::User;
 #[serde_as]
 #[serde_with::skip_serializing_none]
 #[derive(Serialize)]
-pub struct GameResponse {
+pub struct GameStateResponse {
     game_id: u64,
     turn: usize,
     game_status: GameStatus,
     game_type: GameType,
-    tournament: bool,
+    tournament_queen_rule: bool,
     white_player: User,
     black_player: User,
     #[serde_as(as = "Vec<(_, _)>")]
@@ -26,7 +26,7 @@ pub struct GameResponse {
     history: Vec<(String, String)>,
 }
 
-impl GameResponse {
+impl GameStateResponse {
     // TODO we don't need to pass everything in once we have a couple of good helpers :)
     pub fn new_from_state(state: &State) -> Self {
         let white_player = User::new("1", "white", false).unwrap();
@@ -35,11 +35,11 @@ impl GameResponse {
             game_id: state.game_id,
             game_status: state.game_status.clone(),
             game_type: state.game_type,
-            tournament: state.tournament,
+            tournament_queen_rule: state.tournament,
             turn: state.turn,
             white_player,
             black_player,
-            moves: GameResponse::moves_as_string(state.board.moves(&state.turn_color)),
+            moves: GameActionResponse::moves_as_string(state.board.moves(&state.turn_color)),
             spawns: state.board.spawnable_positions(&state.turn_color),
             reserve: state.board.reserve(&state.turn_color, state.game_type),
             history: state.history.moves.clone(),

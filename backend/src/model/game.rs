@@ -2,45 +2,65 @@ use crate::db::schema::games;
 use crate::db::schema::games::dsl::games as games_table;
 use crate::db::util::{get_conn, DbPool};
 use crate::server_error::ServerError;
-use diesel::{result::Error, Identifiable, Insertable, QueryDsl, Queryable};
+use diesel::{prelude::*, result::Error, Identifiable, Insertable, QueryDsl, Queryable};
 use diesel_async::RunQueryDsl;
-use hive_lib::game_status::GameStatus;
 use serde::{Deserialize, Serialize};
+use crate::db::schema::games::dsl::*;
 
-#[derive(Insertable)]
+#[derive(Insertable, Debug)]
 #[diesel(table_name = games)]
-pub struct NewGame<'a> {
-    pub game_type: &'a str,
-    pub game_status: &'a str,
-    pub black: &'a str,
-    pub white: &'a str,
-    pub tournament_rules: bool,
+// TODO use our types
+pub struct NewGame {
+    pub black: String, // uid of user
+    pub game_status: String,
+    pub game_type: String,
+    pub history: String,
+    pub tournament_queen_rule: bool,
+    pub turn: i32,
+    pub white: String, // uid of user
 }
 
-#[derive(Queryable, Identifiable, Insertable, Serialize, Deserialize, Debug)]
+#[derive(Queryable, Identifiable, Serialize, Deserialize, Debug)]
 #[diesel(primary_key(id))]
+#[diesel(table_name = games)]
 pub struct Game {
     pub id: i32,
-    pub game_type: String,
-    pub game_status: String,
-    pub turn: i32,
-    pub history: Vec<String>,
-    pub white: String, // uid of user
     pub black: String, // uid of user
-    pub tournament_rules: bool,
+    pub game_status: String,
+    pub game_type: String,
+    pub history: String,
+    pub tournament_queen_rule: bool,
+    pub turn: i32,
+    pub white: String, // uid of user
 }
 
+//"move;move;move;"
+
 impl Game {
-    pub fn new() -> Result<Game, ServerError> {
-        Ok(Self {
-            id: 0,
-            game_type: "Base+MLP".to_string(),
-            game_status: "NotStarted".to_string(),
-            turn: 0,
-            history: Vec::new(),
-            black: String::new(),
-            white: String::new(),
-            tournament_rules: true,
-        })
+    pub async fn create(new_game: &NewGame, pool: &DbPool) -> Result<Game, Error> {
+        let conn = &mut get_conn(pool).await?;
+        new_game.insert_into(games::table).get_result(conn).await
+    }
+
+    pub async fn make_move(&self, board_move: String, pool: &DbPool) -> Result<(), Error> {
+        let conn = &mut get_conn(pool).await?;
+        let games = diesel::update(games::table.find(self.id))
+            .execute(conn)
+            set(history.eq(history.concat(vec![Some(board_move)])))
+            .await?;
+        Ok(())
+    }
+
+    pub async fn get(id: i32, pool: &DbPool) -> Result<Game, Error> {
+        let conn = &mut get_conn(pool).await?;
+        games::table.find(id).first(conn).await
+    }
+
+    pub async fn delete(&self, pool: &DbPool) -> Result<(), Error> {
+        let conn = &mut get_conn(pool).await?;
+        diesel::delete(games::table.find(self.id))
+            .execute(conn)
+            .await?;
+        Ok(())
     }
 }

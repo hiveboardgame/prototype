@@ -1,10 +1,10 @@
 CREATE TABLE games (
-  id SERIAL PRIMARY KEY,
-  game_type TEXT NOT NULL,
+  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  black_uid TEXT NOT NULL,
   game_status TEXT NOT NULL,
-  turn INT4 NOT NULL DEFAULT 0,
-  history TEXT[],
-  white TEXT NOT NULL,
-  black TEXT NOT NULL,
-  tournament_rules BOOLEAN NOT NULL DEFAULT TRUE
+  game_type TEXT NOT NULL,
+  history TEXT NOT NULL,
+  tournament_queen_rule BOOLEAN NOT NULL DEFAULT TRUE,
+  turn INTEGER NOT NULL DEFAULT 0,
+  white_uid TEXT NOT NULL
 );

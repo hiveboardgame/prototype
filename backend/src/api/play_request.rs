@@ -5,7 +5,7 @@ use serde_with::serde_as;
 
 #[serde_as]
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-pub enum GameRequest {
+pub enum PlayRequest {
     Turn((String, String)),
     GameControl(GameControl),
 }
