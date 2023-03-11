@@ -8,7 +8,7 @@ diesel::table! {
         ranked -> Bool,
         public -> Bool,
         tournament_queen_rule -> Bool,
-        expiration_time -> Timestamptz,
+        created_at -> Timestamptz,
     }
 }
 

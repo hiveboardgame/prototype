@@ -3,13 +3,10 @@ use crate::db::schema::{game_challenges, users};
 use crate::db::util::{get_conn, DbPool};
 use crate::model::user::User;
 use chrono::prelude::*;
-use chrono::Days;
 use diesel::prelude::*;
 use diesel::result::Error;
 use diesel_async::RunQueryDsl;
 use uuid::Uuid;
-
-static CHALLENGE_EXPIRATION_LENGTH_IN_DAYS: u64 = 1;
 
 #[derive(Insertable, Debug)]
 #[diesel(table_name = game_challenges)]
@@ -19,7 +16,7 @@ struct NewGameChallenge {
     ranked: bool,
     public: bool,
     tournament_queen_rule: bool,
-    expiration_time: DateTime<Utc>,
+    created_at: DateTime<Utc>,
 }
 
 #[derive(Identifiable, Queryable, Debug)]
@@ -31,12 +28,7 @@ pub struct GameChallenge {
     pub ranked: bool,
     pub public: bool,
     pub tournament_queen_rule: bool,
-    pub expiration_time: DateTime<Utc>, // TODO: periodically cleanup expired challanges
-}
-
-fn get_expiration_time() -> DateTime<Utc> {
-    let duration_until_expired = Days::new(CHALLENGE_EXPIRATION_LENGTH_IN_DAYS);
-    Utc::now() + duration_until_expired
+    pub created_at: DateTime<Utc>, // TODO: periodically cleanup expired challanges
 }
 
 impl GameChallenge {
@@ -52,7 +44,7 @@ impl GameChallenge {
             ranked: game.ranked,
             public: game.public,
             tournament_queen_rule: true, // This is always true for now
-            expiration_time: get_expiration_time(),
+            created_at: Utc::now(),
         };
         new_challenge
             .insert_into(game_challenges::table)
