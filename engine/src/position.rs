@@ -1,6 +1,7 @@
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::fmt;
+use lazy_static::lazy_static;
 
 use crate::{board::Board, direction::Direction, game_error::GameError, piece::Piece};
 
@@ -85,9 +86,11 @@ impl Position {
             return Ok(Position(0, 0));
         }
 
-        let re = Regex::new(r"([-/\\]?)([wb][ABGMLPSQ]\d?)([-/\\]?)")
-            .expect("This regex should compile");
-        if let Some(cap) = re.captures(s) {
+        lazy_static! {
+            static ref RE: Regex = Regex::new(r"([-/\\]?)([wb][ABGMLPSQ]\d?)([-/\\]?)")
+                .expect("This regex should compile");
+        }
+        if let Some(cap) = RE.captures(s) {
             let piece: Piece = cap[2].parse()?;
             if let Some(mut position) = board.position(&piece) {
                 if !cap[1].is_empty() {

@@ -2,12 +2,10 @@ use crate::{
     board::Board, direction::Direction, game_error::GameError, game_type::GameType,
     position::Position,
 };
+use fnv::FnvHashMap;
 use serde::{Deserialize, Serialize};
-use std::{
-    collections::{HashMap, HashSet},
-    fmt,
-    str::FromStr,
-};
+use std::{collections::HashSet, fmt, str::FromStr};
+type HashMap<K, V> = FnvHashMap<K, V>;
 
 #[derive(Hash, Eq, PartialEq, Clone, Copy, Serialize, Deserialize, Debug)]
 pub enum Bug {
@@ -95,13 +93,12 @@ impl Bug {
     }
 
     pub fn bugs_count(game_type: GameType) -> HashMap<Bug, i8> {
-        let mut bugs = HashMap::from([
-            (Bug::Ant, 3),
-            (Bug::Beetle, 2),
-            (Bug::Grasshopper, 3),
-            (Bug::Queen, 1),
-            (Bug::Spider, 2),
-        ]);
+        let mut bugs = HashMap::default();
+        bugs.insert(Bug::Ant, 3);
+        bugs.insert(Bug::Beetle, 2);
+        bugs.insert(Bug::Grasshopper, 3);
+        bugs.insert(Bug::Queen, 1);
+        bugs.insert(Bug::Spider, 2);
         match game_type {
             GameType::Base => {}
             GameType::M => {
@@ -135,7 +132,7 @@ impl Bug {
     }
 
     pub fn available_moves(position: &Position, board: &Board) -> HashMap<Position, Vec<Position>> {
-        let mut moves = HashMap::new();
+        let mut moves = HashMap::default();
         if !board.pinned(position) {
             let positions = match board.top_bug(position) {
                 Some(Bug::Ant) => Bug::ant_moves(position, board),
@@ -165,26 +162,23 @@ impl Bug {
             {
                 Bug::pillbug_throw(position, board)
             }
-            _ => HashMap::new(),
+            _ => HashMap::default(),
         }
     }
 
-    fn crawl(position: &Position, board: &Board) -> Vec<Position> {
-        let occupied = board.positions_taken_around(position);
-        occupied
-            .iter()
-            .flat_map(|pos| {
+    fn crawl<'board>(position: Position, board: &'board Board) -> impl Iterator<Item=Position>+'board {
+        board.positions_taken_around_iter(position)
+            .flat_map(move |pos| {
                 let mut positions = vec![];
-                let (pos1, pos2) = position.common_adjacent_positions(pos);
-                if !board.gated(1, position, &pos1) && !occupied.contains(&pos1) {
+                let (pos1, pos2) = position.common_adjacent_positions(&pos);
+                if !board.gated(1, &position, &pos1) && !board.occupied(pos1) {
                     positions.push(pos1);
                 }
-                if !board.gated(1, position, &pos2) && !occupied.contains(&pos2) {
+                if !board.gated(1, &position, &pos2) && !board.occupied(pos2) {
                     positions.push(pos2);
                 }
                 positions
             })
-            .collect()
     }
 
     fn climb(position: &Position, board: &Board) -> Vec<Position> {
@@ -220,7 +214,7 @@ impl Bug {
         if let Some(position) = unexplored.iter().next().cloned() {
             unexplored.remove(&position);
             found.insert(position);
-            for pos in Bug::crawl(&position, board).into_iter() {
+            for pos in Bug::crawl(position, board) {
                 if !found.contains(&pos) {
                     unexplored.insert(pos);
                 }
@@ -235,7 +229,7 @@ impl Bug {
             positions.push(pos);
         }
         if board.level(position) == 1 {
-            for pos in Bug::crawl(position, board).into_iter() {
+            for pos in Bug::crawl(*position, board) {
                 if !positions.contains(&pos) {
                     positions.push(pos);
                 }
@@ -324,11 +318,11 @@ impl Bug {
     }
 
     fn pillbug_moves(position: &Position, board: &Board) -> Vec<Position> {
-        Bug::crawl(position, board)
+        Bug::crawl(*position, board).collect()
     }
 
     fn pillbug_throw(position: &Position, board: &Board) -> HashMap<Position, Vec<Position>> {
-        let mut moves = HashMap::new();
+        let mut moves = HashMap::default();
         // get all the positions the pillbug can throw a bug to
         let to = board
             .positions_available_around(position)
@@ -348,7 +342,7 @@ impl Bug {
     }
 
     fn queen_moves(position: &Position, board: &Board) -> Vec<Position> {
-        Bug::crawl(position, board)
+        Bug::crawl(*position, board).collect()
     }
 
     fn spider_moves(position: &Position, board: &Board) -> Vec<Position> {
@@ -358,11 +352,10 @@ impl Bug {
             moves = moves
                 .iter()
                 .flat_map(|positions| {
-                    Bug::crawl(positions.last().expect("Could not get last piece"), &board)
-                        .iter()
+                    Bug::crawl(*positions.last().expect("Could not get last piece"), &board)
                         .map(|p| {
                             let mut pos = positions.clone();
-                            pos.push(*p);
+                            pos.push(p);
                             pos
                         })
                         .collect::<Vec<Vec<Position>>>()
@@ -612,7 +605,7 @@ mod tests {
             Piece::new(Bug::Queen, Color::White, Some(1)),
         );
         board.insert(&Position(1, 0), Piece::new(Bug::Ant, Color::Black, Some(1)));
-        let positions = Bug::crawl(&Position(0, 0), &board);
+        let positions = Bug::crawl(Position(0, 0), &board).collect::<Vec<_>>();
         assert_eq!(positions.len(), 2);
         assert!(positions.contains(&Position(0, -1)));
         assert!(positions.contains(&Position(0, 1)));
@@ -625,7 +618,7 @@ mod tests {
         );
         for pos in board.positions_around(&Position(0, 1)).iter() {
             board.insert(pos, Piece::new(Bug::Queen, Color::Black, Some(1)));
-            let positions = Bug::crawl(&Position(0, 1), &board);
+            let positions = Bug::crawl(Position(0, 1), &board).collect::<Vec<Position>>();
             assert_eq!(positions.len(), 2);
             board.board.remove(pos);
         }
@@ -638,7 +631,7 @@ mod tests {
         );
         board.insert(&Position(1, 0), Piece::new(Bug::Ant, Color::Black, Some(1)));
         board.insert(&Position(0, 1), Piece::new(Bug::Ant, Color::Black, Some(2)));
-        let positions = Bug::crawl(&Position(0, 0), &board);
+        let positions = Bug::crawl(Position(0, 0), &board).collect::<Vec<_>>();
         assert_eq!(positions.len(), 2);
         assert!(positions.contains(&Position(0, -1)));
         assert!(positions.contains(&Position(-1, 1)));
@@ -654,7 +647,7 @@ mod tests {
             &Position(-1, 0),
             Piece::new(Bug::Ant, Color::Black, Some(2)),
         );
-        let positions = Bug::crawl(&Position(0, 0), &board);
+        let positions = Bug::crawl(Position(0, 0), &board).collect::<Vec<_>>();
         assert_eq!(positions.len(), 4);
         assert!(positions.contains(&Position(0, -1)));
         assert!(positions.contains(&Position(0, 1)));
@@ -672,7 +665,7 @@ mod tests {
             &Position(-1, 1),
             Piece::new(Bug::Ant, Color::Black, Some(2)),
         );
-        let positions = Bug::crawl(&Position(0, 0), &board);
+        let positions = Bug::crawl(Position(0, 0), &board).collect::<Vec<_>>();
         assert_eq!(positions.len(), 2);
         assert!(positions.contains(&Position(0, -1)));
         assert!(positions.contains(&Position(-1, 0)));
@@ -692,7 +685,7 @@ mod tests {
             &Position(0, -1),
             Piece::new(Bug::Ant, Color::Black, Some(3)),
         );
-        let positions = Bug::crawl(&Position(0, 0), &board);
+        let positions = Bug::crawl(Position(0, 0), &board).collect::<Vec<_>>();
         assert_eq!(positions.len(), 2);
         assert!(positions.contains(&Position(0, 1)));
         assert!(positions.contains(&Position(-1, 1)));
@@ -712,7 +705,7 @@ mod tests {
             &Position(-1, -1),
             Piece::new(Bug::Ant, Color::Black, Some(3)),
         );
-        let positions = Bug::crawl(&Position(0, 0), &board);
+        let positions = Bug::crawl(Position(0, 0), &board).collect::<Vec<_>>();
         assert_eq!(positions.len(), 0);
 
         // three neighbors no gate -> 2 positions
@@ -727,7 +720,7 @@ mod tests {
             Piece::new(Bug::Ant, Color::Black, Some(2)),
         );
         board.insert(&Position(0, 1), Piece::new(Bug::Ant, Color::Black, Some(3)));
-        let positions = Bug::crawl(&Position(0, 0), &board);
+        let positions = Bug::crawl(Position(0, 0), &board).collect::<Vec<_>>();
         assert_eq!(positions.len(), 2);
         assert!(positions.contains(&Position(-1, -1)));
         assert!(positions.contains(&Position(-1, 1)));
@@ -748,7 +741,7 @@ mod tests {
             &Position(-1, 1),
             Piece::new(Bug::Ladybug, Color::Black, Some(1)),
         );
-        let positions = Bug::crawl(&Position(0, 0), &board);
+        let positions = Bug::crawl(Position(0, 0), &board).collect::<Vec<_>>();
         assert_eq!(positions.len(), 2);
         assert!(positions.contains(&Position(-1, -1)));
         assert!(positions.contains(&Position(-1, 0)));
@@ -773,7 +766,7 @@ mod tests {
             &Position(-1, 0),
             Piece::new(Bug::Ladybug, Color::Black, Some(1)),
         );
-        let positions = Bug::crawl(&Position(0, 0), &board);
+        let positions = Bug::crawl(Position(0, 0), &board).collect::<Vec<_>>();
         assert_eq!(positions.len(), 0);
     }
 

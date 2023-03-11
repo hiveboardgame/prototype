@@ -1,5 +1,8 @@
+use fnv::FnvHashMap;
+type HashMap<K, V> = FnvHashMap<K, V>;
+
 use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::fmt;
 use std::fmt::Write;
 
@@ -52,39 +55,9 @@ impl fmt::Display for Board {
 impl Board {
     pub fn new() -> Self {
         Self {
-            board: HashMap::new(),
+            board: HashMap::default(),
             last_moved: None,
         }
-    }
-
-    pub fn min_max_positions(&self) -> ((i8, i8), (i8, i8)) {
-        let mut positions = self.board.keys().cloned().collect::<Vec<Position>>();
-        positions.sort_by(|a, b| a.1.cmp(&b.1).then(a.0.cmp(&b.0)));
-        let min_x = positions
-            .iter()
-            .min_by(|a, b| a.0.cmp(&b.0))
-            .unwrap_or(&Position(0, 0))
-            .0;
-
-        let max_x = positions
-            .iter()
-            .max_by(|a, b| a.0.cmp(&b.0))
-            .unwrap_or(&Position(0, 0))
-            .0;
-
-        let min_y = positions
-            .iter()
-            .min_by(|a, b| a.1.cmp(&b.1))
-            .unwrap_or(&Position(0, 0))
-            .1;
-
-        let max_y = positions
-            .iter()
-            .max_by(|a, b| a.1.cmp(&b.1))
-            .unwrap_or(&Position(0, 0))
-            .1;
-
-        ((min_x, min_y), (max_x, max_y))
     }
 
     pub fn game_result(&self) -> GameResult {
@@ -175,6 +148,21 @@ impl Board {
             .collect()
     }
 
+    pub fn positions_around_iter(
+        &self,
+        position: Position,
+    ) -> impl Iterator<Item = Position> + 'static {
+        static DIRS: [Direction; 6] = [
+            Direction::NW,
+            Direction::NE,
+            Direction::E,
+            Direction::SE,
+            Direction::SW,
+            Direction::W,
+        ];
+        DIRS.iter().map(move |dir| position.to(dir))
+    }
+
     pub fn positions_around(&self, position: &Position) -> Vec<Position> {
         vec![
             position.to(&Direction::NW),
@@ -233,6 +221,18 @@ impl Board {
         None
     }
 
+    pub fn positions_taken_around_iter<'this>(
+        &'this self,
+        position: Position,
+    ) -> impl Iterator<Item = Position> + 'this {
+        self.positions_around_iter(position)
+            .filter(|pos| self.board.contains_key(pos))
+    }
+
+    pub fn occupied(&self, position: Position) -> bool {
+        self.board.contains_key(&position)
+    }
+
     pub fn positions_taken_around(&self, position: &Position) -> Vec<Position> {
         self.positions_around(position)
             .into_iter()
@@ -270,7 +270,7 @@ impl Board {
     }
 
     pub fn moves(&self, color: &Color) -> HashMap<(Piece, Position), Vec<Position>> {
-        let mut moves: HashMap<(Piece, Position), Vec<Position>> = HashMap::new();
+        let mut moves: HashMap<(Piece, Position), Vec<Position>> = HashMap::default();
         if !self.queen_played(color) {
             return moves;
         }
@@ -336,13 +336,22 @@ impl Board {
         excluded_position: &Position,
         mut visited: HashSet<Position>,
     ) -> HashSet<Position> {
+        self.walk_board_inner(position, excluded_position, &mut visited);
+        visited
+    }
+
+    fn walk_board_inner(
+        &self,
+        position: Position,
+        excluded_position: &Position,
+        mut visited: &mut HashSet<Position>,
+    ) {
         visited.insert(position);
         for pos in self.positions_taken_around(&position).iter() {
             if pos != excluded_position && !visited.contains(pos) {
-                visited.extend(&self.walk_board(*pos, excluded_position, visited.clone()));
+                self.walk_board_inner(*pos, excluded_position, &mut visited);
             }
         }
-        visited
     }
 
     pub fn pinned(&self, position: &Position) -> bool {
@@ -359,7 +368,7 @@ impl Board {
             .collect::<Vec<Position>>()
             .pop()
         {
-            Some(start) => visited = self.walk_board(start, position, visited.clone()),
+            Some(start) => visited = self.walk_board(start, position, visited),
             None => return false,
         }
         visited.len() < (len - 1)
@@ -426,6 +435,36 @@ impl Board {
             .entry(*position)
             .and_modify(|v| v.push(piece))
             .or_insert_with(|| vec![piece]);
+    }
+
+    pub fn min_max_positions(&self) -> ((i8, i8), (i8, i8)) {
+        let mut positions = self.board.keys().cloned().collect::<Vec<Position>>();
+        positions.sort_by(|a, b| a.1.cmp(&b.1).then(a.0.cmp(&b.0)));
+        let min_x = positions
+            .iter()
+            .min_by(|a, b| a.0.cmp(&b.0))
+            .unwrap_or(&Position(0, 0))
+            .0;
+
+        let max_x = positions
+            .iter()
+            .max_by(|a, b| a.0.cmp(&b.0))
+            .unwrap_or(&Position(0, 0))
+            .0;
+
+        let min_y = positions
+            .iter()
+            .min_by(|a, b| a.1.cmp(&b.1))
+            .unwrap_or(&Position(0, 0))
+            .1;
+
+        let max_y = positions
+            .iter()
+            .max_by(|a, b| a.1.cmp(&b.1))
+            .unwrap_or(&Position(0, 0))
+            .1;
+
+        ((min_x, min_y), (max_x, max_y))
     }
 }
 
