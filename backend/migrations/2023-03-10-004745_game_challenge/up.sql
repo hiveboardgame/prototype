@@ -1,5 +1,5 @@
 CREATE TABLE game_challenges (
-    id serial primary key not null,
+    id uuid default gen_random_uuid() primary key not null,
     challenger_uid text references users (uid) not null,
     game_type text not null,
     ranked boolean not null,

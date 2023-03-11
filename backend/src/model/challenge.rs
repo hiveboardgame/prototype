@@ -1,4 +1,4 @@
-use crate::api::game::challenge::NewGameRequest;
+use crate::api::game::challenge::NewChallengeRequest;
 use crate::db::schema::{game_challenges, users};
 use crate::db::util::{get_conn, DbPool};
 use crate::model::user::User;
@@ -7,6 +7,7 @@ use chrono::Days;
 use diesel::prelude::*;
 use diesel::result::Error;
 use diesel_async::RunQueryDsl;
+use uuid::Uuid;
 
 static CHALLENGE_EXPIRATION_LENGTH_IN_DAYS: u64 = 1;
 
@@ -24,7 +25,7 @@ struct NewGameChallenge {
 #[derive(Identifiable, Queryable, Debug)]
 #[diesel(table_name = game_challenges)]
 pub struct GameChallenge {
-    pub id: i32,
+    pub id: Uuid,
     pub challenger_uid: String,
     pub game_type: String,
     pub ranked: bool,
@@ -41,7 +42,7 @@ fn get_expiration_time() -> DateTime<Utc> {
 impl GameChallenge {
     pub async fn create(
         challenger_uid: &str,
-        game: &NewGameRequest,
+        game: &NewChallengeRequest,
         pool: &DbPool,
     ) -> Result<GameChallenge, Error> {
         let conn = &mut get_conn(pool).await?;
@@ -59,7 +60,7 @@ impl GameChallenge {
             .await
     }
 
-    pub async fn get(id: i32, pool: &DbPool) -> Result<GameChallenge, Error> {
+    pub async fn get(id: &Uuid, pool: &DbPool) -> Result<GameChallenge, Error> {
         let conn = &mut get_conn(pool).await?;
         game_challenges::table.find(id).first(conn).await
     }
