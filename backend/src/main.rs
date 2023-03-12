@@ -8,6 +8,7 @@ mod static_files;
 mod websockets;
 
 use crate::api::user;
+use crate::api::game;
 use crate::config::ServerConfig;
 use crate::db::util::{get_pool, DbPool};
 
@@ -40,15 +41,12 @@ async fn main() -> std::io::Result<()> {
             .wrap(middleware::Compress::default())
             .wrap(middleware::Logger::default())
             .service(web::resource("/ws/").route(web::get().to(echo_ws)))
-            .service(web::scope("/api").route(
-                "/game/{id:\\d+}/play",
-                web::post().to(api::game::play::game_play),
-            ))
             .service(
                 web::scope("/api")
                     .service(challenge::create_game_challenge)
                     .service(challenge::accept_game_challenge)
                     .service(challenge::delete_game_challenge)
+                    .service(game::play::game_play)
                     .service(user::get_user)
                     .service(user::create_user)
                     .service(user::create_guest_user),
