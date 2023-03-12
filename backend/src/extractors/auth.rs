@@ -1,4 +1,4 @@
-use actix_web::FromRequest;
+use actix_web::{FromRequest, web::Data};
 use alcoholic_jwt::{token_kid, validate, Validation, ValidationError, JWKS};
 use reqwest;
 use std::future::Future;
@@ -52,7 +52,7 @@ impl FromRequest for AuthenticatedUser {
         let req_clone = req.clone(); // req is cheap to clone, and we must to avoid lifetime issues
         Box::pin(async move {
             let config = req_clone
-                .app_data::<ServerConfig>()
+                .app_data::<Data<ServerConfig>>()
                 .expect("couldn't retrieve server config");
             let auth_token = req_clone
                 .headers()
