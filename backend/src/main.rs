@@ -40,12 +40,12 @@ async fn main() -> std::io::Result<()> {
             .wrap(middleware::Compress::default())
             .wrap(middleware::Logger::default())
             .service(web::resource("/ws/").route(web::get().to(echo_ws)))
-            .service(web::scope("/api").route(
-                "/game/{id:\\d+}/play",
-                web::post().to(api::game::play::game_play),
-            ))
             .service(
                 web::scope("/api")
+                    .route(
+                        "/game/{id:\\d+}/play",
+                        web::post().to(api::game::play::game_play),
+                    )
                     .service(challenge::create_game_challenge)
                     .service(challenge::accept_game_challenge)
                     .service(challenge::delete_game_challenge)
