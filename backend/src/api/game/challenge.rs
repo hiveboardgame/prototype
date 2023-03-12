@@ -27,6 +27,7 @@ impl Display for ColorChoice {
 }
 
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct NewChallengeRequest {
     // Whether this challenge should be listed publicly
     pub public: bool,
@@ -45,6 +46,7 @@ pub struct NewChallengeRequest {
 }
 
 #[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct NewChallengeResponse {
     challenge_url: String,
 }
