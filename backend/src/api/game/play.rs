@@ -1,6 +1,7 @@
 use crate::model::{game_request::GameRequest, game_response::GameResponse};
 use crate::server_error::ServerError;
 use actix_web::web::{self, Json, Path};
+use actix_web::post;
 use hive_lib::{game_error::GameError, history::History, position::Position, state::State};
 
 fn get_game_state_from_db(_game_id: u64) -> Result<State, GameError> {
@@ -19,6 +20,7 @@ fn play_turn(mut state: State, piece: String, pos: String) -> Result<GameRespons
     Ok(GameResponse::new_from_state(&state))
 }
 
+#[post("/game/{id:\\d+}/play")]
 pub async fn game_play(
     path: Path<u64>,
     game_request: Json<GameRequest>,
