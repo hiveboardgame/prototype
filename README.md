@@ -27,6 +27,7 @@ NEXT_PUBLIC_FIREBASE_PROJECT_ID="
 
 ```
 $ npm install
+$ npm run --workspace js/hive-lib build
 $ npm run --workspace js/frontend build
 ```
 
