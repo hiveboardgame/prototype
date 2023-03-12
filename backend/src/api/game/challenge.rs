@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use actix_web::{delete, post, web, HttpResponse};
 use hive_lib::game_type::GameType;
 use serde::{Deserialize, Serialize};
@@ -6,6 +8,23 @@ use uuid::Uuid;
 use crate::model::challenge::GameChallenge;
 use crate::server_error::ServerError;
 use crate::{db::util::DbPool, extractors::auth::AuthenticatedUser};
+
+#[derive(Deserialize, Debug)]
+pub enum ColorChoice {
+    White,
+    Black,
+    Random,
+}
+
+impl Display for ColorChoice {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::White => write!(f, "White"),
+            Self::Black => write!(f, "Black"),
+            Self::Random => write!(f, "Random"),
+        }
+    }
+}
 
 #[derive(Deserialize)]
 pub struct NewChallengeRequest {
@@ -18,6 +37,9 @@ pub struct NewChallengeRequest {
     // Whether the game follows the "tournament" rules, i.e. the queen
     // cannot be played first.
     pub tournament_queen_rule: bool,
+
+    // The challenger's color choice
+    pub color_choice: ColorChoice,
 
     pub game_type: GameType,
 }

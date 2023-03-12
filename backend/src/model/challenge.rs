@@ -7,6 +7,7 @@ use chrono::prelude::*;
 use diesel::prelude::*;
 use diesel::result::Error;
 use diesel_async::RunQueryDsl;
+use serde::Serialize;
 use uuid::Uuid;
 
 #[derive(Insertable, Debug)]
@@ -17,6 +18,7 @@ struct NewGameChallenge {
     ranked: bool,
     public: bool,
     tournament_queen_rule: bool,
+    color_choice: String,
     created_at: DateTime<Utc>,
 }
 
@@ -29,6 +31,7 @@ pub struct GameChallenge {
     pub ranked: bool,
     pub public: bool,
     pub tournament_queen_rule: bool,
+    pub color_choice: String,
     pub created_at: DateTime<Utc>, // TODO: periodically cleanup expired challanges
 }
 
@@ -41,6 +44,7 @@ impl GameChallenge {
         let conn = &mut get_conn(pool).await?;
         let new_challenge = NewGameChallenge {
             challenger_uid: challenger.uid.to_string(),
+            color_choice: game.color_choice.to_string(),
             game_type: game.game_type.to_string(),
             ranked: game.ranked,
             public: game.public,
