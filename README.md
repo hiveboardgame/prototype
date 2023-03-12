@@ -36,7 +36,7 @@ $ npm run --workspace js/frontend build
 `backend/.env`
 ```
 DATABASE_URL=              # whatever the connection string for your Postgres database is
-FIREBASE_JWT_ISSUER=       # this should be the same as your Firebase auth domain
+FIREBASE_JWT_ISSUER=       # this should be "https://securetoken.google.com/<projectId>", where projectId is your firebase project ID as above
 STATIC_FILES_PATH=./dist   # we'll set this up in a moment
 ```
 
