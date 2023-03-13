@@ -1,4 +1,4 @@
-import { Button, useClipboard } from '@chakra-ui/react';
+import { Button, Input, Popover, PopoverArrow, PopoverBody, PopoverCloseButton, PopoverContent, PopoverHeader, PopoverTrigger, useClipboard } from '@chakra-ui/react';
 import {
   deleteGameChallenge,
   GameChallenge,
@@ -8,16 +8,32 @@ import { Header, HeaderItem } from './Header';
 import { ExpansionsItem } from './items/ExpansionsItem';
 import { Row, RowItem } from './Row';
 
-const CopyButton = ({ text }: { text: string }) => {
-  const { onCopy, hasCopied } = useClipboard(text);
+const ShareLinkButton = ({ text }: { text: string }) => {
+  const handleInputFocus = (event) => event.target.select();
   return (
-    <Button
-      size='xs'
-      colorScheme='green'
-      onClick={onCopy}
-    >
-      { hasCopied ? "Copied!" : "Copy link" }
-    </Button>
+    <Popover>
+      <PopoverTrigger>
+        <Button size='xs'>
+          Share link
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent>
+        <PopoverArrow />
+        <PopoverCloseButton />
+        <PopoverBody>
+          <PopoverHeader>
+            Send this link to a friend to invite them!
+          </PopoverHeader>
+          <Input
+            type="text"
+            size='sm'
+            isReadOnly={true}
+            onFocus={handleInputFocus}
+            value={text}
+          ></Input>
+        </PopoverBody>
+      </PopoverContent>
+    </Popover>
   )
 }
 
@@ -59,7 +75,7 @@ const PlayerChallengeRow = ({ challenge }: PlayerChallengeRowProps) => {
       <ExpansionsItem ladybug={ladybug} mosquito={mosquito} pillbug={pillbug} />
       <RowItem>{challenge.createdAt.toDateString()}</RowItem>
       <RowItem>
-        <CopyButton text={challenge.challengeUrl} />
+        <ShareLinkButton text={challenge.challengeUrl} />
       </RowItem>
       <RowItem>
         <DeleteButton id={id} onDelete={() => setDeleted(true)} />

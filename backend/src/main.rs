@@ -44,6 +44,7 @@ async fn main() -> std::io::Result<()> {
             .service(
                 web::scope("/api")
                     .service(challenge::create_game_challenge)
+                    .service(challenge::get_game_challenge)
                     .service(challenge::accept_game_challenge)
                     .service(challenge::delete_game_challenge)
                     .service(game::play::game_play)

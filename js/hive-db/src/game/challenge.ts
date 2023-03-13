@@ -3,6 +3,7 @@ import { deleteReq, getJSON } from '../api';
 import { GameOptions } from 'hive-lib';
 import { newGameOptions } from '../game/options';
 import { postJSON } from '../api';
+import { Game } from './game';
 
 export interface GameChallenge {
   id: string,
@@ -14,6 +15,13 @@ export interface GameChallenge {
   colorChoice: string,
   createdAt: Date,
   challengeUrl: string
+  challenger?: UserData,
+}
+
+function initializeChallenge(challenge: GameChallenge, challenger?: UserData) {
+  challenge.createdAt = new Date(challenge.createdAt);
+  challenge.challengeUrl = `${window.location.origin}/challenge/${challenge.id}`;
+  challenge.challenger = challenger;
 }
 
 export type ColorChoice = 'Black' | 'White' | 'Random';
@@ -46,13 +54,28 @@ export async function createGameChallenge(
     gameType,
     colorChoice,
   };
-  let res = await postJSON<GameChallengeResponse>('/api/game/challenge', reqBody, true);
-  return resToChallenge(res);
+  let challenge = await postJSON<GameChallenge>('/api/game/challenge', reqBody, true);
+  initializeChallenge(challenge);
+  return challenge;
+}
+
+export async function getGameChallenge(id: string): Promise<GameChallenge> {
+  let res = await getJSON<GameChallengeWithUser>(`/api/game/challenge/${id}`);
+  if (!res) {
+      throw new Error(`No such challenge found`);
+  }
+  const challenge = res.challenge as GameChallenge;
+  initializeChallenge(challenge, res.challenger);
+  return challenge;
+}
+
+export async function acceptGameChallenge(id: string): Promise<Game> {
+  return postJSON(`/api/game/challenge/${id}/accept`, {}, true);
 }
 
 export async function deleteGameChallenge(id: string): Promise<null> {
-    await deleteReq(`/api/game/challenge/${id}`);
-    return;
+  await deleteReq(`/api/game/challenge/${id}`);
+  return;
 }
 
 function gameOptionsToString(opts: GameOptions): string {
@@ -66,18 +89,13 @@ function gameOptionsToString(opts: GameOptions): string {
   }
 }
 
-function resToChallenge(res: GameChallengeResponse): GameChallenge {
-  const fullUrl = `${window.location.origin}${res.challengeUrl}`;
-  res.challenge.createdAt = new Date(res.challenge.createdAt);
-  return { challengeUrl: fullUrl, ...res.challenge }
-}
-
-export interface GameChallengeResponse {
-  challengeUrl: string,
-  challenge: Omit<GameChallenge, 'challengeUrl'>,
+export interface GameChallengeWithUser {
+  challenger: UserData,
+  challenge: Omit<GameChallenge, 'challengeUrl' | 'challenger'>,
 }
 
 export async function getUserChallenges(user: UserData): Promise<GameChallenge[]> {
-    let responses = await getJSON<GameChallengeResponse[]>(`/api/user/${user.uid}/challenges`, true);
-    return responses.map(resToChallenge);
+    let responses = await getJSON<GameChallenge[]>(`/api/user/${user.uid}/challenges`, true);
+    responses.forEach((challenge) => initializeChallenge(challenge));
+    return responses;
 }

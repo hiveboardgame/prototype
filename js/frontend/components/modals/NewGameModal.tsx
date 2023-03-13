@@ -1,7 +1,6 @@
 import {
   Button,
   Checkbox,
-  CheckboxGroup,
   FormControl,
   FormLabel,
   Modal,
@@ -26,8 +25,8 @@ import {
 import { CardPicker } from '../forms/CardPicker';
 
 const NewGameModal = (props: Omit<ModalProps, 'children'>) => {
-  const DEFAULT_COLOR_CHOICE: ColorChoice           = "Random"
-  const DEFAULT_VISIBILITY_CHOICE: VisibilityChoice = "Private"
+  const DEFAULT_COLOR_CHOICE: ColorChoice = "Random";
+  const DEFAULT_VISIBILITY_CHOICE: VisibilityChoice = "Private";
 
   const router = useRouter();
   const { user, newChallenge } = usePlayer();

@@ -2,9 +2,9 @@ use actix_web::{get, post, web, HttpResponse};
 use names::{Generator, Name};
 use serde::Deserialize;
 
-use crate::api::game::challenge::GameChallengeResponse;
 use crate::db::util::DbPool;
 use crate::extractors::auth::AuthenticatedUser;
+use crate::model::challenge::GameChallenge;
 use crate::model::user::User;
 use crate::server_error::ServerError;
 
@@ -56,12 +56,7 @@ pub async fn get_user_challenges(
 ) -> Result<HttpResponse, ServerError> {
     auth_user.authorize(&uid)?;
     let user = User::find_by_uid(pool.get_ref(), uid.as_ref()).await?;
-    let response: Vec<GameChallengeResponse> = user
-        .get_challenges(&pool)
-        .await?
-        .drain(..)
-        .map(|challenge| challenge.into())
-        .collect();
+    let response: Vec<GameChallenge> = user.get_challenges(&pool).await?;
     Ok(HttpResponse::Ok().json(response))
 }
 
