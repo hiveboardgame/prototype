@@ -6,20 +6,18 @@ import { GameOptions } from 'hive-lib';
  * @param ladybug A boolean indicating whether to include the ladybug expansion.
  * @param mosquito A boolean indicating whether to include the mosquito expansion.
  * @param pillbug A boolean indicating whether to include the pillbug expansion.
- * @param tournament A boolean indicating whether to use the tournament opening rule.
  * @return A GameOptions object.
  */
 export const newGameOptions = (
   ladybug: boolean,
   mosquito: boolean,
   pillbug: boolean,
-  tournament: boolean
 ): GameOptions => {
   return {
     ladybug,
     mosquito,
     pillbug,
-    tournament
+    tournament: true, // We currently only support tournament rules
   };
 };
 

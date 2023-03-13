@@ -1,4 +1,4 @@
-use actix_web::{FromRequest, web::Data};
+use actix_web::{web::Data, FromRequest};
 use alcoholic_jwt::{token_kid, validate, Validation, ValidationError, JWKS};
 use reqwest;
 use std::future::Future;

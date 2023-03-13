@@ -5,5 +5,6 @@ CREATE TABLE game_challenges (
     ranked boolean not null,
     public boolean not null,
     tournament_queen_rule boolean not null,
+    color_choice text not null,
     created_at timestamp with time zone not null
 )

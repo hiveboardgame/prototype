@@ -17,13 +17,13 @@ const ExpansionsItem = (
   return (
     <RowItem className='-ml-1' {...rest}>
       {ladybug && (
-        <LadybugIcon width={24} height={24} className='fill-ladybug' />
+        <LadybugIcon aria-label='Ladybug' width={24} height={24} className='fill-ladybug' />
       )}
       {mosquito && (
-        <MosquitoIcon width={24} height={24} className='fill-mosquito' />
+        <MosquitoIcon aria-label='Mosquito' width={24} height={24} className='fill-mosquito' />
       )}
       {pillbug && (
-        <PillbugIcon width={24} height={24} className='fill-pillbug' />
+        <PillbugIcon aria-label='Pillbug' width={24} height={24} className='fill-pillbug' />
       )}
     </RowItem>
   );

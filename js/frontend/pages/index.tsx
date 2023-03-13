@@ -6,7 +6,8 @@ import {
   TabList,
   TabPanel,
   TabPanels,
-  Tabs
+  Tabs,
+  useDisclosure
 } from '@chakra-ui/react';
 import { usePlayer } from 'hive-db';
 import Head from 'next/head';
@@ -15,15 +16,17 @@ import { FaGamepad, FaPlus } from 'react-icons/fa';
 import { Body } from '../components/common/Body';
 import { Footer } from '../components/common/Footer';
 import { ListLobbyGames } from '../components/lists/ListLobbyGames';
+import { ListPlayerChallenges } from '../components/lists/ListPlayerChallenges';
 import { ListPlayerGames } from '../components/lists/ListPlayerGames';
 import { ListPublicGames } from '../components/lists/ListPublicGames';
+import { NewGameModal } from '../components/modals/NewGameModal';
 import { NavBar } from '../components/nav/NavBar';
 import { useHasMounted } from '../hooks/useHasMounted';
 import { useTitle } from '../hooks/useTitle';
 
 const IndexTabs = () => {
-  const { user, incompleteProfile, activeGames } = usePlayer();
-  const showOwnGames = user && !incompleteProfile;
+  const { user, incompleteProfile, activeGames, activeChallenges } = usePlayer();
+  const loggedIn = user && !incompleteProfile;
   return (
     <Tabs
       id='index-tabs'
@@ -35,7 +38,8 @@ const IndexTabs = () => {
       <TabList>
         <Tab>Watch</Tab>
         <Tab>Lobby</Tab>
-        {showOwnGames && <Tab>Your Games</Tab>}
+        {loggedIn && <Tab>Your Games</Tab>}
+        {loggedIn && <Tab>Your Challenges</Tab>}
       </TabList>
       <TabPanels w='full'>
         <TabPanel p={0}>
@@ -44,9 +48,14 @@ const IndexTabs = () => {
         <TabPanel p={0}>
           <ListLobbyGames className='border' />
         </TabPanel>
-        {showOwnGames && (
+        {loggedIn && (
           <TabPanel p={0}>
             <ListPlayerGames className='border' user={user} games={activeGames} />
+          </TabPanel>
+        )}
+        {loggedIn && (
+          <TabPanel p={0}>
+            <ListPlayerChallenges className='border' challenges={activeChallenges} />
           </TabPanel>
         )}
       </TabPanels>
@@ -59,6 +68,7 @@ const Index = () => {
   const title = useTitle();
   const router = useRouter();
   const mounted = useHasMounted();
+  const { isOpen, onOpen, onClose } = useDisclosure();
   const loggedIn = mounted && !!user && !incompleteProfile;
   return (
     <>
@@ -88,7 +98,7 @@ const Index = () => {
                 colorScheme='teal'
                 size='md'
                 disabled={!loggedIn}
-                onClick={() => router.push('/community')}
+                onClick={onOpen}
               >
                 Create New Game
               </Button>
@@ -104,6 +114,7 @@ const Index = () => {
             </Stack>
           </div>
         </div>
+        <NewGameModal isOpen={isOpen} onClose={onClose} />
       </Body>
       <Footer />
     </>

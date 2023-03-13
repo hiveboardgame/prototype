@@ -1,4 +1,4 @@
-use crate::extractors::auth::AuthenticationError;
+use crate::{api::game::challenge::ChallengeError, extractors::auth::AuthenticationError};
 use actix_web::{error::ResponseError, http::StatusCode, HttpResponse};
 use diesel::result::Error as DieselError;
 use hive_lib::game_error::GameError;
@@ -21,6 +21,8 @@ pub enum ServerError {
     GameError(#[from] GameError),
     #[error("Database error: {0}")]
     DatabaseError(#[from] DieselError),
+    #[error("Challenge error: {0}")]
+    ChallengeError(#[from] ChallengeError),
     #[error("Unimplemented")]
     Unimplemented,
 }
@@ -45,6 +47,10 @@ impl ResponseError for ServerError {
             Self::DatabaseError(err) => match err {
                 DieselError::NotFound => StatusCode::NOT_FOUND,
                 _ => StatusCode::INTERNAL_SERVER_ERROR,
+            },
+            Self::ChallengeError(err) => match err {
+                ChallengeError::MissingChallenger(_) => StatusCode::INTERNAL_SERVER_ERROR,
+                ChallengeError::OwnChallenge => StatusCode::BAD_REQUEST,
             },
             Self::Unimplemented => StatusCode::INTERNAL_SERVER_ERROR,
         }

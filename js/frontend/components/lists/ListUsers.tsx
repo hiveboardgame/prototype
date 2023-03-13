@@ -1,7 +1,7 @@
 import { Button, useDisclosure } from '@chakra-ui/react';
 import { HTMLAttributes, useState } from 'react';
 import { UserData } from 'hive-db';
-import { InviteModal } from '../modals/InviteModal';
+import { InviteModal } from '../modals/NewGameModal';
 import { Row, RowItem } from './Row';
 
 interface ListUsersProps extends HTMLAttributes<HTMLDivElement> {

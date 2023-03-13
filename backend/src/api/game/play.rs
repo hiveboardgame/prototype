@@ -1,7 +1,7 @@
 use crate::model::{game_request::GameRequest, game_response::GameResponse};
 use crate::server_error::ServerError;
-use actix_web::web::{self, Json, Path};
 use actix_web::post;
+use actix_web::web::{self, Json, Path};
 use hive_lib::{game_error::GameError, history::History, position::Position, state::State};
 
 fn get_game_state_from_db(_game_id: u64) -> Result<State, GameError> {

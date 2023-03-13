@@ -1,4 +1,4 @@
-import { getAuth, User as FirebaseUser } from '@firebase/auth';
+import { getAuth, User as FirebaseUser, onAuthStateChanged } from '@firebase/auth';
 import app from './db/app';
 import {
   createContext,
@@ -15,12 +15,14 @@ import {
   signOut
 } from 'firebase/auth';
 import { Game, getGameIsEnded, getGameIsStarted, getUserGames } from './game/game';
+import { GameChallenge, getUserChallenges } from './game/challenge';
 import { createGuestUser, createUser, getUser } from '..';
 
 export interface PlayerContextProps {
   user: UserData | null;
   incompleteProfile: boolean;
-  invitations: Game[];
+  activeChallenges: GameChallenge[];
+  newChallenge: (challenge: GameChallenge) => void,
   activeGames: Game[];
   completedGames: Game[];
   usernameChanged: (username: string) => Promise<void>;
@@ -29,7 +31,6 @@ export interface PlayerContextProps {
   signout: (redirect: string) => Promise<void>;
 }
 
-const auth = getAuth(app);
 const playerContext = createContext<PlayerContextProps>(defaultPlayerContext());
 
 const PlayerProvider = ({ children }: { children?: ReactNode }) => {
@@ -46,10 +47,11 @@ const usePlayer = () => {
 };
 
 function usePlayerState(): PlayerContextProps {
+  const auth = getAuth(app);
   const [user, setUser] = useState<UserData | null>(null);
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [incompleteProfile, setIncompleteProfile] = useState<boolean>(false);
-  const [invitations, setInvitations] = useState<Game[]>([]);
+  const [activeChallenges, setActiveChallenges] = useState<GameChallenge[]>([]);
   const [activeGames, setActiveGames] = useState<Game[]>([]);
   const [completedGames, setCompletedGames] = useState<Game[]>([]);
 
@@ -64,11 +66,11 @@ function usePlayerState(): PlayerContextProps {
           (game) => getGameIsStarted(game) && !getGameIsEnded(game)
         );
         const completedGames = games.filter((game) => getGameIsEnded(game));
-        const invitations = games.filter((game) => !getGameIsStarted(game));
         setActiveGames(activeGames);
         setCompletedGames(completedGames);
-        setInvitations(invitations);
       });
+    getUserChallenges(user)
+      .then(setActiveChallenges);
   }, [user]);
 
   async function usernameChanged(username: string) {
@@ -101,6 +103,8 @@ function usePlayerState(): PlayerContextProps {
     }
   }
 
+  onAuthStateChanged(auth, setFirebaseUser)
+
   useEffect(() => {
     handleFirebaseUserChanged();
   }, [firebaseUser])
@@ -113,16 +117,14 @@ function usePlayerState(): PlayerContextProps {
     provider.setCustomParameters({
       prompt: 'select_account'
     });
-    const creds = await signInWithPopup(auth, provider);
-    setFirebaseUser(creds.user);
+    await signInWithPopup(auth, provider);
   };
 
   /**
    * Sign in anonymously.
    */
   const signInAsGuest = async () => {
-    const creds = await signInAnonymously(auth);
-    setFirebaseUser(creds.user);
+    await signInAnonymously(auth);
   }
 
   /**
@@ -137,7 +139,7 @@ function usePlayerState(): PlayerContextProps {
         setIncompleteProfile(false);
         setActiveGames([]);
         setCompletedGames([]);
-        setInvitations([]);
+        setActiveChallenges([]);
         if (redirect) { /* router.push(redirect) */ }
       })
       .catch((error) => {
@@ -145,12 +147,17 @@ function usePlayerState(): PlayerContextProps {
       });
   };
 
+  function newChallenge(challenge: GameChallenge) {
+    setActiveChallenges([challenge].concat(activeChallenges));
+  }
+
   return {
     user,
     incompleteProfile,
     activeGames,
     completedGames,
-    invitations,
+    newChallenge,
+    activeChallenges,
     usernameChanged,
     signInWithGoogle,
     signInAsGuest,
@@ -165,7 +172,8 @@ function defaultPlayerContext(): PlayerContextProps {
     incompleteProfile: false,
     activeGames: [],
     completedGames: [],
-    invitations: [],
+    activeChallenges: [],
+    newChallenge: (_) => Promise.reject(message),
     usernameChanged: (_) => Promise.reject(message),
     signInWithGoogle: () => Promise.reject(message),
     signInAsGuest: () => Promise.reject(message),
