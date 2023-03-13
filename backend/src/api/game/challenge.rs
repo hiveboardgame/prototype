@@ -28,7 +28,7 @@ impl Display for ColorChoice {
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct NewChallengeRequest {
+pub struct NewGameChallengeRequest {
     // Whether this challenge should be listed publicly
     pub public: bool,
 
@@ -47,19 +47,26 @@ pub struct NewChallengeRequest {
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct NewChallengeResponse {
+pub struct GameChallengeResponse {
     challenge_url: String,
+    challenge: GameChallenge,
+}
+
+impl From<GameChallenge> for GameChallengeResponse {
+    fn from(challenge: GameChallenge) -> Self {
+        let challenge_url = format!("/game/challenge/{}", challenge.id);
+        Self { challenge, challenge_url }
+    }
 }
 
 #[post("/game/challenge")]
 pub async fn create_game_challenge(
-    game: web::Json<NewChallengeRequest>,
+    game: web::Json<NewGameChallengeRequest>,
     auth_user: AuthenticatedUser,
     pool: web::Data<DbPool>,
 ) -> Result<HttpResponse, ServerError> {
     let challenge = GameChallenge::create(&auth_user, &game, &pool).await?;
-    let challenge_url = format!("/game/challenge/{}", challenge.id);
-    Ok(HttpResponse::Created().json(NewChallengeResponse { challenge_url }))
+    Ok(HttpResponse::Created().json(GameChallengeResponse::from(challenge)))
 }
 
 #[post("/game/challenge/{id}/accept")]

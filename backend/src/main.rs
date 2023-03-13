@@ -48,6 +48,8 @@ async fn main() -> std::io::Result<()> {
                     .service(challenge::delete_game_challenge)
                     .service(game::play::game_play)
                     .service(user::get_user)
+                    .service(user::get_user_challenges)
+                    .service(user::get_user_games)
                     .service(user::create_user)
                     .service(user::create_guest_user),
             )

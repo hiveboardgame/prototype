@@ -1,4 +1,4 @@
-use crate::api::game::challenge::NewChallengeRequest;
+use crate::api::game::challenge::NewGameChallengeRequest;
 use crate::db::schema::{game_challenges, users};
 use crate::db::util::{get_conn, DbPool};
 use crate::extractors::auth::AuthenticatedUser;
@@ -22,7 +22,9 @@ struct NewGameChallenge {
     created_at: DateTime<Utc>,
 }
 
-#[derive(Identifiable, Queryable, Debug)]
+#[derive(Associations, Identifiable, Queryable, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+#[diesel(belongs_to(User, foreign_key = challenger_uid))]
 #[diesel(table_name = game_challenges)]
 pub struct GameChallenge {
     pub id: Uuid,
@@ -38,7 +40,7 @@ pub struct GameChallenge {
 impl GameChallenge {
     pub async fn create(
         challenger: &AuthenticatedUser,
-        game: &NewChallengeRequest,
+        game: &NewGameChallengeRequest,
         pool: &DbPool,
     ) -> Result<GameChallenge, Error> {
         let conn = &mut get_conn(pool).await?;
