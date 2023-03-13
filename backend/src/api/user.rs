@@ -56,14 +56,14 @@ pub async fn get_user_challenges(
 ) -> Result<HttpResponse, ServerError> {
     auth_user.authorize(&uid)?;
     let user = User::find_by_uid(pool.get_ref(), uid.as_ref()).await?;
-    let response: Vec<GameChallengeResponse> =  user.get_challenges(&pool)
+    let response: Vec<GameChallengeResponse> = user
+        .get_challenges(&pool)
         .await?
         .drain(..)
         .map(|challenge| challenge.into())
         .collect();
     Ok(HttpResponse::Ok().json(response))
 }
-
 
 #[get("/user/{uid}/games")]
 pub async fn get_user_games(

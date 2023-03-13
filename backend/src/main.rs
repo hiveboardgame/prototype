@@ -7,8 +7,8 @@ mod server_error;
 mod static_files;
 mod websockets;
 
-use crate::api::user;
 use crate::api::game;
+use crate::api::user;
 use crate::config::ServerConfig;
 use crate::db::util::{get_pool, DbPool};
 

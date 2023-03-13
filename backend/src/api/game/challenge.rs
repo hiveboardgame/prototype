@@ -55,7 +55,10 @@ pub struct GameChallengeResponse {
 impl From<GameChallenge> for GameChallengeResponse {
     fn from(challenge: GameChallenge) -> Self {
         let challenge_url = format!("/game/challenge/{}", challenge.id);
-        Self { challenge, challenge_url }
+        Self {
+            challenge,
+            challenge_url,
+        }
     }
 }
 
