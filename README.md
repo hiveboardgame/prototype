@@ -23,12 +23,12 @@ NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
 NEXT_PUBLIC_FIREBASE_PROJECT_ID="
 ```
 
-3. Build the static frontend files:
+3. Run the nextjs dev server. This is configured to proxy `/api` requests to the rust backend
 
 ```
 $ npm install
 $ npm run --workspace js/hive-lib build
-$ npm run --workspace js/frontend build
+$ npm run --workspace js/frontend dev
 ```
 
 4. Create a `.env` file for the backend:
@@ -36,7 +36,7 @@ $ npm run --workspace js/frontend build
 `backend/.env`
 ```
 DATABASE_URL=              # whatever the connection string for your Postgres database is
-FIREBASE_JWT_ISSUER=       # this should be the same as your Firebase auth domain
+FIREBASE_JWT_ISSUER=       # this should be "https://securetoken.google.com/<projectId>", where projectId is your firebase project ID as above
 STATIC_FILES_PATH=./dist   # we'll set this up in a moment
 ```
 
@@ -53,6 +53,8 @@ $ diesel migration run
 $ cd backend
 $ cargo run
 ```
+
+6. Go to `http://localhost:3000` (the nextjs dev server's url)
 
 ## Previous works
 [lihive frontend](https://github.com/atdyer/lihive) by [atdyer](https://github.com/atdyer/lihive)
