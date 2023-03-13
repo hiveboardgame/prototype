@@ -24,7 +24,7 @@ pub struct NewUserBody {
 
 fn random_guest_name() -> String {
     let mut generator = Generator::with_naming(Name::Numbered);
-    generator.next().unwrap()
+    format!("guest-{}", generator.next().unwrap())
 }
 
 #[post("/user")]
