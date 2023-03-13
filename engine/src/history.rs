@@ -1,9 +1,9 @@
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::{
+    fmt,
     fs::{File, OpenOptions},
     io::{self, prelude::*, BufRead},
-    fmt,
 };
 
 use crate::color::Color;

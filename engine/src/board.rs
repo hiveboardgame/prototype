@@ -1,8 +1,3 @@
-use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet};
-use std::fmt;
-use std::fmt::Write;
-
 use crate::bug::Bug;
 use crate::color::Color;
 use crate::direction::Direction;
@@ -11,6 +6,10 @@ use crate::game_result::GameResult;
 use crate::game_type::GameType;
 use crate::piece::Piece;
 use crate::position::Position;
+use serde::{Deserialize, Serialize};
+use std::collections::{HashMap, HashSet};
+use std::fmt;
+use std::fmt::Write;
 
 #[derive(Deserialize, Serialize, Clone, Default, Debug, Eq, PartialEq)]
 pub struct Board {

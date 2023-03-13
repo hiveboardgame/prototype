@@ -20,3 +20,6 @@ hex-literal = "*"
 serde_json = "*"
 serde = { version = "*", features = ["derive"] }
 thiserror = "*"
+
+[dev-dependencies]
+rusty-hook = "^0.11.2"
