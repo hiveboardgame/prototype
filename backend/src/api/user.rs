@@ -1,4 +1,5 @@
 use actix_web::{get, post, web, HttpResponse};
+use names::{Generator, Name};
 use serde::Deserialize;
 
 use crate::db::util::DbPool;
@@ -20,6 +21,11 @@ pub struct NewUserBody {
     username: String,
 }
 
+fn random_guest_name() -> String {
+    let mut generator = Generator::with_naming(Name::Numbered);
+    generator.next().unwrap()
+}
+
 #[post("/user")]
 pub async fn create_user(
     user: web::Json<NewUserBody>,
@@ -36,8 +42,7 @@ pub async fn create_guest_user(
     auth_user: AuthenticatedUser,
     pool: web::Data<DbPool>,
 ) -> Result<HttpResponse, ServerError> {
-    // TODO random guest names
-    let user = User::new(&auth_user.uid, "Guest", true)?;
+    let user = User::new(&auth_user.uid, &random_guest_name(), true)?;
     user.insert(&pool).await?;
     Ok(HttpResponse::Created().json(user))
 }
