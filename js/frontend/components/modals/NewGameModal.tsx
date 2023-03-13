@@ -26,11 +26,14 @@ import {
 import { CardPicker } from '../forms/CardPicker';
 
 const NewGameModal = (props: Omit<ModalProps, 'children'>) => {
+  const DEFAULT_COLOR_CHOICE: ColorChoice           = "Random"
+  const DEFAULT_VISIBILITY_CHOICE: VisibilityChoice = "Private"
+
   const router = useRouter();
   const { user, newChallenge } = usePlayer();
 
-  const [color, setColor] = useState<ColorChoice>();
-  const [visibility, setVisibility] = useState<VisibilityChoice>();
+  const [color, setColor] = useState<ColorChoice>(DEFAULT_COLOR_CHOICE);
+  const [visibility, setVisibility] = useState<VisibilityChoice>(DEFAULT_VISIBILITY_CHOICE);
   const [expansions, setExpansions] = useState<ExpansionsChoice>({
     ladybug: true,
     mosquito: true,
@@ -75,7 +78,7 @@ const NewGameModal = (props: Omit<ModalProps, 'children'>) => {
                   pl={4}
                   name='gamevisibility'
                   options={['Public', 'Private']}
-                  defaultValue='Private'
+                  defaultValue={DEFAULT_VISIBILITY_CHOICE}
                   onChange={(visibility) => setVisibility(visibility)}
                 />
               </FormControl>
@@ -85,7 +88,7 @@ const NewGameModal = (props: Omit<ModalProps, 'children'>) => {
                   pl={4}
                   name='playercolor'
                   options={['Black', 'White', 'Random']}
-                  defaultValue='Random'
+                  defaultValue={DEFAULT_COLOR_CHOICE}
                   onChange={(color) => setColor(color)}
                 />
               </FormControl>
