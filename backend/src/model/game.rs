@@ -28,12 +28,11 @@ pub struct Game {
     pub black_uid: String, // uid of user
     pub game_status: String,
     pub game_type: String,
-    pub history: String, //"piece move;piece move;piece move;"
+    pub history: String, //"piece pos;piece pos;piece pos;"
     pub tournament_queen_rule: bool,
     pub turn: i32,
     pub white_uid: String, // uid of user
 }
-
 
 impl Game {
     pub async fn create(new_game: &NewGame, pool: &DbPool) -> Result<Game, Error> {
