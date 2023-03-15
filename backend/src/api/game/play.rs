@@ -24,13 +24,13 @@ async fn play_turn(
     pos: String,
     pool: &DbPool,
 ) -> Result<GameStateResponse, ServerError> {
-    let game = Game::get(game_id, &pool).await?;
+    let game = Game::get(game_id, pool).await?;
     let history = History::new_from_str(game.history.clone())?;
     let mut state = State::new_from_history(&history)?;
     let piece = piece.parse()?;
     let pos = Position::from_string(&pos, &state.board)?;
     state.play_turn(piece, pos)?;
-    Ok(GameStateResponse::new_from(&game, &state, pool).await?)
+    GameStateResponse::new_from(&game, &state, pool).await
 }
 
 #[post("/game/{id:\\d+}/play")]

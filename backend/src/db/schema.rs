@@ -44,9 +44,4 @@ diesel::joinable!(game_challenges -> users (challenger_uid));
 diesel::joinable!(games_users -> games (game_id));
 diesel::joinable!(games_users -> users (user_id));
 
-diesel::allow_tables_to_appear_in_same_query!(
-    game_challenges,
-    games,
-    games_users,
-    users,
-);
+diesel::allow_tables_to_appear_in_same_query!(game_challenges, games, games_users, users,);

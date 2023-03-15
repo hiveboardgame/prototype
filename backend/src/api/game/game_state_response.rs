@@ -1,3 +1,8 @@
+use crate::{
+    db::util::DbPool,
+    model::{game::Game, user::User},
+    server_error::ServerError,
+};
 use hive_lib::{
     bug::Bug, game_status::GameStatus, game_type::GameType, piece::Piece, position::Position,
     state::State,
@@ -5,7 +10,6 @@ use hive_lib::{
 use serde::Serialize;
 use serde_with::serde_as;
 use std::collections::HashMap;
-use crate::{model::{user::User, game::Game}, db::util::DbPool, server_error::ServerError};
 
 #[serde_as]
 #[serde_with::skip_serializing_none]
@@ -33,8 +37,8 @@ impl GameStateResponse {
             game_type: state.game_type,
             tournament_queen_rule: state.tournament,
             turn: state.turn,
-            white_player: User::find_by_uid(&pool, &game.white_uid).await?,
-            black_player: User::find_by_uid(&pool, &game.black_uid).await?,
+            white_player: User::find_by_uid(pool, &game.white_uid).await?,
+            black_player: User::find_by_uid(pool, &game.black_uid).await?,
             moves: GameStateResponse::moves_as_string(state.board.moves(&state.turn_color)),
             spawns: state.board.spawnable_positions(&state.turn_color),
             reserve: state.board.reserve(&state.turn_color, state.game_type),
