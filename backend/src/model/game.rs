@@ -1,8 +1,6 @@
 use crate::db::schema::games;
-use crate::db::schema::games::dsl::games as games_table;
 use crate::db::schema::games::dsl::*;
 use crate::db::util::{get_conn, DbPool};
-use crate::server_error::ServerError;
 use diesel::{prelude::*, result::Error, Identifiable, Insertable, QueryDsl, Queryable};
 use diesel_async::RunQueryDsl;
 use serde::{Deserialize, Serialize};

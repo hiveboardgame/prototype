@@ -1,11 +1,11 @@
 use crate::{
-    api::game::game_state_response::GameStateResponse, api::play_request::PlayRequest,
+    api::game::game_state_response::GameStateResponse,
     db::util::DbPool, model::game::Game, server_error::ServerError,
 };
 use actix_web::web::{self, post, Json, Path};
 use hive_lib::{
-    game_control::GameControl, game_error::GameError, game_error::GameError, history::History,
-    history::History, position::Position, position::Position, state::State, state::State,
+    game_control::GameControl, game_error::GameError, history::History, position::Position,
+    state::State,
 };
 use serde::Deserialize;
 use serde::Serialize;
@@ -25,11 +25,10 @@ async fn play_turn(
     pool: &DbPool,
 ) -> Result<GameStateResponse, ServerError> {
     let game = Game::get(game_id, &pool).await?;
-    let history = History::new_from_str(game.history)?;
-    let state = State::new_from_history(&history)?;
+    let history = History::new_from_str(game.history.clone())?;
+    let mut state = State::new_from_history(&history)?;
     let piece = piece.parse()?;
     let pos = Position::from_string(&pos, &state.board)?;
-
     state.play_turn(piece, pos)?;
     Ok(GameStateResponse::new_from(&game, &state, pool).await?)
 }
