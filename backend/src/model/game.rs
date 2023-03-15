@@ -28,13 +28,12 @@ pub struct Game {
     pub black_uid: String, // uid of user
     pub game_status: String,
     pub game_type: String,
-    pub history: String,
+    pub history: String, //"piece move;piece move;piece move;"
     pub tournament_queen_rule: bool,
     pub turn: i32,
     pub white_uid: String, // uid of user
 }
 
-//"move;move;move;"
 
 impl Game {
     pub async fn create(new_game: &NewGame, pool: &DbPool) -> Result<Game, Error> {
@@ -42,14 +41,12 @@ impl Game {
         new_game.insert_into(games::table).get_result(conn).await
     }
 
-    pub async fn make_move(&self, board_move: String, pool: &DbPool) -> Result<(), Error> {
+    pub async fn make_move(&self, board_move: String, pool: &DbPool) -> Result<Game, Error> {
         let conn = &mut get_conn(pool).await?;
-        // append to history
-        let game = diesel::update(games::table.find(self.id))
-            .set(history.eq("wasd"))
-            .execute(conn)
-            .await?;
-        Ok(())
+        diesel::update(games::table.find(self.id))
+            .set(history.eq(history.concat(board_move)))
+            .get_result(conn)
+            .await
     }
 
     pub async fn get(other_id: i32, pool: &DbPool) -> Result<Game, Error> {
