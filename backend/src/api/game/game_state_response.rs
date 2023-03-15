@@ -39,7 +39,7 @@ impl GameStateResponse {
             turn: state.turn,
             white_player,
             black_player,
-            moves: GameActionResponse::moves_as_string(state.board.moves(&state.turn_color)),
+            moves: GameStateResponse::moves_as_string(state.board.moves(&state.turn_color)),
             spawns: state.board.spawnable_positions(&state.turn_color),
             reserve: state.board.reserve(&state.turn_color, state.game_type),
             history: state.history.moves.clone(),

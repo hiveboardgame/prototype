@@ -2,14 +2,14 @@
 
 diesel::table! {
     games (id) {
-        id -> Int8,
-        black -> Text,
+        id -> Int4,
+        black_uid -> Text,
         game_status -> Text,
         game_type -> Text,
         history -> Text,
         tournament_queen_rule -> Bool,
         turn -> Int4,
-        white -> Text,
+        white_uid -> Text,
     }
 }
 
