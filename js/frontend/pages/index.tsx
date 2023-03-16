@@ -25,7 +25,7 @@ import { useHasMounted } from '../hooks/useHasMounted';
 import { useTitle } from '../hooks/useTitle';
 
 const IndexTabs = () => {
-  const { user, incompleteProfile, activeGames, activeChallenges } = usePlayer();
+  const { user, incompleteProfile, activeGames } = usePlayer();
   const loggedIn = user && !incompleteProfile;
   return (
     <Tabs
@@ -55,7 +55,7 @@ const IndexTabs = () => {
         )}
         {loggedIn && (
           <TabPanel p={0}>
-            <ListPlayerChallenges className='border' challenges={activeChallenges} />
+            <ListPlayerChallenges className='border' />
           </TabPanel>
         )}
       </TabPanels>

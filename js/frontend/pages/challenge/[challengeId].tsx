@@ -74,6 +74,7 @@ interface AcceptChallengeProps {
 
 const AcceptChallenge = (props: AcceptChallengeProps) => {
   const { challenge, user } = props;
+  const { authToken } = usePlayer();
 
   return (
     <>
@@ -87,7 +88,7 @@ const AcceptChallenge = (props: AcceptChallengeProps) => {
             colorScheme="green"
             size="lg"
             onClick={() => {
-              acceptGameChallenge(challenge.id)
+              acceptGameChallenge(challenge.id, authToken)
                 .then((game) => console.log(game)) // TODO: navigate to the newly created game
                 .catch((err) => console.error(err));
             }}

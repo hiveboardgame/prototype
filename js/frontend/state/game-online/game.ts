@@ -4,6 +4,8 @@ import { HexCoordinate, Move, TileId } from 'hive-lib';
 export interface GameProps {
   // the uid of the player viewing the game
   uid: string | null;
+  // the JWT authentication token
+  authToken: string | null,
   // a string indicating the last time the user requested the board to be centered
   boardCentered: string;
   // the game data
@@ -25,6 +27,7 @@ export interface GameProps {
 export function initializeGame(): GameProps {
   return {
     uid: null,
+    authToken: null,
     boardCentered: '',
     game: null,
     newMovesToView: false,

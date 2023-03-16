@@ -1,11 +1,13 @@
-import { Button, Input, Popover, PopoverArrow, PopoverBody, PopoverCloseButton, PopoverContent, PopoverHeader, PopoverTrigger, useClipboard } from '@chakra-ui/react';
+import { Button, Input, Popover, PopoverArrow, PopoverBody, PopoverCloseButton, PopoverContent, PopoverHeader, PopoverTrigger, Spinner, useClipboard } from '@chakra-ui/react';
 import {
   deleteGameChallenge,
   GameChallenge,
+  usePlayer,
 } from 'hive-db';
 import { HTMLAttributes, useState } from 'react';
 import { Header, HeaderItem } from './Header';
 import { ExpansionsItem } from './items/ExpansionsItem';
+import { usePlayerChallenges } from '../../hooks/usePlayerChallenges';
 import { Row, RowItem } from './Row';
 
 const ShareLinkButton = ({ text }: { text: string }) => {
@@ -38,12 +40,13 @@ const ShareLinkButton = ({ text }: { text: string }) => {
 }
 
 const DeleteButton = ({ id, onDelete }: { id: string, onDelete: () => void }) => {
+  const { authToken } = usePlayer();
   return (
     <Button
       size='xs'
       colorScheme='red'
       onClick={() => {
-        deleteGameChallenge(id)
+        deleteGameChallenge(id, authToken)
           .then(onDelete)
           .catch((error) => console.error(error));
       }}
@@ -84,12 +87,13 @@ const PlayerChallengeRow = ({ challenge }: PlayerChallengeRowProps) => {
   );
 };
 
-interface ListPlayerChallengesProps extends HTMLAttributes<HTMLDivElement> {
-  challenges: GameChallenge[];
-}
+const ListPlayerChallenges = (props: HTMLAttributes<HTMLDivElement>) => {
+  const { className, ...rest } = props;
+  const { challenges, error, isLoading } = usePlayerChallenges();
 
-const ListPlayerChallenges = (props: ListPlayerChallengesProps) => {
-  const { challenges, className, ...rest } = props;
+  if (isLoading || error) {
+    return <Spinner />
+  }
 
   return (
     <div className={`grid grid-cols-7 w-full ${className || ''}`} {...rest}>
