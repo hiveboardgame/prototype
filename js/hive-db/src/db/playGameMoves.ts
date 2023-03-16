@@ -19,7 +19,7 @@ interface GameMoveResponse {
  * @param game The game to update.
  * @param moves An ordered list of moves to play.
  */
-export function playGameMove(game: Game, move: Move): Promise<GameMoveResponse> {
+export function playGameMove(game: Game, move: Move, authToken: string): Promise<GameMoveResponse> {
   const uri = `/api/board/${game.gid}/move/${move.notation}`;
-  return postJSON(uri, {}, true);
+  return postJSON(uri, {}, authToken);
 }

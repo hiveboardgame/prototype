@@ -20,9 +20,8 @@ import { createGuestUser, createUser, getUser } from '..';
 
 export interface PlayerContextProps {
   user: UserData | null;
+  authToken: string | null;
   incompleteProfile: boolean;
-  activeChallenges: GameChallenge[];
-  newChallenge: (challenge: GameChallenge) => void,
   activeGames: Game[];
   completedGames: Game[];
   usernameChanged: (username: string) => Promise<void>;
@@ -49,9 +48,9 @@ const usePlayer = () => {
 function usePlayerState(): PlayerContextProps {
   const auth = getAuth(app);
   const [user, setUser] = useState<UserData | null>(null);
+  const [authToken, setAuthToken] = useState<string | null>(null);
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [incompleteProfile, setIncompleteProfile] = useState<boolean>(false);
-  const [activeChallenges, setActiveChallenges] = useState<GameChallenge[]>([]);
   const [activeGames, setActiveGames] = useState<Game[]>([]);
   const [completedGames, setCompletedGames] = useState<Game[]>([]);
 
@@ -69,8 +68,6 @@ function usePlayerState(): PlayerContextProps {
         setActiveGames(activeGames);
         setCompletedGames(completedGames);
       });
-    getUserChallenges(user)
-      .then(setActiveChallenges);
   }, [user]);
 
   async function usernameChanged(username: string) {
@@ -79,7 +76,7 @@ function usePlayerState(): PlayerContextProps {
     }
 
     // TODO: better error handling w/ helpful user-facing messages
-    setUser(await createUser(username));
+    setUser(await createUser(username, authToken));
     setIncompleteProfile(false);
   }
 
@@ -90,6 +87,8 @@ function usePlayerState(): PlayerContextProps {
 
     const uid = firebaseUser.uid;
     const isGuest = firebaseUser.isAnonymous;
+    const token = await firebaseUser.getIdToken();
+    setAuthToken(token);
 
     // Check if a user already exists for this uid. If so, we're done.
     // Otherwise, either create a guest account or prompt for a username
@@ -97,7 +96,7 @@ function usePlayerState(): PlayerContextProps {
     if (user) {
       setUser(user);
     } else if (isGuest) {
-      setUser(await createGuestUser());
+      setUser(await createGuestUser(token));
     } else {
       setIncompleteProfile(true);
     }
@@ -139,7 +138,6 @@ function usePlayerState(): PlayerContextProps {
         setIncompleteProfile(false);
         setActiveGames([]);
         setCompletedGames([]);
-        setActiveChallenges([]);
         if (redirect) { /* router.push(redirect) */ }
       })
       .catch((error) => {
@@ -147,17 +145,12 @@ function usePlayerState(): PlayerContextProps {
       });
   };
 
-  function newChallenge(challenge: GameChallenge) {
-    setActiveChallenges([challenge].concat(activeChallenges));
-  }
-
   return {
     user,
+    authToken,
     incompleteProfile,
     activeGames,
     completedGames,
-    newChallenge,
-    activeChallenges,
     usernameChanged,
     signInWithGoogle,
     signInAsGuest,
@@ -169,11 +162,10 @@ function defaultPlayerContext(): PlayerContextProps {
   const message = 'Player context not properly initialized.';
   return {
     user: null,
+    authToken: null,
     incompleteProfile: false,
     activeGames: [],
     completedGames: [],
-    activeChallenges: [],
-    newChallenge: (_) => Promise.reject(message),
     usernameChanged: (_) => Promise.reject(message),
     signInWithGoogle: () => Promise.reject(message),
     signInAsGuest: () => Promise.reject(message),

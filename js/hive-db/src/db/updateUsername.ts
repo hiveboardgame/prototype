@@ -7,6 +7,6 @@ import { postJSON } from '../api';
  * @param username A username that has been verified to not already be in use.
  * @returns A promise that resolves to void.
  */
-export function updateUsername(uid: string, username: string): Promise<void> {
-  return postJSON(`/api/user/username`, { uid: uid, username: username }, true);
+export function updateUsername(uid: string, username: string, authToken: string): Promise<void> {
+  return postJSON(`/api/user/username`, { uid: uid, username: username }, authToken);
 }

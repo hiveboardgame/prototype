@@ -1,8 +1,5 @@
-import app from './db/app';
-import { getAuth } from '@firebase/auth';
-
-export async function postJSON<T>(uri: string, body: any, authenticated = false): Promise<T> {
-  const res = await jsonReq(uri, { method: 'POST', body: JSON.stringify(body) }, authenticated);
+export async function postJSON<T>(uri: string, body: any, authToken: string | null = null): Promise<T> {
+  const res = await jsonReq(uri, { method: 'POST', body: JSON.stringify(body) }, authToken);
   if (res.ok) {
     return await res.json() as T;
   } else {
@@ -10,8 +7,8 @@ export async function postJSON<T>(uri: string, body: any, authenticated = false)
   }
 }
 
-export async function getJSON<T>(uri: string, authenticated = false): Promise<T | null> {
-  const res = await jsonReq(uri, { method: 'GET' }, authenticated);
+export async function getJSON<T>(uri: string, authToken: string | null = null): Promise<T | null> {
+  const res = await jsonReq(uri, { method: 'GET' }, authToken);
   if (res.ok) {
     return await res.json() as T;
   } else if (res.status === 404) {
@@ -21,29 +18,25 @@ export async function getJSON<T>(uri: string, authenticated = false): Promise<T 
   }
 }
 
-async function setAuthHeader(options: any) {
-  const auth = getAuth(app);
-  if (!auth.currentUser) {
-    throw new Error('user not logged in');
-  }
+function setAuthHeader(options: any, authToken: string) {
   if (!options.headers) {
     options.headers = {};
   }
-  options.headers['X-Authentication'] = await auth.currentUser.getIdToken();
+  options.headers['X-Authentication'] = authToken;
 }
 
-async function jsonReq(uri: string, options: any, authenticated: boolean): Promise<Response> {
+async function jsonReq(uri: string, options: any, authToken: string | null): Promise<Response> {
   options.headers = {
     'Content-Type': 'application/json',
   };
-  if (authenticated) {
-    await setAuthHeader(options);
+  if (authToken) {
+    setAuthHeader(options, authToken);
   }
   return fetch(uri, options);
 }
 
-export async function deleteReq(uri: string): Promise<Response> {
+export async function deleteReq(uri: string, authToken: string): Promise<Response> {
   const options = { method: 'DELETE' };
-  await setAuthHeader(options);
+  setAuthHeader(options, authToken);
   return fetch(uri, options);
 }

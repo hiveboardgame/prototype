@@ -40,6 +40,7 @@ export async function createGameChallenge(
   visibility: VisibilityChoice,
   colorChoice: ColorChoice,
   expansions: ExpansionsChoice,
+  authToken: string,
 ): Promise<GameChallenge> {
   const isPublic = visibility === 'Public';
   const gameType = gameOptionsToString(newGameOptions(
@@ -54,7 +55,7 @@ export async function createGameChallenge(
     gameType,
     colorChoice,
   };
-  let challenge = await postJSON<GameChallenge>('/api/game/challenge', reqBody, true);
+  let challenge = await postJSON<GameChallenge>('/api/game/challenge', reqBody, authToken);
   initializeChallenge(challenge);
   return challenge;
 }
@@ -69,12 +70,12 @@ export async function getGameChallenge(id: string): Promise<GameChallenge> {
   return challenge;
 }
 
-export async function acceptGameChallenge(id: string): Promise<Game> {
-  return postJSON(`/api/game/challenge/${id}/accept`, {}, true);
+export async function acceptGameChallenge(id: string, authToken: string): Promise<Game> {
+  return postJSON(`/api/game/challenge/${id}/accept`, {}, authToken);
 }
 
-export async function deleteGameChallenge(id: string): Promise<null> {
-  await deleteReq(`/api/game/challenge/${id}`);
+export async function deleteGameChallenge(id: string, authToken: string): Promise<void> {
+  await deleteReq(`/api/game/challenge/${id}`, authToken);
   return;
 }
 
@@ -94,8 +95,8 @@ export interface GameChallengeWithUser {
   challenge: Omit<GameChallenge, 'challengeUrl' | 'challenger'>,
 }
 
-export async function getUserChallenges(user: UserData): Promise<GameChallenge[]> {
-    let responses = await getJSON<GameChallenge[]>(`/api/user/${user.uid}/challenges`, true);
-    responses.forEach((challenge) => initializeChallenge(challenge));
-    return responses;
+export async function getUserChallenges(user: UserData, authToken: string): Promise<GameChallenge[]> {
+  let responses = await getJSON<GameChallenge[]>(`/api/user/${user.uid}/challenges`, authToken);
+  responses.forEach((challenge) => initializeChallenge(challenge));
+  return responses;
 }
