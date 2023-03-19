@@ -6,6 +6,7 @@ pub struct TorusArray<T> {
     data: Vec<T>,
     width: i32,
     height: i32,
+    default: T,
 }
 
 impl<T> TorusArray<T>
@@ -14,16 +15,20 @@ where
 {
     pub fn new(width: usize, height: usize, default: T) -> Self {
         Self {
-            data: vec![default; width * height],
+            data: vec![default.clone(); width * height],
             width: width.try_into().expect("too big"),
             height: height.try_into().expect("too big"),
+            default,
         }
     }
 
     pub fn get(&self, position: Position) -> &T {
+        // TODO Move modulo this into position
+        // assert!(position.x < self.width);
+        // assert!(position.y < self.height);
         let x = position.x.rem_euclid(self.width) as usize;
         let y = position.y.rem_euclid(self.height) as usize;
-        self.data.get(x * y + y).expect(
+        self.data.get(y * (self.width as usize) + x).expect(
             "TorusArray found an empty position, this should not happen because it's initialized",
         )
     }
@@ -31,15 +36,20 @@ where
     pub fn get_mut(&mut self, position: Position) -> &mut T {
         let x = position.x.rem_euclid(self.width) as usize;
         let y = position.y.rem_euclid(self.height) as usize;
-        self.data.get_mut(x * y + y).expect(
+        self.data.get_mut(y * (self.width as usize) + x).expect(
             "TorusArray found an empty position, this should not happen because it's initialized",
         )
+    }
+
+    // TODO get rid of this
+    pub fn remove(&mut self, position: Position) {
+        self.set(position, self.default.clone());
     }
 
     pub fn set(&mut self, position: Position, element: T) {
         let x = position.x.rem_euclid(self.width) as usize;
         let y = position.y.rem_euclid(self.height) as usize;
-        self.data.insert(x * y + y, element)
+        self.data.insert(y * (self.width as usize) + x, element)
     }
 }
 

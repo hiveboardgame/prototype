@@ -55,8 +55,12 @@ impl History {
         Ok(history)
     }
 
-    pub fn record_move(&mut self, piece: &str, pos: &str) {
-        self.moves.push((piece.to_string(), pos.to_string()));
+    pub fn record_move<S1, S2>(&mut self, piece: S1, pos: S2)
+    where
+        S1: Into<String>,
+        S2: Into<String>,
+    {
+        self.moves.push((piece.into(), pos.into()));
     }
 
     fn parse_game_result(&mut self, str: &str) {
@@ -126,7 +130,8 @@ impl History {
             static ref RESULT: Regex = Regex::new(r"\[Result").expect("This regex should compile");
         }
         lazy_static! {
-            static ref GAME_TYPE_LINE: Regex = Regex::new(r"\[GameType.*").expect("This regex should compile");
+            static ref GAME_TYPE_LINE: Regex =
+                Regex::new(r"\[GameType.*").expect("This regex should compile");
         }
         match File::open(file_path) {
             Ok(file) => {

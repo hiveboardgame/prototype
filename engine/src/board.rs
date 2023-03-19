@@ -3,7 +3,7 @@ type HashMap<K, V> = FnvHashMap<K, V>;
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
-use std::fmt;
+use std::{fmt, num};
 use std::fmt::Write;
 
 use crate::bug::Bug;
@@ -18,34 +18,29 @@ use crate::torus_array::TorusArray;
 
 #[derive(Deserialize, Serialize, Clone, Debug, Eq, PartialEq)]
 pub struct Board {
-    pub board: TorusArray<Piece>,
+    pub board: TorusArray<Vec<Piece>>,
     pub last_moved: Option<(Piece, Position)>,
 }
 
 impl fmt::Display for Board {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut positions = self.board.keys().cloned().collect::<Vec<Position>>();
-        positions.sort_by(|a, b| a.y.cmp(&b.y).then(a.x.cmp(&b.x)));
-        let ((min_x, min_y), (max_x, max_y)) = ((0, 28), (0, 28));
+        let ((min_x, min_y), (max_x, max_y)) = ((0_i8, 31_i8), (0_i8, 31_i8));
         let mut s = "".to_string();
         for y in min_y..=max_y {
             if y.rem_euclid(2) == 1 {
                 write!(s, "  ")?;
             }
             for x in min_x..=max_x {
-                match self.board.get(Position::new(x, y)) {
-                    Some(piece) => match piece.last() {
-                        Some(last) => {
-                            if last.to_string().len() < 3 {
-                                write!(s, "{last}  ")
-                            } else {
-                                write!(s, "{last} ")
-                            }
-                        }
-                        None => unreachable!("Found a piece key but no value"),
-                    },
-                    None => write!(s, "    "),
-                }?
+                let pieces = self.board.get(Position::new(x, y));
+                if let Some(last) = pieces.last() {
+                    if last.to_string().len() < 3 {
+                        write!(s, "{last}  ")?;
+                    } else {
+                        write!(s, "{last} ")?;
+                    }
+                } else {
+                    write!(s, "    ")?;
+                }
             }
             writeln!(s)?;
         }
@@ -56,48 +51,18 @@ impl fmt::Display for Board {
 impl Board {
     pub fn new() -> Self {
         Self {
-            board: TorusArray::new(29, 29, Piece { bug: Bug::Ant, color: Color::White, order: Some(1) }),
+            board: TorusArray::new(32, 32, vec![]),
             last_moved: None,
         }
-    }
-
-    pub fn min_max_positions(&self) -> ((i8, i8), (i8, i8)) {
-        let mut positions = self.board.keys().cloned().collect::<Vec<Position>>();
-        positions.sort_by(|a, b| a.y.cmp(&b.y).then(a.x.cmp(&b.x)));
-        let min_x = positions
-            .iter()
-            .min_by(|a, b| a.x.cmp(&b.x))
-            .unwrap_or(&Position::new(0, 0))
-            .x as i8;
-
-        let max_x = positions
-            .iter()
-            .max_by(|a, b| a.x.cmp(&b.x))
-            .unwrap_or(&Position::new(0, 0))
-            .x as i8;
-
-        let min_y = positions
-            .iter()
-            .min_by(|a, b| a.y.cmp(&b.y))
-            .unwrap_or(&Position::new(0, 0))
-            .y as i8;
-
-        let max_y = positions
-            .iter()
-            .max_by(|a, b| a.y.cmp(&b.y))
-            .unwrap_or(&Position::new(0, 0))
-            .y as i8;
-
-        ((min_x, min_y), (max_x, max_y))
     }
 
     pub fn game_result(&self) -> GameResult {
         let black = self
             .position_of_piece(&Piece::new(Bug::Queen, Color::White, None))
-            .map(|pos| self.neighbors(&pos).len() == 6);
+            .map(|pos| self.neighbors(pos).len() == 6);
         let white = self
             .position_of_piece(&Piece::new(Bug::Queen, Color::Black, None))
-            .map(|pos| self.neighbors(&pos).len() == 6);
+            .map(|pos| self.neighbors(pos).len() == 6);
         match (black, white) {
             (Some(true), Some(true)) => GameResult::Draw,
             (Some(true), Some(false)) => GameResult::Winner(Color::Black),
@@ -107,19 +72,57 @@ impl Board {
     }
 
     pub fn position_of_piece(&self, piece: &Piece) -> Option<Position> {
-        for (pos, pieces) in self.board.iter() {
-            if pieces.contains(piece) {
-                return Some(*pos);
+        // TODO: think about caching positions
+        for x in 0..32 {
+            for y in 0..32 {
+                let pos = Position { x, y };
+                let pieces = self.board.get(pos);
+                if pieces.contains(piece) {
+                    return Some(pos);
+                }
             }
         }
         None
     }
 
+    pub fn position(&self, piece: &Piece) -> Option<Position> {
+        // TODO: think about caching positions
+        self.position_of_piece(piece)
+    }
+
+    pub fn piece_already_played(&self, piece: Piece) -> bool {
+        // TODO seriously some caching
+        for x in 0..32 {
+            for y in 0..32 {
+                if self.board.get(Position { x, y }).contains(&piece) {
+                    return true;
+                }
+            }
+        }
+        false
+    }
+
+    pub fn positions_for_color(&self, color: Color) -> Vec<Position> {
+        // TODO: think about caching positions
+        let mut found_positions = Vec::new();
+        for x in 0..32 {
+            for y in 0..32 {
+                let pos = Position { x, y };
+                if let Some(piece) = self.board.get(pos).last() {
+                    if piece.is_color(color) {
+                        found_positions.push(pos);
+                    }
+                }
+            }
+        }
+        found_positions
+    }
+
     pub fn move_piece(
         &mut self,
-        piece: &Piece,
-        current: &Position,
-        target: &Position,
+        piece: Piece,
+        current: Position,
+        target: Position,
         turn: usize,
     ) -> Result<(), GameError> {
         if !self.is_top_piece(piece, current) {
@@ -131,52 +134,20 @@ impl Board {
                 reason: "Trying to move a covered piece".to_string(),
             });
         }
-        if let Some(vec) = self.board.get_mut(current) {
-            if let Some(piece) = vec.pop() {
-                if vec.is_empty() {
-                    self.board.remove(current);
-                }
-                self.insert(target, piece);
-                return Ok(());
-            }
+        let vec = self.board.get_mut(current);
+        if let Some(piece) = vec.pop() {
+            self.insert(target, piece);
+            return Ok(());
         }
         panic!(
             "Trying to move {piece} from {current} to {target} which should have been a legal move"
         );
     }
 
-    pub fn neighbor_is_a(&self, position: &Position, bug: Bug) -> bool {
+    pub fn neighbor_is_a(&self, position: Position, bug: Bug) -> bool {
         self.top_layer_neighbors(position)
             .iter()
             .any(|piece| piece.bug == bug)
-    }
-
-    pub fn position(&self, piece: &Piece) -> Option<Position> {
-        self.board.iter().find_map(|(pos, pieces)| {
-            if pieces.contains(piece) {
-                Some(*pos)
-            } else {
-                None
-            }
-        })
-    }
-
-    pub fn piece_already_played(&self, piece: &Piece) -> bool {
-        self.board.values().any(|pieces| pieces.contains(piece))
-    }
-
-    pub fn positions_for_color(&self, color: &Color) -> Vec<Position> {
-        self.board
-            .iter()
-            .filter_map(|(pos, pieces)| {
-                if let Some(piece) = pieces.last() {
-                    if piece.is_color(color) {
-                        return Some(*pos);
-                    }
-                }
-                None
-            })
-            .collect()
     }
 
     pub fn positions_around_iter(
@@ -194,7 +165,7 @@ impl Board {
         DIRS.iter().map(move |dir| position.to(dir))
     }
 
-    pub fn positions_around(&self, position: &Position) -> Vec<Position> {
+    pub fn positions_around(&self, position: Position) -> Vec<Position> {
         vec![
             position.to(&Direction::NW),
             position.to(&Direction::NE),
@@ -205,48 +176,42 @@ impl Board {
         ]
     }
 
-    pub fn level(&self, position: &Position) -> usize {
-        return match self.board.get(position) {
-            None => 0,
-            Some(pieces) => pieces.len(),
-        };
+    pub fn level(&self, position: Position) -> usize {
+        self.board.get(position).len()
     }
 
-    pub fn top_piece(&self, position: &Position) -> Option<Piece> {
-        if let Some(piece) = self.board.get(position).unwrap_or(&Vec::new()).last() {
-            return Some(*piece);
-        }
-        None
+    pub fn top_piece(&self, position: Position) -> Option<Piece> {
+        self.board.get(position).last().cloned()
     }
 
-    pub fn is_top_piece(&self, piece: &Piece, position: &Position) -> bool {
-        if let Some(found) = self.top_piece(position) {
-            return piece == &found;
-        }
-        false
+    pub fn is_top_piece(&self, piece: Piece, position: Position) -> bool {
+        self.top_piece(position)
+            .map(|found| found == piece)
+            .unwrap_or(false)
     }
 
-    pub fn top_bug(&self, position: &Position) -> Option<Bug> {
+    pub fn top_bug(&self, position: Position) -> Option<Bug> {
         if let Some(piece) = self.top_piece(position) {
             return Some(piece.bug);
         }
         None
     }
 
-    pub fn gated(&self, level: usize, from: &Position, to: &Position) -> bool {
+    pub fn gated(&self, level: usize, from: Position, to: Position) -> bool {
         let (pos1, pos2) = from.common_adjacent_positions(to);
-        match (self.board.get(&pos1), self.board.get(&pos2)) {
-            (Some(p1), Some(p2)) => p1.len() >= level && p2.len() >= level,
-            _ => false,
+        let p1 = self.board.get(pos1);
+        let p2 = self.board.get(pos2);
+        if p1.len() == 0 || p2.len() == 0 {
+            return false;
         }
+        p1.len() >= level && p2.len() >= level
     }
 
-    pub fn get_neighbor(&self, position: &Position) -> Option<(Piece, Position)> {
-        for pos in self.positions_around(position).iter() {
-            if let Some(pieces) = self.board.get(pos) {
-                if let Some(piece) = pieces.last() {
-                    return Some((*piece, *pos));
-                }
+    pub fn get_neighbor(&self, position: Position) -> Option<(Piece, Position)> {
+        for pos in self.positions_around(position).into_iter() {
+            let pieces = self.board.get(pos);
+            if let Some(piece) = pieces.last() {
+                return Some((*piece, pos));
             }
         }
         None
@@ -257,70 +222,80 @@ impl Board {
         position: Position,
     ) -> impl Iterator<Item = Position> + 'this {
         self.positions_around_iter(position)
-            .filter(|pos| self.board.contains_key(pos))
+            .filter(|pos| self.occupied(*pos))
     }
 
     pub fn occupied(&self, position: Position) -> bool {
-        self.board.contains_key(&position)
+        self.board.get(position).len() > 0
     }
 
-    pub fn positions_taken_around(&self, position: &Position) -> Vec<Position> {
+    pub fn positions_taken_around(&self, position: Position) -> Vec<Position> {
         self.positions_around(position)
             .into_iter()
-            .filter(|pos| self.board.contains_key(pos))
+            .filter(|pos| self.occupied(*pos))
             .collect()
     }
 
-    pub fn positions_available_around(&self, position: &Position) -> Vec<Position> {
+    pub fn positions_available_around(&self, position: Position) -> Vec<Position> {
         self.positions_around(position)
             .into_iter()
-            .filter(|pos| !self.board.contains_key(pos))
+            .filter(|pos| !self.occupied(*pos))
             .collect()
     }
 
-    pub fn neighbors(&self, position: &Position) -> Vec<Vec<Piece>> {
+    pub fn neighbors(&self, position: Position) -> Vec<Vec<Piece>> {
         return self
             .positions_around(position)
             .iter()
-            .filter_map(|pos| self.board.get(pos))
+            .filter_map(|pos| {
+                if self.occupied(*pos) {
+                    Some(self.board.get(*pos))
+                } else {
+                    None
+                }
+            })
             .cloned()
             .collect();
     }
 
     pub fn is_valid_move(
         &self,
-        color: &Color,
-        piece: &Piece,
-        current_position: &Position,
-        target_position: &Position,
+        color: Color,
+        piece: Piece,
+        current_position: Position,
+        target_position: Position,
     ) -> bool {
-        return match self.moves(color).get(&(*piece, *current_position)) {
+        return match self.moves(color).get(&(piece, current_position)) {
             None => false,
-            Some(positions) => positions.contains(target_position),
+            Some(positions) => positions.contains(&target_position),
         };
     }
 
-    pub fn moves(&self, color: &Color) -> HashMap<(Piece, Position), Vec<Position>> {
+    pub fn moves(&self, color: Color) -> HashMap<(Piece, Position), Vec<Position>> {
+        // TODO this needs caching
         let mut moves: HashMap<(Piece, Position), Vec<Position>> = HashMap::default();
         if !self.queen_played(color) {
             return moves;
         }
-        for pos in self.board.keys() {
-            if let Some(piece) = self.top_piece(pos) {
-                if piece.is_color(color) {
-                    // let's make sure pieces that were just moved cannot be moved again
-                    if let Some(last_moved) = self.last_moved {
-                        if last_moved == (piece, *pos) {
-                            // now we skip it
-                            continue;
+        for x in 0..32 {
+            for y in 0..32 {
+                let pos = Position { x, y };
+                if let Some(piece) = self.top_piece(pos) {
+                    if piece.is_color(color) {
+                        // let's make sure pieces that were just moved cannot be moved again
+                        if let Some(last_moved) = self.last_moved {
+                            if last_moved == (piece, pos) {
+                                // now we skip it
+                                continue;
+                            }
                         }
-                    }
-                    for (start_pos, target_positions) in Bug::available_moves(pos, self) {
-                        if let Some(piece) = self.top_piece(&start_pos) {
-                            moves
-                                .entry((piece, start_pos))
-                                .or_default()
-                                .append(&mut target_positions.clone());
+                        for (start_pos, target_positions) in Bug::available_moves(pos, self) {
+                            if let Some(piece) = self.top_piece(start_pos) {
+                                moves
+                                    .entry((piece, start_pos))
+                                    .or_default()
+                                    .append(&mut target_positions.clone());
+                            }
                         }
                     }
                 }
@@ -332,30 +307,34 @@ impl Board {
         moves
     }
 
-    pub fn spawnable_positions(&self, color: &Color) -> Vec<Position> {
-        if self.board.is_empty() {
+    pub fn spawnable_positions(&self, color: Color) -> Vec<Position> {
+        // TODO seriously some caching
+        let mut occupied = false;
+        for x in 0..32 {
+            for y in 0..32 {
+                occupied |= self.occupied(Position { x, y });
+            }
+        }
+        if !occupied {
             return vec![Position::new(0, 0)];
         }
         return self
             .negative_space()
             .iter()
-            .filter(|pos| self.spawnable(color, pos))
+            .filter(|pos| self.spawnable(color, **pos))
             .cloned()
             .collect();
     }
 
-    pub fn queen_played(&self, color: &Color) -> bool {
-        return self
-            .board
-            .values()
-            .any(|p| p.contains(&Piece::new(Bug::Queen, *color, None)));
+    pub fn queen_played(&self, color: Color) -> bool {
+        self.piece_already_played(Piece::new(Bug::Queen, color, None))
     }
 
-    pub fn queen_required(&self, turn: usize, color: &Color) -> bool {
-        if turn == 6 && color == &Color::White && !self.queen_played(&Color::White) {
+    pub fn queen_required(&self, turn: usize, color: Color) -> bool {
+        if turn == 6 && color == Color::White && !self.queen_played(Color::White) {
             return true;
         }
-        if turn == 7 && color == &Color::Black && !self.queen_played(&Color::Black) {
+        if turn == 7 && color == Color::Black && !self.queen_played(Color::Black) {
             return true;
         }
         false
@@ -364,7 +343,7 @@ impl Board {
     fn walk_board(
         &self,
         position: Position,
-        excluded_position: &Position,
+        excluded_position: Position,
         mut visited: HashSet<Position>,
     ) -> HashSet<Position> {
         self.walk_board_inner(position, excluded_position, &mut visited);
@@ -374,47 +353,52 @@ impl Board {
     fn walk_board_inner(
         &self,
         position: Position,
-        excluded_position: &Position,
+        excluded_position: Position,
         mut visited: &mut HashSet<Position>,
     ) {
+        if visited.contains(&position) {
+            return;
+        }
         visited.insert(position);
-        for pos in self.positions_taken_around(&position).iter() {
-            if pos != excluded_position && !visited.contains(pos) {
-                self.walk_board_inner(*pos, excluded_position, &mut visited);
+        for pos in self.positions_taken_around_iter(position) {
+            if pos != excluded_position && !visited.contains(&pos) {
+                self.walk_board_inner(pos, excluded_position, &mut visited);
             }
         }
     }
 
-    pub fn pinned(&self, position: &Position) -> bool {
+    pub fn pinned(&self, position: Position) -> bool {
+        // pieces on top of the hive cannot be pinned (just gated)
         if self.level(position) > 1 {
             return false;
         }
-        let len = self.board.keys().len();
-        let mut visited = HashSet::new();
-        match self
-            .board
-            .keys()
-            .filter(|p| *p != position)
-            .cloned()
-            .collect::<Vec<Position>>()
-            .pop()
-        {
-            Some(start) => visited = self.walk_board(start, position, visited),
-            None => return false,
+        // if there's only one neighbor the piece isn't pinned
+        let all_neighbor_positions = self.positions_taken_around(position);
+        if all_neighbor_positions.len() < 2 {
+            return false;
         }
-        visited.len() < (len - 1)
+        let mut visited = HashSet::new();
+        visited = self.walk_board(*all_neighbor_positions.last().unwrap(), position, visited);
+        for neighbor_pos in all_neighbor_positions {
+            // if we can't reach all neighbors starting from a random neighbor, the piece would
+            // break the hive into two
+            if !visited.contains(&neighbor_pos) {
+                return true;
+            }
+        }
+        false
     }
 
-    pub fn top_layer_neighbors(&self, position: &Position) -> Vec<Piece> {
+    pub fn top_layer_neighbors(&self, position: Position) -> Vec<Piece> {
         return self
             .positions_around(position)
             .iter()
-            .filter_map(|pos| self.board.get(pos).and_then(|v| v.last()))
+            .filter_map(|pos| self.board.get(*pos).last())
             .cloned()
             .collect();
     }
 
-    pub fn spawns_left(&self, color: &Color, game_type: GameType) -> bool {
+    pub fn spawns_left(&self, color: Color, game_type: GameType) -> bool {
         let reserve_bugs_count = self
             .reserve(color, game_type)
             .iter()
@@ -422,13 +406,16 @@ impl Board {
         !self.spawnable_positions(color).is_empty() && reserve_bugs_count > 0
     }
 
-    pub fn reserve(&self, color: &Color, game_type: GameType) -> HashMap<Bug, i8> {
+    pub fn reserve(&self, color: Color, game_type: GameType) -> HashMap<Bug, i8> {
+        // TODO Cache the shit out of this, too plz
         let mut bugs = Bug::bugs_count(game_type);
-        for pieces in self.board.values() {
-            for piece in pieces {
-                if piece.is_color(color) {
-                    if let Some(i) = bugs.get_mut(&piece.bug) {
-                        *i -= 1;
+        for x in 0..32 {
+            for y in 0..32 {
+                for piece in self.board.get(Position { x, y }) {
+                    if piece.is_color(color) {
+                        if let Some(i) = bugs.get_mut(&piece.bug) {
+                            *i -= 1;
+                        }
                     }
                 }
             }
@@ -437,65 +424,60 @@ impl Board {
     }
 
     pub fn negative_space(&self) -> Vec<Position> {
-        let taken = self.board.keys().cloned().collect::<HashSet<Position>>();
-        let mut all_neighbors = HashSet::new();
-        for pos in taken.iter() {
-            for pos in self.positions_around(pos) {
-                all_neighbors.insert(pos);
+        // TODO caching
+        let mut negative_space = Vec::new();
+        for x in 0..32 {
+            for y in 0..32 {
+                let position = Position { x, y };
+                if self.is_negative_space(position) {
+                    negative_space.push(position)
+                }
             }
         }
-        all_neighbors.difference(&taken).cloned().collect()
+        negative_space
     }
 
-    pub fn spawnable(&self, color: &Color, position: &Position) -> bool {
-        if self.board.contains_key(position) {
+    pub fn is_negative_space(&self, position: Position) -> bool {
+        if self.board.get(position).len() == 0 {
+            return self.positions_taken_around_iter(position).count() > 0;
+        }
+        false
+    }
+
+    pub fn all_taken_positions(&self) -> impl Iterator<Item = Position> {
+        // TODO caching
+        let mut taken = Vec::new();
+        for x in 0..32 {
+            for y in 0..32 {
+                let position = Position { x, y };
+                if self.occupied(position) {
+                    taken.push(position)
+                }
+            }
+        }
+        taken.into_iter()
+    }
+
+    pub fn spawnable(&self, color: Color, position: Position) -> bool {
+        if self.occupied(position) {
             return false;
         }
-        if self.board.keys().len() < 2 {
-            return true;
+        let number_of_positions = self.all_taken_positions().count();
+        if number_of_positions == 0 {
+            return position == Position { x: 0, y: 0 };
+        }
+        if number_of_positions == 1 {
+            return self.is_negative_space(position);
         }
         !self
             .top_layer_neighbors(position)
             .iter()
-            .any(|piece| color == &piece.color.opposite())
+            .any(|piece| color == piece.color.opposite())
     }
 
-    pub fn insert(&mut self, position: &Position, piece: Piece) {
-        self.last_moved = Some((piece, *position));
-        self.board
-            .entry(*position)
-            .and_modify(|v| v.push(piece))
-            .or_insert_with(|| vec![piece]);
-    }
-
-    pub fn min_max_positions(&self) -> ((i8, i8), (i8, i8)) {
-        let mut positions = self.board.keys().cloned().collect::<Vec<Position>>();
-        positions.sort_by(|a, b| a.1.cmp(&b.1).then(a.0.cmp(&b.0)));
-        let min_x = positions
-            .iter()
-            .min_by(|a, b| a.0.cmp(&b.0))
-            .unwrap_or(&Position(0, 0))
-            .0;
-
-        let max_x = positions
-            .iter()
-            .max_by(|a, b| a.0.cmp(&b.0))
-            .unwrap_or(&Position(0, 0))
-            .0;
-
-        let min_y = positions
-            .iter()
-            .min_by(|a, b| a.1.cmp(&b.1))
-            .unwrap_or(&Position(0, 0))
-            .1;
-
-        let max_y = positions
-            .iter()
-            .max_by(|a, b| a.1.cmp(&b.1))
-            .unwrap_or(&Position(0, 0))
-            .1;
-
-        ((min_x, min_y), (max_x, max_y))
+    pub fn insert(&mut self, position: Position, piece: Piece) {
+        self.last_moved = Some((piece, position));
+        self.board.get_mut(position).push(piece);
     }
 }
 
@@ -507,10 +489,10 @@ mod tests {
     fn tests_positions_around() {
         let board = Board::new();
         let positions_0_0 = board
-            .positions_around(&Position::new(0, 0))
+            .positions_around(Position::new(0, 0))
             .into_iter()
             .collect::<HashSet<Position>>();
-        for pos in positions_0_0.iter() {
+        for pos in positions_0_0.clone().into_iter() {
             let other = board
                 .positions_around(pos)
                 .into_iter()
@@ -523,11 +505,14 @@ mod tests {
     fn tests_positions_taken_around() {
         let mut board = Board::new();
         board.insert(
-            &Position::new(0, 0),
+            Position::new(0, 0),
             Piece::new(Bug::Queen, Color::Black, Some(1)),
         );
-        board.insert(&Position::new(1, 0), Piece::new(Bug::Ant, Color::Black, Some(1)));
-        let pos = board.positions_taken_around(&Position::new(0, 0));
+        board.insert(
+            Position::new(1, 0),
+            Piece::new(Bug::Ant, Color::Black, Some(1)),
+        );
+        let pos = board.positions_taken_around(Position::new(0, 0));
         assert_eq!(pos, vec![Position::new(1, 0)]);
     }
 
@@ -535,30 +520,30 @@ mod tests {
     fn tests_neighbors() {
         let mut board = Board::new();
         board.insert(
-            &Position::new(0, 0),
+            Position::new(0, 0),
             Piece::new(Bug::Queen, Color::Black, Some(1)),
         );
         let mut pieces = vec![Piece::new(Bug::Ant, Color::Black, Some(1))];
         board.insert(
-            &Position::new(1, 0),
+            Position::new(1, 0),
             *pieces.last().expect("This is in test neighbors"),
         );
-        let neighbors = board.neighbors(&Position::new(0, 0));
+        let neighbors = board.neighbors(Position::new(0, 0));
         assert_eq!(neighbors, vec![pieces.clone()]);
 
         pieces.push(Piece::new(Bug::Beetle, Color::Black, Some(1)));
         board.insert(
-            &Position::new(1, 0),
+            Position::new(1, 0),
             *pieces.last().expect("This is in test neighbors"),
         );
-        let neighbors = board.neighbors(&Position::new(0, 0));
+        let neighbors = board.neighbors(Position::new(0, 0));
         assert_eq!(neighbors, vec![pieces.clone()]);
 
         board.insert(
-            &Position::new(0, 2),
+            Position::new(0, 2),
             Piece::new(Bug::Ladybug, Color::Black, Some(1)),
         );
-        let neighbors = board.neighbors(&Position::new(0, 0));
+        let neighbors = board.neighbors(Position::new(0, 0));
         assert_eq!(neighbors, vec![pieces]);
     }
 
@@ -566,32 +551,47 @@ mod tests {
     fn tests_top_layer_neighbors() {
         let mut board = Board::new();
         board.insert(
-            &Position::new(0, 0),
+            Position::new(0, 0),
             Piece::new(Bug::Queen, Color::Black, Some(1)),
         );
-        board.insert(&Position::new(1, 0), Piece::new(Bug::Ant, Color::Black, Some(1)));
-        board.insert(&Position::new(2, 0), Piece::new(Bug::Ant, Color::Black, Some(2)));
-        board.insert(&Position::new(3, 0), Piece::new(Bug::Ant, Color::Black, Some(3)));
-        board.insert(&Position::new(4, 0), Piece::new(Bug::Ant, Color::Black, Some(3)));
-        board.insert(&Position::new(3, 1), Piece::new(Bug::Ant, Color::Black, Some(3)));
-        assert_eq!(board.top_layer_neighbors(&Position::new(0, 0)).len(), 1);
-        assert_eq!(board.top_layer_neighbors(&Position::new(1, 0)).len(), 2);
-        assert_eq!(board.top_layer_neighbors(&Position::new(2, 0)).len(), 2);
-        assert_eq!(board.top_layer_neighbors(&Position::new(3, 0)).len(), 3);
+        board.insert(
+            Position::new(1, 0),
+            Piece::new(Bug::Ant, Color::Black, Some(1)),
+        );
+        board.insert(
+            Position::new(2, 0),
+            Piece::new(Bug::Ant, Color::Black, Some(2)),
+        );
+        board.insert(
+            Position::new(3, 0),
+            Piece::new(Bug::Ant, Color::Black, Some(3)),
+        );
+        board.insert(
+            Position::new(4, 0),
+            Piece::new(Bug::Ant, Color::Black, Some(3)),
+        );
+        board.insert(
+            Position::new(3, 1),
+            Piece::new(Bug::Ant, Color::Black, Some(3)),
+        );
+        assert_eq!(board.top_layer_neighbors(Position::new(0, 0)).len(), 1);
+        assert_eq!(board.top_layer_neighbors(Position::new(1, 0)).len(), 2);
+        assert_eq!(board.top_layer_neighbors(Position::new(2, 0)).len(), 2);
+        assert_eq!(board.top_layer_neighbors(Position::new(3, 0)).len(), 3);
     }
 
     #[test]
     fn tests_negative_space() {
         let mut board = Board::new();
         board.insert(
-            &Position::new(0, 0),
+            Position::new(0, 0),
             Piece::new(Bug::Queen, Color::Black, Some(1)),
         );
-        let mut positions = board.positions_around(&Position::new(0, 0));
+        let mut positions = board.positions_around(Position::new(0, 0));
         let mut negative_space = board.negative_space();
         assert_eq!(negative_space.sort(), positions.sort());
         board.insert(
-            &Position::new(0, 1),
+            Position::new(0, 1),
             Piece::new(Bug::Queen, Color::Black, Some(1)),
         );
         assert_eq!(board.negative_space().len(), 8);
@@ -601,31 +601,40 @@ mod tests {
     fn tests_walk_board() {
         let mut board = Board::new();
         board.insert(
-            &Position::new(0, 0),
+            Position::new(0, 0),
             Piece::new(Bug::Queen, Color::Black, Some(1)),
         );
-        board.insert(&Position::new(1, 0), Piece::new(Bug::Ant, Color::Black, Some(1)));
-        board.insert(&Position::new(2, 0), Piece::new(Bug::Ant, Color::Black, Some(2)));
-        board.insert(&Position::new(3, 0), Piece::new(Bug::Ant, Color::Black, Some(3)));
+        board.insert(
+            Position::new(1, 0),
+            Piece::new(Bug::Ant, Color::Black, Some(1)),
+        );
+        board.insert(
+            Position::new(2, 0),
+            Piece::new(Bug::Ant, Color::Black, Some(2)),
+        );
+        board.insert(
+            Position::new(3, 0),
+            Piece::new(Bug::Ant, Color::Black, Some(3)),
+        );
         let excluded = Position::new(5, 0);
-        let visited = board.walk_board(Position::new(0, 0), &excluded, HashSet::new());
+        let visited = board.walk_board(Position::new(0, 0), excluded, HashSet::new());
         assert_eq!(visited.len(), 4);
         let excluded = Position::new(2, 0);
-        let visited = board.walk_board(Position::new(0, 0), &excluded, HashSet::new());
+        let visited = board.walk_board(Position::new(0, 0), excluded, HashSet::new());
         assert_eq!(visited.len(), 2);
-        let visited = board.walk_board(Position::new(0, 0), &excluded, HashSet::new());
+        let visited = board.walk_board(Position::new(0, 0), excluded, HashSet::new());
         assert_eq!(visited.len(), 2);
-        let visited = board.walk_board(Position::new(1, 0), &excluded, HashSet::new());
+        let visited = board.walk_board(Position::new(1, 0), excluded, HashSet::new());
         assert_eq!(visited.len(), 2);
-        let visited = board.walk_board(Position::new(3, 0), &excluded, HashSet::new());
+        let visited = board.walk_board(Position::new(3, 0), excluded, HashSet::new());
         assert_eq!(visited.len(), 1);
 
-        for pos in board.positions_around(&Position::new(0, 0)).iter() {
+        for pos in board.positions_around(Position::new(0, 0)).into_iter() {
             board.insert(pos, Piece::new(Bug::Ant, Color::Black, Some(5)));
         }
-        for pos in board.positions_around(&Position::new(0, 0)).iter() {
+        for pos in board.positions_around(Position::new(0, 0)).into_iter() {
             let visited = board.walk_board(Position::new(3, 0), pos, HashSet::new());
-            if pos == &Position::new(1, 0) {
+            if pos == Position::new(1, 0) {
                 assert_eq!(visited.len(), 2);
             } else {
                 assert_eq!(visited.len(), 8);
@@ -637,18 +646,24 @@ mod tests {
     fn tests_spawnable_positions() {
         let mut board = Board::new();
         board.insert(
-            &Position::new(0, 0),
+            Position::new(0, 0),
             Piece::new(Bug::Queen, Color::White, Some(1)),
         );
-        board.insert(&Position::new(1, 0), Piece::new(Bug::Ant, Color::Black, Some(1)));
-        let positions = board.spawnable_positions(&Color::Black);
+        board.insert(
+            Position::new(1, 0),
+            Piece::new(Bug::Ant, Color::Black, Some(1)),
+        );
+        let positions = board.spawnable_positions(Color::Black);
         assert_eq!(positions.len(), 3);
-        let positions = board.spawnable_positions(&Color::White);
+        let positions = board.spawnable_positions(Color::White);
         assert_eq!(positions.len(), 3);
-        board.insert(&Position::new(2, 0), Piece::new(Bug::Ant, Color::White, Some(2)));
-        let positions = board.spawnable_positions(&Color::White);
+        board.insert(
+            Position::new(2, 0),
+            Piece::new(Bug::Ant, Color::White, Some(2)),
+        );
+        let positions = board.spawnable_positions(Color::White);
         assert_eq!(positions.len(), 6);
-        let positions = board.spawnable_positions(&Color::Black);
+        let positions = board.spawnable_positions(Color::Black);
         assert_eq!(positions.len(), 0);
     }
 
@@ -656,53 +671,68 @@ mod tests {
     fn tests_spawnable() {
         let mut board = Board::new();
         // if board is empty you can spawn
-        assert!(board.spawnable(&Color::White, &Position::new(0, 0)));
-        board.insert(&Position::new(0, 0), Piece::new(Bug::Ant, Color::White, Some(1)));
+        assert!(board.spawnable(Color::White, Position::new(0, 0)));
+        board.insert(
+            Position::new(0, 0),
+            Piece::new(Bug::Ant, Color::White, Some(1)),
+        );
 
         // if position is already occupied, a bug can't be spawned there
-        assert!(!board.spawnable(&Color::White, &Position::new(0, 0)));
+        assert!(!board.spawnable(Color::White, Position::new(0, 0)));
 
         // the second bug can always be played
-        assert!(board.spawnable(&Color::Black, &Position::new(1, 0)));
-        board.insert(&Position::new(1, 0), Piece::new(Bug::Ant, Color::Black, Some(1)));
+        assert!(board.spawnable(Color::Black, Position::new(1, 0)));
+        board.insert(
+            Position::new(1, 0),
+            Piece::new(Bug::Ant, Color::Black, Some(1)),
+        );
 
         // now no other black bug can be spawned around the white one
-        for pos in board.positions_around(&Position::new(0, 0)).iter() {
-            assert!(!board.spawnable(&Color::Black, pos));
+        for pos in board.positions_around(Position::new(0, 0)).iter() {
+            assert!(!board.spawnable(Color::Black, *pos));
         }
 
         // a white bug can be added adjacent to a white, but not a black bug
-        assert!(!board.spawnable(&Color::White, &Position::new(2, 0)));
-        assert!(board.spawnable(&Color::White, &Position::new(-1, 0)));
-        assert!(board.spawnable(&Color::Black, &Position::new(2, 0)));
-        assert!(!board.spawnable(&Color::Black, &Position::new(-1, 0)));
+        assert!(!board.spawnable(Color::White, Position::new(2, 0)));
+        assert!(board.spawnable(Color::White, Position::new(-1, 0)));
+        assert!(board.spawnable(Color::Black, Position::new(2, 0)));
+        assert!(!board.spawnable(Color::Black, Position::new(-1, 0)));
     }
 
     #[test]
     fn tests_move_splits_hive() {
         let mut board = Board::new();
         board.insert(
-            &Position::new(0, 0),
+            Position::new(0, 0),
             Piece::new(Bug::Queen, Color::Black, Some(1)),
         );
-        board.insert(&Position::new(1, 0), Piece::new(Bug::Ant, Color::Black, Some(1)));
-        board.insert(&Position::new(2, 0), Piece::new(Bug::Ant, Color::Black, Some(2)));
-        board.insert(&Position::new(3, 0), Piece::new(Bug::Ant, Color::Black, Some(3)));
-        assert!(!board.pinned(&Position::new(0, 0)));
-        assert!(board.pinned(&Position::new(1, 0)));
-        assert!(board.pinned(&Position::new(2, 0)));
-        assert!(!board.pinned(&Position::new(3, 0)));
-        for pos in board.positions_around(&Position::new(0, 0)).iter() {
+        board.insert(
+            Position::new(1, 0),
+            Piece::new(Bug::Ant, Color::Black, Some(1)),
+        );
+        board.insert(
+            Position::new(2, 0),
+            Piece::new(Bug::Ant, Color::Black, Some(2)),
+        );
+        board.insert(
+            Position::new(3, 0),
+            Piece::new(Bug::Ant, Color::Black, Some(3)),
+        );
+        assert!(!board.pinned(Position::new(0, 0)));
+        assert!(board.pinned(Position::new(1, 0)));
+        assert!(board.pinned(Position::new(2, 0)));
+        assert!(!board.pinned(Position::new(3, 0)));
+        for pos in board.positions_around(Position::new(0, 0)).iter() {
             if pos == &Position::new(1, 0) {
                 continue;
             }
-            board.insert(pos, Piece::new(Bug::Ant, Color::Black, Some(5)));
+            board.insert(*pos, Piece::new(Bug::Ant, Color::Black, Some(5)));
         }
-        for pos in board.positions_around(&Position::new(0, 0)).iter() {
+        for pos in board.positions_around(Position::new(0, 0)).iter() {
             if pos == &Position::new(1, 0) {
-                assert!(board.pinned(pos));
+                assert!(board.pinned(*pos));
             } else {
-                assert!(!board.pinned(pos));
+                assert!(!board.pinned(*pos));
             };
         }
     }

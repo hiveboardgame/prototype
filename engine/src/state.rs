@@ -20,7 +20,7 @@ pub enum LastTurn {
     None,
 }
 
-#[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct State {
     pub game_id: u64,
     pub board: Board,
@@ -109,26 +109,26 @@ impl State {
         Ok(())
     }
 
-    fn update_history(&mut self, piece: &Piece, target_position: &Position) {
+    fn update_history(&mut self, piece: Piece, target_position: Position) {
         // if there's no piece on the board yet use "."
-        if self.board.board.len() == 1 {
-            self.history.record_move(&piece.to_string(), ".");
+        if self.board.all_taken_positions().count() == 1 {
+            self.history.record_move(piece.to_string(), ".".to_string());
             return;
         }
         if let Some((neighbor_piece, neighbor_pos)) = self.board.get_neighbor(target_position) {
             let dir = neighbor_pos.direction(target_position);
             let pos = dir.to_history_string(neighbor_piece.to_string());
-            self.history.record_move(&piece.to_string(), &pos);
+            self.history.record_move(piece.to_string(), pos.to_string());
             return;
         }
         unreachable!()
     }
 
     fn shutout(&mut self) {
-        let no_spawns = !self.board.spawns_left(&self.turn_color, self.game_type);
+        let no_spawns = !self.board.spawns_left(self.turn_color, self.game_type);
         let no_moves = self
             .board
-            .moves(&self.turn_color)
+            .moves(self.turn_color)
             .values()
             .flatten()
             .collect::<Vec<&Position>>()
@@ -141,7 +141,7 @@ impl State {
 
     fn pass(&mut self) {
         self.history
-            .record_move(&self.turn_color.to_string(), "pass");
+            .record_move(self.turn_color.to_string(), "pass");
         self.turn_color = self.turn_color.opposite();
         self.turn += 1;
         self.board.last_moved = None;
@@ -152,7 +152,7 @@ impl State {
         match self.board.game_result() {
             GameResult::Winner(color) => {
                 self.game_status = GameStatus::Finished(GameResult::Winner(color));
-                self.history.record_move(&color.to_string(), "won");
+                self.history.record_move(color.to_string(), "won");
                 return;
             }
             GameResult::Draw => {
@@ -190,23 +190,23 @@ impl State {
             err.clone()
         })?;
         err.update_to(current_position.to_string());
-        if self.board.pinned(&current_position) {
+        if self.board.pinned(current_position) {
             err.update_reason("Piece is pinned.");
             return Err(err);
         }
         // remove the piece from its current location
         if !self.board.is_valid_move(
-            &self.turn_color,
-            &piece,
-            &current_position,
-            &target_position,
+            self.turn_color,
+            piece,
+            current_position,
+            target_position,
         ) {
             err.update_reason("This move isn't valid.");
             return Err(err);
         }
         self.last_turn = LastTurn::Move(current_position, target_position);
         self.board
-            .move_piece(&piece, &current_position, &target_position, self.turn)?;
+            .move_piece(piece, current_position, target_position, self.turn)?;
         Ok(())
     }
 
@@ -218,7 +218,7 @@ impl State {
             turn: self.turn,
             reason: "NA".to_string(),
         };
-        if !piece.is_color(&self.turn_color) {
+        if !piece.is_color(self.turn_color) {
             err.update_reason(format!(
                 "It is {}'s turn, but {} tried to spawn a piece.",
                 self.turn_color, piece.color
@@ -229,12 +229,12 @@ impl State {
             err.update_reason("Can't spawn Queen. Game uses tournament rules");
             return Err(err);
         }
-        if piece.bug != Bug::Queen && self.board.queen_required(self.turn, &piece.color) {
+        if piece.bug != Bug::Queen && self.board.queen_required(self.turn, piece.color) {
             err.update_reason("Can't spawn another piece. Queen is required.");
             return Err(err);
         }
-        if self.board.spawnable(&piece.color, &target_position) {
-            self.board.insert(&target_position, piece);
+        if self.board.spawnable(piece.color, target_position) {
+            self.board.insert(target_position, piece);
             self.last_turn = LastTurn::Move(target_position, target_position);
         } else {
             err.update_reason(format!("{} is not allowed to spawn here.", self.turn_color));
@@ -244,12 +244,12 @@ impl State {
     }
 
     pub fn play_turn(&mut self, piece: Piece, target_position: Position) -> Result<(), GameError> {
-        if self.board.piece_already_played(&piece) {
+        if self.board.piece_already_played(piece) {
             self.turn_move(piece, target_position)?
         } else {
             self.turn_spawn(piece, target_position)?
         }
-        self.update_history(&piece, &target_position);
+        self.update_history(piece, target_position);
         self.update_hasher();
         self.next_turn();
         self.shutout();

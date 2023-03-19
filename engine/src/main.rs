@@ -1,13 +1,14 @@
 use hive_lib::game_error::GameError;
 use hive_lib::game_result::GameResult;
 use hive_lib::game_status::GameStatus;
+use hive_lib::game_type::GameType;
 use hive_lib::history::History;
 use hive_lib::state::State;
 use std::env;
 
 fn play_game_from_file(file_path: &str) -> Result<(), GameError> {
     let history = History::from_filepath(file_path)?;
-    let mut state: State = Default::default();
+    let mut state: State = State::new(GameType::default(), true);
     for _ in 1..100 {
         state = State::new_from_history(&history)?;
     }

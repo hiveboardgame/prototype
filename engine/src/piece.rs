@@ -41,8 +41,8 @@ impl Piece {
         Piece { bug, color, order }
     }
 
-    pub fn is_color(&self, color: &Color) -> bool {
-        *color == self.color
+    pub fn is_color(&self, color: Color) -> bool {
+        color == self.color
     }
 }
 
