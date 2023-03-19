@@ -14,3 +14,4 @@ pub mod piece;
 pub mod player;
 pub mod position;
 pub mod state;
+pub mod torus_array;

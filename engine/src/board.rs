@@ -14,25 +14,26 @@ use crate::game_result::GameResult;
 use crate::game_type::GameType;
 use crate::piece::Piece;
 use crate::position::Position;
+use crate::torus_array::TorusArray;
 
-#[derive(Deserialize, Serialize, Clone, Default, Debug, Eq, PartialEq)]
+#[derive(Deserialize, Serialize, Clone, Debug, Eq, PartialEq)]
 pub struct Board {
-    pub board: HashMap<Position, Vec<Piece>>,
+    pub board: TorusArray<Piece>,
     pub last_moved: Option<(Piece, Position)>,
 }
 
 impl fmt::Display for Board {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut positions = self.board.keys().cloned().collect::<Vec<Position>>();
-        positions.sort_by(|a, b| a.1.cmp(&b.1).then(a.0.cmp(&b.0)));
-        let ((min_x, min_y), (max_x, max_y)) = self.min_max_positions();
+        positions.sort_by(|a, b| a.y.cmp(&b.y).then(a.x.cmp(&b.x)));
+        let ((min_x, min_y), (max_x, max_y)) = ((0, 28), (0, 28));
         let mut s = "".to_string();
         for y in min_y..=max_y {
             if y.rem_euclid(2) == 1 {
                 write!(s, "  ")?;
             }
             for x in min_x..=max_x {
-                match self.board.get(&Position(x, y)) {
+                match self.board.get(Position::new(x, y)) {
                     Some(piece) => match piece.last() {
                         Some(last) => {
                             if last.to_string().len() < 3 {
@@ -55,9 +56,39 @@ impl fmt::Display for Board {
 impl Board {
     pub fn new() -> Self {
         Self {
-            board: HashMap::default(),
+            board: TorusArray::new(29, 29, Piece { bug: Bug::Ant, color: Color::White, order: Some(1) }),
             last_moved: None,
         }
+    }
+
+    pub fn min_max_positions(&self) -> ((i8, i8), (i8, i8)) {
+        let mut positions = self.board.keys().cloned().collect::<Vec<Position>>();
+        positions.sort_by(|a, b| a.y.cmp(&b.y).then(a.x.cmp(&b.x)));
+        let min_x = positions
+            .iter()
+            .min_by(|a, b| a.x.cmp(&b.x))
+            .unwrap_or(&Position::new(0, 0))
+            .x as i8;
+
+        let max_x = positions
+            .iter()
+            .max_by(|a, b| a.x.cmp(&b.x))
+            .unwrap_or(&Position::new(0, 0))
+            .x as i8;
+
+        let min_y = positions
+            .iter()
+            .min_by(|a, b| a.y.cmp(&b.y))
+            .unwrap_or(&Position::new(0, 0))
+            .y as i8;
+
+        let max_y = positions
+            .iter()
+            .max_by(|a, b| a.y.cmp(&b.y))
+            .unwrap_or(&Position::new(0, 0))
+            .y as i8;
+
+        ((min_x, min_y), (max_x, max_y))
     }
 
     pub fn game_result(&self) -> GameResult {
@@ -303,7 +334,7 @@ impl Board {
 
     pub fn spawnable_positions(&self, color: &Color) -> Vec<Position> {
         if self.board.is_empty() {
-            return vec![Position(0, 0)];
+            return vec![Position::new(0, 0)];
         }
         return self
             .negative_space()
@@ -476,7 +507,7 @@ mod tests {
     fn tests_positions_around() {
         let board = Board::new();
         let positions_0_0 = board
-            .positions_around(&Position(0, 0))
+            .positions_around(&Position::new(0, 0))
             .into_iter()
             .collect::<HashSet<Position>>();
         for pos in positions_0_0.iter() {
@@ -492,42 +523,42 @@ mod tests {
     fn tests_positions_taken_around() {
         let mut board = Board::new();
         board.insert(
-            &Position(0, 0),
+            &Position::new(0, 0),
             Piece::new(Bug::Queen, Color::Black, Some(1)),
         );
-        board.insert(&Position(1, 0), Piece::new(Bug::Ant, Color::Black, Some(1)));
-        let pos = board.positions_taken_around(&Position(0, 0));
-        assert_eq!(pos, vec![Position(1, 0)]);
+        board.insert(&Position::new(1, 0), Piece::new(Bug::Ant, Color::Black, Some(1)));
+        let pos = board.positions_taken_around(&Position::new(0, 0));
+        assert_eq!(pos, vec![Position::new(1, 0)]);
     }
 
     #[test]
     fn tests_neighbors() {
         let mut board = Board::new();
         board.insert(
-            &Position(0, 0),
+            &Position::new(0, 0),
             Piece::new(Bug::Queen, Color::Black, Some(1)),
         );
         let mut pieces = vec![Piece::new(Bug::Ant, Color::Black, Some(1))];
         board.insert(
-            &Position(1, 0),
+            &Position::new(1, 0),
             *pieces.last().expect("This is in test neighbors"),
         );
-        let neighbors = board.neighbors(&Position(0, 0));
+        let neighbors = board.neighbors(&Position::new(0, 0));
         assert_eq!(neighbors, vec![pieces.clone()]);
 
         pieces.push(Piece::new(Bug::Beetle, Color::Black, Some(1)));
         board.insert(
-            &Position(1, 0),
+            &Position::new(1, 0),
             *pieces.last().expect("This is in test neighbors"),
         );
-        let neighbors = board.neighbors(&Position(0, 0));
+        let neighbors = board.neighbors(&Position::new(0, 0));
         assert_eq!(neighbors, vec![pieces.clone()]);
 
         board.insert(
-            &Position(0, 2),
+            &Position::new(0, 2),
             Piece::new(Bug::Ladybug, Color::Black, Some(1)),
         );
-        let neighbors = board.neighbors(&Position(0, 0));
+        let neighbors = board.neighbors(&Position::new(0, 0));
         assert_eq!(neighbors, vec![pieces]);
     }
 
@@ -535,32 +566,32 @@ mod tests {
     fn tests_top_layer_neighbors() {
         let mut board = Board::new();
         board.insert(
-            &Position(0, 0),
+            &Position::new(0, 0),
             Piece::new(Bug::Queen, Color::Black, Some(1)),
         );
-        board.insert(&Position(1, 0), Piece::new(Bug::Ant, Color::Black, Some(1)));
-        board.insert(&Position(2, 0), Piece::new(Bug::Ant, Color::Black, Some(2)));
-        board.insert(&Position(3, 0), Piece::new(Bug::Ant, Color::Black, Some(3)));
-        board.insert(&Position(4, 0), Piece::new(Bug::Ant, Color::Black, Some(3)));
-        board.insert(&Position(3, 1), Piece::new(Bug::Ant, Color::Black, Some(3)));
-        assert_eq!(board.top_layer_neighbors(&Position(0, 0)).len(), 1);
-        assert_eq!(board.top_layer_neighbors(&Position(1, 0)).len(), 2);
-        assert_eq!(board.top_layer_neighbors(&Position(2, 0)).len(), 2);
-        assert_eq!(board.top_layer_neighbors(&Position(3, 0)).len(), 3);
+        board.insert(&Position::new(1, 0), Piece::new(Bug::Ant, Color::Black, Some(1)));
+        board.insert(&Position::new(2, 0), Piece::new(Bug::Ant, Color::Black, Some(2)));
+        board.insert(&Position::new(3, 0), Piece::new(Bug::Ant, Color::Black, Some(3)));
+        board.insert(&Position::new(4, 0), Piece::new(Bug::Ant, Color::Black, Some(3)));
+        board.insert(&Position::new(3, 1), Piece::new(Bug::Ant, Color::Black, Some(3)));
+        assert_eq!(board.top_layer_neighbors(&Position::new(0, 0)).len(), 1);
+        assert_eq!(board.top_layer_neighbors(&Position::new(1, 0)).len(), 2);
+        assert_eq!(board.top_layer_neighbors(&Position::new(2, 0)).len(), 2);
+        assert_eq!(board.top_layer_neighbors(&Position::new(3, 0)).len(), 3);
     }
 
     #[test]
     fn tests_negative_space() {
         let mut board = Board::new();
         board.insert(
-            &Position(0, 0),
+            &Position::new(0, 0),
             Piece::new(Bug::Queen, Color::Black, Some(1)),
         );
-        let mut positions = board.positions_around(&Position(0, 0));
+        let mut positions = board.positions_around(&Position::new(0, 0));
         let mut negative_space = board.negative_space();
         assert_eq!(negative_space.sort(), positions.sort());
         board.insert(
-            &Position(0, 1),
+            &Position::new(0, 1),
             Piece::new(Bug::Queen, Color::Black, Some(1)),
         );
         assert_eq!(board.negative_space().len(), 8);
@@ -570,31 +601,31 @@ mod tests {
     fn tests_walk_board() {
         let mut board = Board::new();
         board.insert(
-            &Position(0, 0),
+            &Position::new(0, 0),
             Piece::new(Bug::Queen, Color::Black, Some(1)),
         );
-        board.insert(&Position(1, 0), Piece::new(Bug::Ant, Color::Black, Some(1)));
-        board.insert(&Position(2, 0), Piece::new(Bug::Ant, Color::Black, Some(2)));
-        board.insert(&Position(3, 0), Piece::new(Bug::Ant, Color::Black, Some(3)));
-        let excluded = Position(5, 0);
-        let visited = board.walk_board(Position(0, 0), &excluded, HashSet::new());
+        board.insert(&Position::new(1, 0), Piece::new(Bug::Ant, Color::Black, Some(1)));
+        board.insert(&Position::new(2, 0), Piece::new(Bug::Ant, Color::Black, Some(2)));
+        board.insert(&Position::new(3, 0), Piece::new(Bug::Ant, Color::Black, Some(3)));
+        let excluded = Position::new(5, 0);
+        let visited = board.walk_board(Position::new(0, 0), &excluded, HashSet::new());
         assert_eq!(visited.len(), 4);
-        let excluded = Position(2, 0);
-        let visited = board.walk_board(Position(0, 0), &excluded, HashSet::new());
+        let excluded = Position::new(2, 0);
+        let visited = board.walk_board(Position::new(0, 0), &excluded, HashSet::new());
         assert_eq!(visited.len(), 2);
-        let visited = board.walk_board(Position(0, 0), &excluded, HashSet::new());
+        let visited = board.walk_board(Position::new(0, 0), &excluded, HashSet::new());
         assert_eq!(visited.len(), 2);
-        let visited = board.walk_board(Position(1, 0), &excluded, HashSet::new());
+        let visited = board.walk_board(Position::new(1, 0), &excluded, HashSet::new());
         assert_eq!(visited.len(), 2);
-        let visited = board.walk_board(Position(3, 0), &excluded, HashSet::new());
+        let visited = board.walk_board(Position::new(3, 0), &excluded, HashSet::new());
         assert_eq!(visited.len(), 1);
 
-        for pos in board.positions_around(&Position(0, 0)).iter() {
+        for pos in board.positions_around(&Position::new(0, 0)).iter() {
             board.insert(pos, Piece::new(Bug::Ant, Color::Black, Some(5)));
         }
-        for pos in board.positions_around(&Position(0, 0)).iter() {
-            let visited = board.walk_board(Position(3, 0), pos, HashSet::new());
-            if pos == &Position(1, 0) {
+        for pos in board.positions_around(&Position::new(0, 0)).iter() {
+            let visited = board.walk_board(Position::new(3, 0), pos, HashSet::new());
+            if pos == &Position::new(1, 0) {
                 assert_eq!(visited.len(), 2);
             } else {
                 assert_eq!(visited.len(), 8);
@@ -606,15 +637,15 @@ mod tests {
     fn tests_spawnable_positions() {
         let mut board = Board::new();
         board.insert(
-            &Position(0, 0),
+            &Position::new(0, 0),
             Piece::new(Bug::Queen, Color::White, Some(1)),
         );
-        board.insert(&Position(1, 0), Piece::new(Bug::Ant, Color::Black, Some(1)));
+        board.insert(&Position::new(1, 0), Piece::new(Bug::Ant, Color::Black, Some(1)));
         let positions = board.spawnable_positions(&Color::Black);
         assert_eq!(positions.len(), 3);
         let positions = board.spawnable_positions(&Color::White);
         assert_eq!(positions.len(), 3);
-        board.insert(&Position(2, 0), Piece::new(Bug::Ant, Color::White, Some(2)));
+        board.insert(&Position::new(2, 0), Piece::new(Bug::Ant, Color::White, Some(2)));
         let positions = board.spawnable_positions(&Color::White);
         assert_eq!(positions.len(), 6);
         let positions = board.spawnable_positions(&Color::Black);
@@ -625,50 +656,50 @@ mod tests {
     fn tests_spawnable() {
         let mut board = Board::new();
         // if board is empty you can spawn
-        assert!(board.spawnable(&Color::White, &Position(0, 0)));
-        board.insert(&Position(0, 0), Piece::new(Bug::Ant, Color::White, Some(1)));
+        assert!(board.spawnable(&Color::White, &Position::new(0, 0)));
+        board.insert(&Position::new(0, 0), Piece::new(Bug::Ant, Color::White, Some(1)));
 
         // if position is already occupied, a bug can't be spawned there
-        assert!(!board.spawnable(&Color::White, &Position(0, 0)));
+        assert!(!board.spawnable(&Color::White, &Position::new(0, 0)));
 
         // the second bug can always be played
-        assert!(board.spawnable(&Color::Black, &Position(1, 0)));
-        board.insert(&Position(1, 0), Piece::new(Bug::Ant, Color::Black, Some(1)));
+        assert!(board.spawnable(&Color::Black, &Position::new(1, 0)));
+        board.insert(&Position::new(1, 0), Piece::new(Bug::Ant, Color::Black, Some(1)));
 
         // now no other black bug can be spawned around the white one
-        for pos in board.positions_around(&Position(0, 0)).iter() {
+        for pos in board.positions_around(&Position::new(0, 0)).iter() {
             assert!(!board.spawnable(&Color::Black, pos));
         }
 
         // a white bug can be added adjacent to a white, but not a black bug
-        assert!(!board.spawnable(&Color::White, &Position(2, 0)));
-        assert!(board.spawnable(&Color::White, &Position(-1, 0)));
-        assert!(board.spawnable(&Color::Black, &Position(2, 0)));
-        assert!(!board.spawnable(&Color::Black, &Position(-1, 0)));
+        assert!(!board.spawnable(&Color::White, &Position::new(2, 0)));
+        assert!(board.spawnable(&Color::White, &Position::new(-1, 0)));
+        assert!(board.spawnable(&Color::Black, &Position::new(2, 0)));
+        assert!(!board.spawnable(&Color::Black, &Position::new(-1, 0)));
     }
 
     #[test]
     fn tests_move_splits_hive() {
         let mut board = Board::new();
         board.insert(
-            &Position(0, 0),
+            &Position::new(0, 0),
             Piece::new(Bug::Queen, Color::Black, Some(1)),
         );
-        board.insert(&Position(1, 0), Piece::new(Bug::Ant, Color::Black, Some(1)));
-        board.insert(&Position(2, 0), Piece::new(Bug::Ant, Color::Black, Some(2)));
-        board.insert(&Position(3, 0), Piece::new(Bug::Ant, Color::Black, Some(3)));
-        assert!(!board.pinned(&Position(0, 0)));
-        assert!(board.pinned(&Position(1, 0)));
-        assert!(board.pinned(&Position(2, 0)));
-        assert!(!board.pinned(&Position(3, 0)));
-        for pos in board.positions_around(&Position(0, 0)).iter() {
-            if pos == &Position(1, 0) {
+        board.insert(&Position::new(1, 0), Piece::new(Bug::Ant, Color::Black, Some(1)));
+        board.insert(&Position::new(2, 0), Piece::new(Bug::Ant, Color::Black, Some(2)));
+        board.insert(&Position::new(3, 0), Piece::new(Bug::Ant, Color::Black, Some(3)));
+        assert!(!board.pinned(&Position::new(0, 0)));
+        assert!(board.pinned(&Position::new(1, 0)));
+        assert!(board.pinned(&Position::new(2, 0)));
+        assert!(!board.pinned(&Position::new(3, 0)));
+        for pos in board.positions_around(&Position::new(0, 0)).iter() {
+            if pos == &Position::new(1, 0) {
                 continue;
             }
             board.insert(pos, Piece::new(Bug::Ant, Color::Black, Some(5)));
         }
-        for pos in board.positions_around(&Position(0, 0)).iter() {
-            if pos == &Position(1, 0) {
+        for pos in board.positions_around(&Position::new(0, 0)).iter() {
+            if pos == &Position::new(1, 0) {
                 assert!(board.pinned(pos));
             } else {
                 assert!(!board.pinned(pos));

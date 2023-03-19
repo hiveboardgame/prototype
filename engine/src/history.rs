@@ -38,6 +38,23 @@ impl History {
         }
     }
 
+    pub fn new_from_str(moves: String) -> Result<Self, GameError> {
+        let mut history = History::new();
+        for mov in moves.split(";") {
+            let split = mov.split_whitespace().collect::<Vec<&str>>();
+            let piece = split.get(0).ok_or(GameError::ParsingError {
+                found: "NA".to_string(),
+                typ: "Piece".to_string(),
+            })?;
+            let pos = split.get(1).ok_or(GameError::ParsingError {
+                found: "NA".to_string(),
+                typ: "Position".to_string(),
+            })?;
+            history.moves.push((piece.to_string(), pos.to_string()));
+        }
+        Ok(history)
+    }
+
     pub fn record_move(&mut self, piece: &str, pos: &str) {
         self.moves.push((piece.to_string(), pos.to_string()));
     }
