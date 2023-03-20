@@ -7,6 +7,7 @@ use crate::{board::Board, direction::Direction, game_error::GameError, piece::Pi
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord, Deserialize, Serialize)]
 pub struct Position {
+    // This needs to be modulo the torus array size
     pub x: i32,
     pub y: i32,
 }

@@ -920,12 +920,10 @@ mod tests {
             Position::new(0, 0),
             Piece::new(Bug::Beetle, Color::White, Some(1)),
         );
-        println!("pos around: {:?}", board.positions_around(Position { x: 0, y: 0 }));
         for pos in board.positions_around(Position::new(0, 0)).iter() {
             board.insert(*pos, Piece::new(Bug::Grasshopper, Color::White, Some(1)));
         }
         board.board.remove(Position::new(1, 0));
-        println!("board: {:?}", board.board);
         assert_eq!(Bug::beetle_moves(Position::new(0, 0), &board).len(), 5);
     }
 

@@ -49,7 +49,7 @@ where
     pub fn set(&mut self, position: Position, element: T) {
         let x = position.x.rem_euclid(self.width) as usize;
         let y = position.y.rem_euclid(self.height) as usize;
-        self.data.insert(y * (self.width as usize) + x, element)
+        self.data[y * (self.width as usize) + x] = element;
     }
 }
 
@@ -58,7 +58,7 @@ mod tests {
     use super::*;
     #[test]
     fn test_new_insert_get() {
-        let mut arr = TorusArray::new(29, 29, 0_i32);
+        let mut arr = TorusArray::new(32, 32, 0_i32);
         let position = Position { x: 0, y: 1 };
         arr.set(position, 1);
         assert_eq!(*arr.get(position), 1);

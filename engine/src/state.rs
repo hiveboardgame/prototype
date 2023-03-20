@@ -201,6 +201,7 @@ impl State {
             current_position,
             target_position,
         ) {
+            println!("{:?}", self.board);
             err.update_reason("This move isn't valid.");
             return Err(err);
         }
