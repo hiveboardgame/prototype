@@ -13,7 +13,6 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Default)]
 pub enum LastTurn {
     Pass,
-    Shutout,
     Move(Position, Position),
     #[default]
     None,
@@ -117,21 +116,6 @@ impl State {
             return;
         }
         unreachable!()
-    }
-
-    fn shutout(&mut self) {
-        let no_spawns = !self.board.spawns_left(self.turn_color, self.game_type);
-        let no_moves = self
-            .board
-            .moves(self.turn_color)
-            .values()
-            .flatten()
-            .collect::<Vec<&Position>>()
-            .is_empty();
-        if no_moves && no_spawns {
-            self.pass();
-            self.last_turn = LastTurn::Shutout;
-        }
     }
 
     fn pass(&mut self) {
