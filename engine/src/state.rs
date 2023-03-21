@@ -83,10 +83,8 @@ impl State {
     ) -> Result<(), GameError> {
         match piece {
             "pass" => {
-                if self.last_turn == LastTurn::Shutout {
-                    self.last_turn = LastTurn::Pass;
-                    // we handled this in shutout already
-                    // Don't do anything
+                if self.board.moves(self.turn_color).is_empty() {
+                    self.pass();
                 } else {
                     return Err(GameError::InvalidMove {
                         piece: "NA".to_string(),
@@ -234,7 +232,6 @@ impl State {
         }
         self.update_history(piece, target_position);
         self.next_turn();
-        self.shutout();
         Ok(())
     }
 }
