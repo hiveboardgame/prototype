@@ -52,7 +52,7 @@ impl Board {
         let number_of_bugs = 24;
         let color = piece.color as usize;
         let bug = piece.bug as usize;
-        let num = piece.order.unwrap_or(1) as usize;
+        let num = piece.order.unwrap_or(1) as usize - 1;
         self.piece_positions[color * number_of_bugs + bug * 3 + num] = Some(position);
     }
 
@@ -60,7 +60,7 @@ impl Board {
         let number_of_bugs = 24;
         let color = piece.color as usize;
         let bug = piece.bug as usize;
-        let num = piece.order.unwrap_or(1) as usize;
+        let num = piece.order.unwrap_or(1) as usize - 1;
         self.piece_positions
             .get(color * number_of_bugs + bug * 3 + num)
             .expect("The vec gets initialized to have space for all the bugs")
@@ -357,7 +357,7 @@ impl Board {
         let mut bugs = Bug::bugs_count(game_type);
         for (i, maybe_pos) in self.piece_positions[start..end].iter().enumerate() {
             if maybe_pos.is_some() {
-                let bug = Bug::from(i as u8 % 3);
+                let bug = Bug::from(i as u8 / 3);
                 if let Some(num) = bugs.get_mut(&bug) {
                     *num -= 1;
                 }
