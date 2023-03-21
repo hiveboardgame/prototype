@@ -25,14 +25,13 @@ pub struct Board {
 
 impl fmt::Display for Board {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let ((min_x, min_y), (max_x, max_y)) = ((0_i8, 31_i8), (0_i8, 31_i8));
         let mut s = "".to_string();
-        for y in min_y..=max_y {
+        for y in 0..BOARD_SIZE {
             if y.rem_euclid(2) == 1 {
                 write!(s, "  ")?;
             }
-            for x in min_x..=max_x {
-                let pieces = self.board.get(Position::new(x, y));
+            for x in 0..BOARD_SIZE {
+                let pieces = self.board.get(Position::new_i32(x, y));
                 if let Some(last) = pieces.last() {
                     if last.to_string().len() < 3 {
                         write!(s, "{last}  ")?;

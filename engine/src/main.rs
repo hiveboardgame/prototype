@@ -9,7 +9,7 @@ use std::env;
 fn play_game_from_file(file_path: &str) -> Result<(), GameError> {
     let history = History::from_filepath(file_path)?;
     let mut state: State = State::new(GameType::default(), true);
-    for _ in 1..100 {
+    for _ in 0..1 {
         state = State::new_from_history(&history)?;
     }
     if let GameStatus::Finished(GameResult::Winner(winner)) = state.game_status {

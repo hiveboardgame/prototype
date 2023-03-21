@@ -49,11 +49,13 @@ impl Position {
     }
 
     fn wrap_around(num: i32) -> i32 {
-        return match num {
-            -31 => 1,
-            31 => -1,
-            x => x,
+        if num == (BOARD_SIZE-1) {
+            return -1;
         }
+        if num == (-(BOARD_SIZE-1)){
+            return 1;
+        }
+        return num;
     }
 
     // this implements "odd-r horizontal" which offsets odd rows to the right
