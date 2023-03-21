@@ -20,7 +20,7 @@ pub enum LastTurn {
     None,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct State {
     pub game_id: u64,
     pub board: Board,
@@ -91,8 +91,6 @@ impl State {
                     // we handled this in shutout already
                     // Don't do anything
                 } else {
-                    println!("{}", self.board);
-                    println!("{:?}", self.board.reserve(self.turn_color, self.game_type));
                     return Err(GameError::InvalidMove {
                         piece: "NA".to_string(),
                         from: "NA".to_string(),
@@ -201,7 +199,6 @@ impl State {
             .board
             .is_valid_move(self.turn_color, piece, current_position, target_position)
         {
-            println!("{}", self.board);
             err.update_reason("This move isn't valid.");
             return Err(err);
         }

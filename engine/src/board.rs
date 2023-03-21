@@ -1,25 +1,20 @@
 use fnv::FnvHashMap;
 type HashMap<K, V> = FnvHashMap<K, V>;
 
-use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::fmt::{self, Write};
 
-use crate::bug::Bug;
-use crate::color::Color;
-use crate::direction::Direction;
-use crate::game_error::GameError;
-use crate::game_result::GameResult;
-use crate::game_type::GameType;
-use crate::piece::Piece;
-use crate::position::Position;
-use crate::torus_array::TorusArray;
+use crate::{
+    bug::Bug, bug_stack::BugStack, color::Color, direction::Direction, game_error::GameError,
+    game_result::GameResult, game_type::GameType, piece::Piece, position::Position,
+    torus_array::TorusArray,
+};
 
 pub static BOARD_SIZE: i32 = 32;
 
-#[derive(Deserialize, Serialize, Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Board {
-    pub board: TorusArray<Vec<Piece>>,
+    pub board: TorusArray<BugStack>,
     pub last_moved: Option<(Piece, Position)>,
     pub piece_positions: Vec<Option<Position>>,
 }
@@ -27,7 +22,7 @@ pub struct Board {
 impl Board {
     pub fn new() -> Self {
         Self {
-            board: TorusArray::new(vec![]),
+            board: TorusArray::new(BugStack::new()),
             last_moved: None,
             piece_positions: vec![None; 48],
         }
@@ -87,14 +82,10 @@ impl Board {
                 reason: "Trying to move a covered piece".to_string(),
             });
         }
-        let vec = self.board.get_mut(current);
-        if let Some(piece) = vec.pop() {
-            self.insert(target, piece);
-            return Ok(());
-        }
-        unreachable!(
-            "Trying to move {piece} from {current} to {target} which should have been a legal move"
-        );
+        let bug_stack = self.board.get_mut(current);
+        let piece = bug_stack.pop_piece();
+        self.insert(target, piece);
+        return Ok(());
     }
 
     pub fn neighbor_is_a(&self, position: Position, bug: Bug) -> bool {
@@ -107,6 +98,7 @@ impl Board {
         &self,
         position: Position,
     ) -> impl Iterator<Item = Position> + 'static {
+        // TODO this can be done statically
         static DIRS: [Direction; 6] = [
             Direction::NW,
             Direction::NE,
@@ -119,6 +111,7 @@ impl Board {
     }
 
     pub fn positions_around(&self, position: Position) -> Vec<Position> {
+        // TODO this can be done statically
         vec![
             position.to(&Direction::NW),
             position.to(&Direction::NE),
@@ -130,11 +123,11 @@ impl Board {
     }
 
     pub fn level(&self, position: Position) -> usize {
-        self.board.get(position).len()
+        self.board.get(position).size as usize
     }
 
     pub fn top_piece(&self, position: Position) -> Option<Piece> {
-        self.board.get(position).last().cloned()
+        self.board.get(position).top_piece()
     }
 
     pub fn is_top_piece(&self, piece: Piece, position: Position) -> bool {
@@ -163,8 +156,8 @@ impl Board {
     pub fn get_neighbor(&self, position: Position) -> Option<(Piece, Position)> {
         for pos in self.positions_around(position).into_iter() {
             let pieces = self.board.get(pos);
-            if let Some(piece) = pieces.last() {
-                return Some((*piece, pos));
+            if let Some(piece) = pieces.top_piece() {
+                return Some((piece, pos));
             }
         }
         None
@@ -179,7 +172,7 @@ impl Board {
     }
 
     pub fn occupied(&self, position: Position) -> bool {
-        self.board.get(position).len() > 0
+        self.board.get(position).size > 0
     }
 
     pub fn positions_taken_around(&self, position: Position) -> Vec<Position> {
@@ -196,7 +189,7 @@ impl Board {
             .collect()
     }
 
-    pub fn neighbors(&self, position: Position) -> Vec<Vec<Piece>> {
+    pub fn neighbors(&self, position: Position) -> Vec<BugStack> {
         return self
             .positions_around(position)
             .iter()
@@ -335,12 +328,9 @@ impl Board {
     }
 
     pub fn top_layer_neighbors(&self, position: Position) -> Vec<Piece> {
-        return self
-            .positions_around(position)
-            .iter()
-            .filter_map(|pos| self.board.get(*pos).last())
-            .cloned()
-            .collect();
+        self.positions_around_iter(position)
+            .filter_map(|pos| self.board.get(pos).top_piece())
+            .collect()
     }
 
     pub fn spawns_left(&self, color: Color, game_type: GameType) -> bool {
@@ -414,7 +404,7 @@ impl Board {
 
     pub fn insert(&mut self, position: Position, piece: Piece) {
         self.last_moved = Some((piece, position));
-        self.board.get_mut(position).push(piece);
+        self.board.get_mut(position).push_piece(piece);
         self.set_position_of_piece(piece, position);
     }
 }
@@ -428,7 +418,7 @@ impl fmt::Display for Board {
             }
             for x in 0..BOARD_SIZE {
                 let pieces = self.board.get(Position::new_i32(x, y));
-                if let Some(last) = pieces.last() {
+                if let Some(last) = pieces.top_piece() {
                     if last.to_string().len() < 3 {
                         write!(s, "{last}  ")?;
                     } else {
@@ -486,28 +476,30 @@ mod tests {
             Position::new(0, 0),
             Piece::new_from(Bug::Queen, Color::Black, 0),
         );
-        let mut pieces = vec![Piece::new_from(Bug::Ant, Color::Black, 1)];
+        let mut bug_stack = BugStack::new();
+        let piece = Piece::new_from(Bug::Ant, Color::Black, 1);
+        bug_stack.push_piece(piece);
         board.insert(
             Position::new(1, 0),
-            *pieces.last().expect("This is in test neighbors"),
+            bug_stack.top_piece().expect("This is in test neighbors"),
         );
         let neighbors = board.neighbors(Position::new(0, 0));
-        assert_eq!(neighbors, vec![pieces.clone()]);
+        assert_eq!(neighbors, vec![bug_stack]);
 
-        pieces.push(Piece::new_from(Bug::Beetle, Color::Black, 1));
+        bug_stack.push_piece(Piece::new_from(Bug::Beetle, Color::Black, 1));
         board.insert(
             Position::new(1, 0),
-            *pieces.last().expect("This is in test neighbors"),
+            bug_stack.top_piece().expect("This is in test neighbors"),
         );
         let neighbors = board.neighbors(Position::new(0, 0));
-        assert_eq!(neighbors, vec![pieces.clone()]);
+        assert_eq!(neighbors, vec![bug_stack]);
 
         board.insert(
             Position::new(0, 2),
-            Piece::new_from(Bug::Ladybug, Color::Black, 0)
+            Piece::new_from(Bug::Ladybug, Color::Black, 0),
         );
         let neighbors = board.neighbors(Position::new(0, 0));
-        assert_eq!(neighbors, vec![pieces]);
+        assert_eq!(neighbors, vec![bug_stack]);
     }
 
     #[test]
@@ -592,13 +584,17 @@ mod tests {
         let visited = board.walk_board(Position::new(3, 0), excluded, HashSet::new());
         assert_eq!(visited.len(), 1);
 
-        for (i, pos) in board.positions_around(Position::new(0, 0)).into_iter().enumerate() {
+        for (i, pos) in board
+            .positions_around(Position::new(0, 0))
+            .into_iter()
+            .enumerate()
+        {
             if i < 3 {
                 board.insert(pos, Piece::new_from(Bug::Ant, Color::Black, i));
-                             } 
+            }
             if i > 2 {
-                board.insert(pos, Piece::new_from(Bug::Grasshopper, Color::Black, i-3));
-                             }
+                board.insert(pos, Piece::new_from(Bug::Grasshopper, Color::Black, i - 3));
+            }
         }
         for pos in board.positions_around(Position::new(0, 0)).into_iter() {
             let visited = board.walk_board(Position::new(3, 0), pos, HashSet::new());

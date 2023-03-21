@@ -328,7 +328,7 @@ impl Bug {
                 .neighbors(position)
                 .iter()
                 .flat_map(
-                    |pieces| match pieces.last().expect("Could not get last piece").bug() {
+                    |pieces| match pieces.top_piece().expect("Could not get last piece").bug() {
                         Bug::Ant => Bug::ant_moves(position, board),
                         Bug::Beetle => Bug::beetle_moves(position, board),
                         Bug::Grasshopper => Bug::grasshopper_moves(position, board),
@@ -862,7 +862,6 @@ mod tests {
             Piece::new_from(Bug::Ant, Color::Black, 1),
         );
         let positions = Bug::spider_moves(Position::new(0, 0), &board);
-        println!("Position::news: {:?}", positions);
         assert_eq!(positions.len(), 1);
         assert!(positions.contains(&Position::new(2, 0)));
     }
@@ -966,13 +965,9 @@ mod tests {
                 .neighbors(Position { x: 0, y: 0 })
                 .last()
                 .unwrap()
-                .last()
+                .top_piece()
                 .unwrap(),
-            &Piece::new_from(Bug::Beetle, Color::White, 1)
-        );
-        println!(
-            "ant moves: {:?}",
-            Bug::ant_moves(Position::new(0, 0), &board)
+            Piece::new_from(Bug::Beetle, Color::White, 1)
         );
         assert_eq!(Bug::ant_moves(Position::new(0, 0), &board).len(), 5);
     }

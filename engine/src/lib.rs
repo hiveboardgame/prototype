@@ -1,5 +1,6 @@
 pub mod board;
 pub mod bug;
+pub mod bug_stack;
 pub mod color;
 pub mod direction;
 pub mod game_control;
