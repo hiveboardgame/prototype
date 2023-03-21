@@ -84,6 +84,7 @@ impl State {
         piece: &str,
         position: &str,
     ) -> Result<(), GameError> {
+        //println!("Playing: {piece} {position}");
         match piece {
             "pass" => {
                 if self.last_turn == LastTurn::Shutout {

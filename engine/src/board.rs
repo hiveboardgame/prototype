@@ -3,8 +3,7 @@ type HashMap<K, V> = FnvHashMap<K, V>;
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
-use std::{fmt, num};
-use std::fmt::Write;
+use std::fmt::{self, Write};
 
 use crate::bug::Bug;
 use crate::color::Color;
@@ -15,6 +14,8 @@ use crate::game_type::GameType;
 use crate::piece::Piece;
 use crate::position::Position;
 use crate::torus_array::TorusArray;
+
+pub static BOARD_SIZE: i32 = 32;
 
 #[derive(Deserialize, Serialize, Clone, Debug, Eq, PartialEq)]
 pub struct Board {
@@ -51,7 +52,7 @@ impl fmt::Display for Board {
 impl Board {
     pub fn new() -> Self {
         Self {
-            board: TorusArray::new(32, 32, vec![]),
+            board: TorusArray::new(BOARD_SIZE as usize, BOARD_SIZE as usize, vec![]),
             last_moved: None,
         }
     }

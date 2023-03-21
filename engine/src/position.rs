@@ -1,9 +1,14 @@
+use lazy_static::lazy_static;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::fmt;
-use lazy_static::lazy_static;
 
-use crate::{board::Board, direction::Direction, game_error::GameError, piece::Piece};
+use crate::{
+    board::{Board, BOARD_SIZE},
+    direction::Direction,
+    game_error::GameError,
+    piece::Piece,
+};
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord, Deserialize, Serialize)]
 pub struct Position {
@@ -20,6 +25,8 @@ impl fmt::Display for Position {
 
 impl Position {
     pub fn new(x: i8, y: i8) -> Self {
+        let x = x.rem_euclid(BOARD_SIZE as i8);
+        let y = y.rem_euclid(BOARD_SIZE as i8);
         Self {
             x: x as i32,
             y: y as i32,
@@ -27,21 +34,34 @@ impl Position {
     }
 
     pub fn new_i32(x: i32, y: i32) -> Self {
+        let x = x.rem_euclid(BOARD_SIZE);
+        let y = y.rem_euclid(BOARD_SIZE);
         Self { x, y }
     }
 
     pub fn new_i8(x: i8, y: i8) -> Self {
+        let x = x.rem_euclid(BOARD_SIZE as i8);
+        let y = y.rem_euclid(BOARD_SIZE as i8);
         Self {
             x: x as i32,
             y: y as i32,
         }
     }
 
+    fn wrap_around(num: i32) -> i32 {
+        return match num {
+            -31 => 1,
+            31 => -1,
+            x => x,
+        }
+    }
+
     // this implements "odd-r horizontal" which offsets odd rows to the right
     pub fn direction(&self, to: Position) -> Direction {
+        let diff = (Self::wrap_around(to.x - self.x), Self::wrap_around(to.y - self.y));
         // even rows
         if self.y.rem_euclid(2) == 0 {
-            return match (to.x - self.x, to.y - self.y) {
+            return match diff {
                 (-1, -1) => Direction::NW,
                 (0, -1) => Direction::NE,
                 (1, 0) => Direction::E,
@@ -56,7 +76,7 @@ impl Position {
             };
         }
         // odd rows
-        match (to.x - self.x, to.y - self.y) {
+        match diff {
             (0, -1) => Direction::NW,
             (1, -1) => Direction::NE,
             (1, 0) => Direction::E,
@@ -175,35 +195,20 @@ mod tests {
 
     #[test]
     fn tests_direction_and_to_circles() {
-    use Direction::*;
+        use Direction::*;
         let pos = Position::new(0, 0);
         let nw = pos.to(&Direction::NW);
         let sw = nw.to(&Direction::SW);
         let e = sw.to(&Direction::E);
         assert_eq!(e, pos);
-        let dirs = vec![
-            NW,
-            NW,
-            SW,
-            SW,
-            E,
-            E,
-        ];
+        let dirs = vec![NW, NW, SW, SW, E, E];
         let pos_0_0 = Position::new(0, 0);
         let mut pos = Position::new(0, 0);
         for direction in dirs {
             pos = pos.to(&direction)
         }
         assert_eq!(pos_0_0, pos);
-        let dirs = vec![
-            NW,
-            SW,
-            SE,
-            E,
-            NE,
-            NW,
-            SW,
-        ];
+        let dirs = vec![NW, SW, SE, E, NE, NW, SW];
         let pos_0_0 = Position::new(0, 0);
         let mut pos = Position::new(0, 0);
         for direction in dirs {
@@ -211,5 +216,4 @@ mod tests {
         }
         assert_eq!(pos_0_0, pos);
     }
-
 }
