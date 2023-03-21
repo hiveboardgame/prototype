@@ -10,7 +10,7 @@ use crate::{
     torus_array::TorusArray,
 };
 
-pub static BOARD_SIZE: i32 = 32;
+pub const BOARD_SIZE: i32 = 32;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Board {

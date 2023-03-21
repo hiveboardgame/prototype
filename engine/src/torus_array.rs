@@ -1,19 +1,22 @@
-use crate::{position::Position, board::BOARD_SIZE};
+use crate::{board::BOARD_SIZE, position::Position};
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize, Serialize, Clone, Debug, Eq, PartialEq)]
-pub struct TorusArray<T> {
-    data: Vec<T>,
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct TorusArray<T>
+where
+    T: Clone,
+{
+    data: [T; (BOARD_SIZE * BOARD_SIZE) as usize],
     default: T,
 }
 
 impl<T> TorusArray<T>
 where
-    T: Clone,
+    T: Clone + std::marker::Copy,
 {
     pub fn new(default: T) -> Self {
         Self {
-            data: vec![default.clone(); (BOARD_SIZE * BOARD_SIZE) as usize],
+            data: [default.clone(); (BOARD_SIZE * BOARD_SIZE) as usize],
             default,
         }
     }
