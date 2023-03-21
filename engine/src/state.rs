@@ -84,7 +84,6 @@ impl State {
         piece: &str,
         position: &str,
     ) -> Result<(), GameError> {
-        //println!("Playing: {piece} {position}");
         match piece {
             "pass" => {
                 if self.last_turn == LastTurn::Shutout {
@@ -186,7 +185,7 @@ impl State {
             turn: self.turn,
             reason: "NA".to_string(),
         };
-        let current_position = self.board.position(&piece).ok_or({
+        let current_position = self.board.position_of_piece(piece).ok_or({
             err.update_reason("This piece is not on the board.");
             err.clone()
         })?;
@@ -196,12 +195,10 @@ impl State {
             return Err(err);
         }
         // remove the piece from its current location
-        if !self.board.is_valid_move(
-            self.turn_color,
-            piece,
-            current_position,
-            target_position,
-        ) {
+        if !self
+            .board
+            .is_valid_move(self.turn_color, piece, current_position, target_position)
+        {
             println!("{}", self.board);
             err.update_reason("This move isn't valid.");
             return Err(err);

@@ -8,7 +8,7 @@ use std::env;
 
 fn play_game_from_file(file_path: &str) -> Result<(), GameError> {
     let history = History::from_filepath(file_path)?;
-    let mut state: State = State::new(GameType::default(), true);
+    let mut state: State = State::new(GameType::default(), false);
     for _ in 0..1 {
         state = State::new_from_history(&history)?;
     }

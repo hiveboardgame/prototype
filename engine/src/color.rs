@@ -6,8 +6,8 @@ use std::str::FromStr;
 #[derive(Serialize, Deserialize, Hash, Eq, PartialEq, Clone, Copy, Debug, Default)]
 pub enum Color {
     #[default]
-    White,
-    Black,
+    White = 0 ,
+    Black = 1,
 }
 
 impl FromStr for Color {

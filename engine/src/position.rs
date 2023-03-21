@@ -12,7 +12,6 @@ use crate::{
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord, Deserialize, Serialize)]
 pub struct Position {
-    // This needs to be modulo the torus array size
     pub x: i32,
     pub y: i32,
 }
@@ -48,11 +47,19 @@ impl Position {
         }
     }
 
+    pub fn inital_spawn_position() -> Self {
+        // TODO make this depenedent on BOARD_SIZE
+        Self {
+            x: 15,
+            y: 15,
+        }
+    }
+
     fn wrap_around(num: i32) -> i32 {
-        if num == (BOARD_SIZE-1) {
+        if num == (BOARD_SIZE - 1) {
             return -1;
         }
-        if num == (-(BOARD_SIZE-1)){
+        if num == (-(BOARD_SIZE - 1)) {
             return 1;
         }
         return num;
@@ -60,7 +67,10 @@ impl Position {
 
     // this implements "odd-r horizontal" which offsets odd rows to the right
     pub fn direction(&self, to: Position) -> Direction {
-        let diff = (Self::wrap_around(to.x - self.x), Self::wrap_around(to.y - self.y));
+        let diff = (
+            Self::wrap_around(to.x - self.x),
+            Self::wrap_around(to.y - self.y),
+        );
         // even rows
         if self.y.rem_euclid(2) == 0 {
             return match diff {
@@ -123,7 +133,7 @@ impl Position {
 
     pub fn from_string(s: &str, board: &Board) -> Result<Position, GameError> {
         if s.starts_with('.') {
-            return Ok(Position::new(0, 0));
+            return Ok(Position::inital_spawn_position());
         }
 
         lazy_static! {
@@ -132,7 +142,7 @@ impl Position {
         }
         if let Some(cap) = RE.captures(s) {
             let piece: Piece = cap[2].parse()?;
-            if let Some(mut position) = board.position(&piece) {
+            if let Some(mut position) = board.position_of_piece(piece) {
                 if !cap[1].is_empty() {
                     match &cap[1] {
                         "\\" => {

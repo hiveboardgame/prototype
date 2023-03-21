@@ -9,14 +9,14 @@ type HashMap<K, V> = FnvHashMap<K, V>;
 
 #[derive(Hash, Eq, PartialEq, Clone, Copy, Serialize, Deserialize, Debug)]
 pub enum Bug {
-    Ant,
-    Beetle,
-    Grasshopper,
-    Ladybug,
-    Mosquito,
-    Pillbug,
-    Queen,
-    Spider,
+    Ant = 0,
+    Beetle = 1,
+    Grasshopper = 2,
+    Ladybug = 3,
+    Mosquito = 4,
+    Pillbug = 5,
+    Queen = 6,
+    Spider = 7,
 }
 
 impl fmt::Display for Bug {

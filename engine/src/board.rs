@@ -21,47 +21,24 @@ pub static BOARD_SIZE: i32 = 32;
 pub struct Board {
     pub board: TorusArray<Vec<Piece>>,
     pub last_moved: Option<(Piece, Position)>,
-}
-
-impl fmt::Display for Board {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut s = "".to_string();
-        for y in 0..BOARD_SIZE {
-            if y.rem_euclid(2) == 1 {
-                write!(s, "  ")?;
-            }
-            for x in 0..BOARD_SIZE {
-                let pieces = self.board.get(Position::new_i32(x, y));
-                if let Some(last) = pieces.last() {
-                    if last.to_string().len() < 3 {
-                        write!(s, "{last}  ")?;
-                    } else {
-                        write!(s, "{last} ")?;
-                    }
-                } else {
-                    write!(s, "    ")?;
-                }
-            }
-            writeln!(s)?;
-        }
-        write!(f, "{s}")
-    }
+    pub piece_positions: Vec<Option<Position>>,
 }
 
 impl Board {
     pub fn new() -> Self {
         Self {
-            board: TorusArray::new(BOARD_SIZE as usize, BOARD_SIZE as usize, vec![]),
+            board: TorusArray::new(vec![]),
             last_moved: None,
+            piece_positions: vec![None; 48],
         }
     }
 
     pub fn game_result(&self) -> GameResult {
         let black = self
-            .position_of_piece(&Piece::new(Bug::Queen, Color::White, None))
+            .position_of_piece(Piece::new(Bug::Queen, Color::White, None))
             .map(|pos| self.neighbors(pos).len() == 6);
         let white = self
-            .position_of_piece(&Piece::new(Bug::Queen, Color::Black, None))
+            .position_of_piece(Piece::new(Bug::Queen, Color::Black, None))
             .map(|pos| self.neighbors(pos).len() == 6);
         match (black, white) {
             (Some(true), Some(true)) => GameResult::Draw,
@@ -71,51 +48,27 @@ impl Board {
         }
     }
 
-    pub fn position_of_piece(&self, piece: &Piece) -> Option<Position> {
-        // TODO: think about caching positions
-        for x in 0..32 {
-            for y in 0..32 {
-                let pos = Position { x, y };
-                let pieces = self.board.get(pos);
-                if pieces.contains(piece) {
-                    return Some(pos);
-                }
-            }
-        }
-        None
+    pub fn set_position_of_piece(&mut self, piece: Piece, position: Position) {
+        let number_of_bugs = 24;
+        let color = piece.color as usize;
+        let bug = piece.bug as usize;
+        let num = piece.order.unwrap_or(1) as usize;
+        self.piece_positions[color * number_of_bugs + bug * 3 + num] = Some(position);
     }
 
-    pub fn position(&self, piece: &Piece) -> Option<Position> {
-        // TODO: think about caching positions
-        self.position_of_piece(piece)
+    pub fn position_of_piece(&self, piece: Piece) -> Option<Position> {
+        let number_of_bugs = 24;
+        let color = piece.color as usize;
+        let bug = piece.bug as usize;
+        let num = piece.order.unwrap_or(1) as usize;
+        self.piece_positions
+            .get(color * number_of_bugs + bug * 3 + num)
+            .expect("The vec gets initialized to have space for all the bugs")
+            .clone()
     }
 
     pub fn piece_already_played(&self, piece: Piece) -> bool {
-        // TODO seriously some caching
-        for x in 0..32 {
-            for y in 0..32 {
-                if self.board.get(Position { x, y }).contains(&piece) {
-                    return true;
-                }
-            }
-        }
-        false
-    }
-
-    pub fn positions_for_color(&self, color: Color) -> Vec<Position> {
-        // TODO: think about caching positions
-        let mut found_positions = Vec::new();
-        for x in 0..32 {
-            for y in 0..32 {
-                let pos = Position { x, y };
-                if let Some(piece) = self.board.get(pos).last() {
-                    if piece.is_color(color) {
-                        found_positions.push(pos);
-                    }
-                }
-            }
-        }
-        found_positions
+        self.position_of_piece(piece).is_some()
     }
 
     pub fn move_piece(
@@ -139,7 +92,7 @@ impl Board {
             self.insert(target, piece);
             return Ok(());
         }
-        panic!(
+        unreachable!(
             "Trying to move {piece} from {current} to {target} which should have been a legal move"
         );
     }
@@ -309,14 +262,9 @@ impl Board {
 
     pub fn spawnable_positions(&self, color: Color) -> Vec<Position> {
         // TODO seriously some caching
-        let mut occupied = false;
-        for x in 0..32 {
-            for y in 0..32 {
-                occupied |= self.occupied(Position { x, y });
-            }
-        }
-        if !occupied {
-            return vec![Position::new(0, 0)];
+        let empty = !self.piece_positions.iter().any(|piece| *piece != None);
+        if empty {
+            return vec![Position::inital_spawn_position()];
         }
         return self
             .negative_space()
@@ -464,7 +412,7 @@ impl Board {
         }
         let number_of_positions = self.all_taken_positions().count();
         if number_of_positions == 0 {
-            return position == Position { x: 0, y: 0 };
+            return position == Position::inital_spawn_position();
         }
         if number_of_positions == 1 {
             return self.is_negative_space(position);
@@ -478,6 +426,32 @@ impl Board {
     pub fn insert(&mut self, position: Position, piece: Piece) {
         self.last_moved = Some((piece, position));
         self.board.get_mut(position).push(piece);
+        self.set_position_of_piece(piece, position);
+    }
+}
+
+impl fmt::Display for Board {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut s = "".to_string();
+        for y in 0..BOARD_SIZE {
+            if y.rem_euclid(2) == 1 {
+                write!(s, "  ")?;
+            }
+            for x in 0..BOARD_SIZE {
+                let pieces = self.board.get(Position::new_i32(x, y));
+                if let Some(last) = pieces.last() {
+                    if last.to_string().len() < 3 {
+                        write!(s, "{last}  ")?;
+                    } else {
+                        write!(s, "{last} ")?;
+                    }
+                } else {
+                    write!(s, "    ")?;
+                }
+            }
+            writeln!(s)?;
+        }
+        write!(f, "{s}")
     }
 }
 
@@ -646,11 +620,11 @@ mod tests {
     fn tests_spawnable_positions() {
         let mut board = Board::new();
         board.insert(
-            Position::new(0, 0),
+            Position::inital_spawn_position(),
             Piece::new(Bug::Queen, Color::White, Some(1)),
         );
         board.insert(
-            Position::new(1, 0),
+            Position::inital_spawn_position().to(&Direction::E),
             Piece::new(Bug::Ant, Color::Black, Some(1)),
         );
         let positions = board.spawnable_positions(Color::Black);
@@ -658,7 +632,9 @@ mod tests {
         let positions = board.spawnable_positions(Color::White);
         assert_eq!(positions.len(), 3);
         board.insert(
-            Position::new(2, 0),
+            Position::inital_spawn_position()
+                .to(&Direction::E)
+                .to(&Direction::E),
             Piece::new(Bug::Ant, Color::White, Some(2)),
         );
         let positions = board.spawnable_positions(Color::White);
@@ -671,32 +647,32 @@ mod tests {
     fn tests_spawnable() {
         let mut board = Board::new();
         // if board is empty you can spawn
-        assert!(board.spawnable(Color::White, Position::new(0, 0)));
+        assert!(board.spawnable(Color::White, Position::inital_spawn_position()));
         board.insert(
-            Position::new(0, 0),
+            Position::inital_spawn_position(),
             Piece::new(Bug::Ant, Color::White, Some(1)),
         );
 
         // if position is already occupied, a bug can't be spawned there
-        assert!(!board.spawnable(Color::White, Position::new(0, 0)));
+        assert!(!board.spawnable(Color::White, Position::inital_spawn_position()));
 
         // the second bug can always be played
-        assert!(board.spawnable(Color::Black, Position::new(1, 0)));
+        assert!(board.spawnable(Color::Black, Position::inital_spawn_position().to(&Direction::E)));
         board.insert(
-            Position::new(1, 0),
+            Position::inital_spawn_position().to(&Direction::E),
             Piece::new(Bug::Ant, Color::Black, Some(1)),
         );
 
         // now no other black bug can be spawned around the white one
-        for pos in board.positions_around(Position::new(0, 0)).iter() {
+        for pos in board.positions_around(Position::inital_spawn_position()).iter() {
             assert!(!board.spawnable(Color::Black, *pos));
         }
 
         // a white bug can be added adjacent to a white, but not a black bug
-        assert!(!board.spawnable(Color::White, Position::new(2, 0)));
-        assert!(board.spawnable(Color::White, Position::new(-1, 0)));
-        assert!(board.spawnable(Color::Black, Position::new(2, 0)));
-        assert!(!board.spawnable(Color::Black, Position::new(-1, 0)));
+        assert!(!board.spawnable(Color::White, Position::inital_spawn_position().to(&Direction::E).to(&Direction::E)));
+        assert!(board.spawnable(Color::White, Position::inital_spawn_position().to(&Direction::W)));
+        assert!(board.spawnable(Color::Black, Position::inital_spawn_position().to(&Direction::E).to(&Direction::E)));
+        assert!(!board.spawnable(Color::Black, Position::inital_spawn_position().to(&Direction::W)));
     }
 
     #[test]
