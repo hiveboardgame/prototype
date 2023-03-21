@@ -261,17 +261,14 @@ impl Board {
     }
 
     pub fn spawnable_positions(&self, color: Color) -> Vec<Position> {
-        // TODO seriously some caching
-        let empty = !self.piece_positions.iter().any(|piece| *piece != None);
-        if empty {
+        if !self.piece_positions.iter().any(|piece| piece.is_some()) {
             return vec![Position::inital_spawn_position()];
         }
-        return self
-            .negative_space()
+        self.negative_space()
             .iter()
             .filter(|pos| self.spawnable(color, **pos))
             .cloned()
-            .collect();
+            .collect()
     }
 
     pub fn queen_played(&self, color: Color) -> bool {
@@ -372,17 +369,17 @@ impl Board {
     }
 
     pub fn negative_space(&self) -> Vec<Position> {
-        // TODO caching
-        let mut negative_space = Vec::new();
-        for x in 0..32 {
-            for y in 0..32 {
-                let position = Position { x, y };
-                if self.is_negative_space(position) {
-                    negative_space.push(position)
+        let mut negative_space = HashSet::new();
+        for maybe_pos in self.piece_positions.iter() {
+            if let Some(pos) = maybe_pos {
+                for neighbor in self.positions_around(*pos).into_iter() {
+                    if self.is_negative_space(neighbor) {
+                        negative_space.insert(neighbor);
+                    }
                 }
             }
         }
-        negative_space
+        Vec::from_iter(negative_space)
     }
 
     pub fn is_negative_space(&self, position: Position) -> bool {
@@ -558,15 +555,15 @@ mod tests {
     fn tests_negative_space() {
         let mut board = Board::new();
         board.insert(
-            Position::new(0, 0),
-            Piece::new(Bug::Queen, Color::Black, Some(1)),
+            Position::inital_spawn_position(),
+            Piece::new(Bug::Queen, Color::White, None),
         );
-        let mut positions = board.positions_around(Position::new(0, 0));
+        let mut positions = board.positions_around(Position::inital_spawn_position());
         let mut negative_space = board.negative_space();
         assert_eq!(negative_space.sort(), positions.sort());
         board.insert(
-            Position::new(0, 1),
-            Piece::new(Bug::Queen, Color::Black, Some(1)),
+            Position::inital_spawn_position().to(&Direction::NW),
+            Piece::new(Bug::Queen, Color::Black, None),
         );
         assert_eq!(board.negative_space().len(), 8);
     }
@@ -657,22 +654,44 @@ mod tests {
         assert!(!board.spawnable(Color::White, Position::inital_spawn_position()));
 
         // the second bug can always be played
-        assert!(board.spawnable(Color::Black, Position::inital_spawn_position().to(&Direction::E)));
+        assert!(board.spawnable(
+            Color::Black,
+            Position::inital_spawn_position().to(&Direction::E)
+        ));
         board.insert(
             Position::inital_spawn_position().to(&Direction::E),
             Piece::new(Bug::Ant, Color::Black, Some(1)),
         );
 
         // now no other black bug can be spawned around the white one
-        for pos in board.positions_around(Position::inital_spawn_position()).iter() {
+        for pos in board
+            .positions_around(Position::inital_spawn_position())
+            .iter()
+        {
             assert!(!board.spawnable(Color::Black, *pos));
         }
 
         // a white bug can be added adjacent to a white, but not a black bug
-        assert!(!board.spawnable(Color::White, Position::inital_spawn_position().to(&Direction::E).to(&Direction::E)));
-        assert!(board.spawnable(Color::White, Position::inital_spawn_position().to(&Direction::W)));
-        assert!(board.spawnable(Color::Black, Position::inital_spawn_position().to(&Direction::E).to(&Direction::E)));
-        assert!(!board.spawnable(Color::Black, Position::inital_spawn_position().to(&Direction::W)));
+        assert!(!board.spawnable(
+            Color::White,
+            Position::inital_spawn_position()
+                .to(&Direction::E)
+                .to(&Direction::E)
+        ));
+        assert!(board.spawnable(
+            Color::White,
+            Position::inital_spawn_position().to(&Direction::W)
+        ));
+        assert!(board.spawnable(
+            Color::Black,
+            Position::inital_spawn_position()
+                .to(&Direction::E)
+                .to(&Direction::E)
+        ));
+        assert!(!board.spawnable(
+            Color::Black,
+            Position::inital_spawn_position().to(&Direction::W)
+        ));
     }
 
     #[test]
