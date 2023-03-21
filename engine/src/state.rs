@@ -3,7 +3,6 @@ use crate::color::Color;
 use crate::game_error::GameError;
 use crate::game_result::GameResult;
 use crate::game_status::GameStatus;
-use crate::hasher::Hasher;
 use crate::history::History;
 use crate::piece::Piece;
 use crate::player::Player;
@@ -25,7 +24,6 @@ pub struct State {
     pub game_id: u64,
     pub board: Board,
     pub history: History,
-    pub hasher: Hasher,
     pub last_turn: LastTurn,
     pub turn: usize,
     pub turn_color: Color,
@@ -41,7 +39,6 @@ impl State {
             game_id: 1,
             board: Board::new(),
             history: History::new(),
-            hasher: Hasher::new(),
             last_turn: LastTurn::None,
             turn: 0,
             turn_color: Color::White,
@@ -145,7 +142,6 @@ impl State {
         self.turn_color = Color::from(self.turn_color.opposite());
         self.turn += 1;
         self.board.last_moved = None;
-        self.update_hasher();
     }
 
     fn next_turn(&mut self) {
@@ -164,17 +160,6 @@ impl State {
         }
         self.turn_color = Color::from(self.turn_color.opposite());
         self.turn += 1;
-    }
-
-    fn update_hasher(&mut self) {
-        let mut h = History::new();
-        let mut turn = 0;
-        if self.turn > 0 {
-            turn = self.turn - 1;
-        }
-        h.moves = self.history.moves[0..=turn].to_vec();
-        self.hasher.record_move(&h);
-        self.hasher.record_board_state(&self.board);
     }
 
     fn turn_move(&mut self, piece: Piece, target_position: Position) -> Result<(), GameError> {
@@ -248,7 +233,6 @@ impl State {
             self.turn_spawn(piece, target_position)?
         }
         self.update_history(piece, target_position);
-        self.update_hasher();
         self.next_turn();
         self.shutout();
         Ok(())

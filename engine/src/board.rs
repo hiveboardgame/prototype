@@ -5,7 +5,7 @@ use std::collections::HashSet;
 use std::fmt::{self, Write};
 
 use crate::{
-    bug::Bug, bug_stack::BugStack, color::Color, direction::Direction, game_error::GameError,
+    bug::Bug, bug_stack::BugStack, color::Color, game_error::GameError,
     game_result::GameResult, game_type::GameType, piece::Piece, position::Position,
     torus_array::TorusArray,
 };
@@ -410,10 +410,10 @@ impl fmt::Display for Board {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::direction::Direction;
 
     #[test]
     fn tests_positions_around() {
-        let board = Board::new();
         let positions_0_0 = Position::new(0, 0)
             .positions_around()
             .collect::<HashSet<Position>>();
