@@ -4,6 +4,7 @@ use std::fmt;
 use std::str::FromStr;
 
 #[derive(Serialize, Deserialize, Hash, Eq, PartialEq, Clone, Copy, Debug, Default)]
+#[repr(u8)]
 pub enum Color {
     #[default]
     White = 0 ,
@@ -25,25 +26,30 @@ impl FromStr for Color {
     }
 }
 
-impl Color {
-    pub fn opposite(&self) -> Color {
-        match self {
-            Self::Black => Self::White,
-            Self::White => Self::Black,
+impl From<u8> for Color {
+    fn from(num: u8) -> Self {
+        if num == 0 {
+            return Color::White;
         }
+        Color::Black
+    }
+}
+
+impl From<Color> for u8 {
+    fn from(color: Color) -> Self {
+        color as u8
+    }
+}
+
+impl Color {
+    pub fn opposite(&self) -> u8 {
+        1 - (*self as u8)
     }
 
     pub fn name(&self) -> &'static str {
         match self {
             Self::Black => "black",
             Self::White => "white",
-        }
-    }
-
-    pub fn to_html_color(&self) -> &'static str {
-        match self {
-            Self::Black => "#131200",
-            Self::White => "#F0EAD6",
         }
     }
 }

@@ -57,14 +57,14 @@ impl State {
         // Did white open with a Queen?
         if let Some((piece_str, _)) = history.moves.get(0) {
             let piece: Piece = piece_str.parse()?;
-            if piece.bug == Bug::Queen {
+            if piece.bug() == Bug::Queen {
                 tournament = false;
             }
         }
         // Did black open with a Queen?
         if let Some((piece_str, _)) = history.moves.get(1) {
             let piece: Piece = piece_str.parse()?;
-            if piece.bug == Bug::Queen {
+            if piece.bug() == Bug::Queen {
                 tournament = false;
             }
         }
@@ -91,6 +91,8 @@ impl State {
                     // we handled this in shutout already
                     // Don't do anything
                 } else {
+                    println!("{}", self.board);
+                    println!("{:?}", self.board.reserve(self.turn_color, self.game_type));
                     return Err(GameError::InvalidMove {
                         piece: "NA".to_string(),
                         from: "NA".to_string(),
@@ -142,7 +144,7 @@ impl State {
     fn pass(&mut self) {
         self.history
             .record_move(self.turn_color.to_string(), "pass");
-        self.turn_color = self.turn_color.opposite();
+        self.turn_color = Color::from(self.turn_color.opposite());
         self.turn += 1;
         self.board.last_moved = None;
         self.update_hasher();
@@ -162,7 +164,7 @@ impl State {
             }
             GameResult::Unknown => {}
         }
-        self.turn_color = self.turn_color.opposite();
+        self.turn_color = Color::from(self.turn_color.opposite());
         self.turn += 1;
     }
 
@@ -220,19 +222,19 @@ impl State {
         if !piece.is_color(self.turn_color) {
             err.update_reason(format!(
                 "It is {}'s turn, but {} tried to spawn a piece.",
-                self.turn_color, piece.color
+                self.turn_color, piece.color()
             ));
             return Err(err);
         }
-        if self.turn < 2 && piece.bug == Bug::Queen && self.tournament {
+        if self.turn < 2 && piece.bug() == Bug::Queen && self.tournament {
             err.update_reason("Can't spawn Queen. Game uses tournament rules");
             return Err(err);
         }
-        if piece.bug != Bug::Queen && self.board.queen_required(self.turn, piece.color) {
+        if piece.bug() != Bug::Queen && self.board.queen_required(self.turn, piece.color()) {
             err.update_reason("Can't spawn another piece. Queen is required.");
             return Err(err);
         }
-        if self.board.spawnable(piece.color, target_position) {
+        if self.board.spawnable(piece.color(), target_position) {
             self.board.insert(target_position, piece);
             self.last_turn = LastTurn::Move(target_position, target_position);
         } else {
