@@ -19,6 +19,22 @@ pub enum Bug {
     Spider = 7,
 }
 
+impl From<u8> for Bug {
+    fn from(item: u8) -> Self {
+        match item {
+            0 => Bug::Ant,
+            1 => Bug::Beetle,
+            2 => Bug::Grasshopper,
+            3 => Bug::Ladybug,
+            4 => Bug::Mosquito,
+            5 => Bug::Pillbug,
+            6 => Bug::Queen,
+            7 => Bug::Spider,
+            _ => panic!(),
+        }
+    }
+}
+
 impl fmt::Display for Bug {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.as_str())

@@ -352,16 +352,14 @@ impl Board {
     }
 
     pub fn reserve(&self, color: Color, game_type: GameType) -> HashMap<Bug, i8> {
-        // TODO Cache the shit out of this, too plz
+        let start = 24 * color as usize;
+        let end = 24 + start;
         let mut bugs = Bug::bugs_count(game_type);
-        for x in 0..32 {
-            for y in 0..32 {
-                for piece in self.board.get(Position { x, y }) {
-                    if piece.is_color(color) {
-                        if let Some(i) = bugs.get_mut(&piece.bug) {
-                            *i -= 1;
-                        }
-                    }
+        for (i, maybe_pos) in self.piece_positions[start..end].iter().enumerate() {
+            if maybe_pos.is_some() {
+                let bug = Bug::from(i as u8 % 3);
+                if let Some(num) = bugs.get_mut(&bug) {
+                    *num -= 1;
                 }
             }
         }
@@ -390,17 +388,9 @@ impl Board {
     }
 
     pub fn all_taken_positions(&self) -> impl Iterator<Item = Position> {
-        // TODO caching
-        let mut taken = Vec::new();
-        for x in 0..32 {
-            for y in 0..32 {
-                let position = Position { x, y };
-                if self.occupied(position) {
-                    taken.push(position)
-                }
-            }
-        }
-        taken.into_iter()
+        self.piece_positions.clone().into_iter()
+            .filter_map(|maybe_pos| maybe_pos)
+            .into_iter()
     }
 
     pub fn spawnable(&self, color: Color, position: Position) -> bool {
