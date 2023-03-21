@@ -49,10 +49,7 @@ impl Position {
 
     pub fn inital_spawn_position() -> Self {
         // TODO make this depenedent on BOARD_SIZE
-        Self {
-            x: 15,
-            y: 15,
-        }
+        Self { x: 15, y: 15 }
     }
 
     fn wrap_around(num: i32) -> i32 {
@@ -106,6 +103,44 @@ impl Position {
     pub fn common_adjacent_positions(&self, to: Position) -> (Position, Position) {
         let (dir1, dir2) = self.direction(to).adjacent_directions();
         (self.to(&dir1), self.to(&dir2))
+    }
+
+    // pub fn positions_around(&self) -> impl Iterator<Item = Position> + '_  {
+    //     // TODO this can be done statically
+    //     static DIRS: [Direction; 6] = [
+    //         Direction::NW,
+    //         Direction::NE,
+    //         Direction::E,
+    //         Direction::SE,
+    //         Direction::SW,
+    //         Direction::W,
+    //     ];
+    //     DIRS.iter().map(move |dir| self.to(dir))
+    // }
+
+    pub fn positions_around(&self) -> impl Iterator<Item = Position> {
+        // even rows
+        if self.y.rem_euclid(2) == 0 {
+            return [
+                Position::new_i32(self.x - 1, self.y - 1),
+                Position::new_i32(self.x, self.y - 1),
+                Position::new_i32(self.x + 1, self.y),
+                Position::new_i32(self.x, self.y + 1),
+                Position::new_i32(self.x - 1, self.y + 1),
+                Position::new_i32(self.x - 1, self.y),
+            ]
+            .into_iter();
+        }
+        // odd rows
+        [
+            Position::new_i32(self.x, self.y - 1),
+            Position::new_i32(self.x + 1, self.y - 1),
+            Position::new_i32(self.x + 1, self.y),
+            Position::new_i32(self.x + 1, self.y + 1),
+            Position::new_i32(self.x, self.y + 1),
+            Position::new_i32(self.x - 1, self.y),
+        ]
+        .into_iter()
     }
 
     pub fn to(&self, direction: &Direction) -> Position {

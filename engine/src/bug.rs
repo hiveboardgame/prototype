@@ -327,8 +327,8 @@ impl Bug {
             board
                 .neighbors(position)
                 .iter()
-                .flat_map(
-                    |pieces| match pieces.top_piece().expect("Could not get last piece").bug() {
+                .flat_map(|pieces| {
+                    match pieces.top_piece().expect("Could not get last piece").bug() {
                         Bug::Ant => Bug::ant_moves(position, board),
                         Bug::Beetle => Bug::beetle_moves(position, board),
                         Bug::Grasshopper => Bug::grasshopper_moves(position, board),
@@ -337,8 +337,8 @@ impl Bug {
                         Bug::Pillbug => Bug::pillbug_moves(position, board),
                         Bug::Queen => Bug::queen_moves(position, board),
                         Bug::Spider => Bug::spider_moves(position, board),
-                    },
-                )
+                    }
+                })
                 .collect()
         } else {
             Bug::beetle_moves(position, board)
@@ -602,12 +602,8 @@ mod tests {
             Position::new(0, 0),
             Piece::new_from(Bug::Beetle, Color::White, 1),
         );
-        for (i, pos) in board
-            .positions_around(Position::new(0, 0))
-            .iter()
-            .enumerate()
-        {
-            board.insert(*pos, Piece::new_from(Bug::Queen, Color::Black, 0));
+        for (i, pos) in Position::new(0, 0).positions_around().enumerate() {
+            board.insert(pos, Piece::new_from(Bug::Queen, Color::Black, 0));
             let positions = Bug::climb(Position::new(0, 0), &board);
             assert_eq!(positions.len(), i + 1);
         }
@@ -617,8 +613,8 @@ mod tests {
             Position::new(0, 0),
             Piece::new_from(Bug::Beetle, Color::White, 1),
         );
-        for pos in board.positions_around(Position::new(0, 0)).iter() {
-            board.insert(*pos, Piece::new_from(Bug::Queen, Color::Black, 0));
+        for pos in Position::new(0, 0).positions_around() {
+            board.insert(pos, Piece::new_from(Bug::Queen, Color::Black, 0));
         }
         board.insert(
             Position::new(0, 1),
@@ -655,11 +651,11 @@ mod tests {
             Position::new(0, 1),
             Piece::new_from(Bug::Queen, Color::White, 0),
         );
-        for pos in board.positions_around(Position::new(0, 1)).iter() {
-            board.insert(*pos, Piece::new_from(Bug::Queen, Color::Black, 0));
+        for pos in Position::new(0, 1).positions_around() {
+            board.insert(pos, Piece::new_from(Bug::Queen, Color::Black, 0));
             let positions = Bug::crawl(Position::new(0, 1), &board).collect::<Vec<Position>>();
             assert_eq!(positions.len(), 2);
-            board.board.remove(*pos);
+            board.board.remove(pos);
         }
 
         // two adjacent neighbors means two positions
@@ -888,8 +884,8 @@ mod tests {
             Position::new(0, 0),
             Piece::new_from(Bug::Ladybug, Color::White, 0),
         );
-        for pos in board.positions_around(Position::new(0, 0)).iter() {
-            board.insert(*pos, Piece::new_from(Bug::Grasshopper, Color::Black, 1));
+        for pos in Position::new(0, 0).positions_around() {
+            board.insert(pos, Piece::new_from(Bug::Grasshopper, Color::Black, 1));
         }
         board.board.remove(Position::new(1, 0));
         assert_eq!(Bug::ladybug_moves(Position::new(0, 0), &board).len(), 12);
@@ -899,8 +895,8 @@ mod tests {
             Position::new(0, 0),
             Piece::new_from(Bug::Ladybug, Color::White, 0),
         );
-        for pos in board.positions_around(Position::new(0, 0)).iter() {
-            board.insert(*pos, Piece::new_from(Bug::Grasshopper, Color::Black, 1));
+        for pos in Position::new(0, 0).positions_around() {
+            board.insert(pos, Piece::new_from(Bug::Grasshopper, Color::Black, 1));
         }
         board.insert(
             Position::new(-2, 0),
@@ -932,8 +928,8 @@ mod tests {
             Position::new(0, 0),
             Piece::new_from(Bug::Beetle, Color::White, 1),
         );
-        for pos in board.positions_around(Position::new(0, 0)).iter() {
-            board.insert(*pos, Piece::new_from(Bug::Grasshopper, Color::White, 1));
+        for pos in Position::new(0, 0).positions_around() {
+            board.insert(pos, Piece::new_from(Bug::Grasshopper, Color::White, 1));
         }
         assert_eq!(Bug::beetle_moves(Position::new(0, 0), &board).len(), 6);
 
@@ -942,8 +938,8 @@ mod tests {
             Position::new(0, 0),
             Piece::new_from(Bug::Beetle, Color::White, 1),
         );
-        for pos in board.positions_around(Position::new(0, 0)).iter() {
-            board.insert(*pos, Piece::new_from(Bug::Grasshopper, Color::White, 1));
+        for pos in Position::new(0, 0).positions_around() {
+            board.insert(pos, Piece::new_from(Bug::Grasshopper, Color::White, 1));
         }
         board.board.remove(Position::new(1, 0));
         assert_eq!(Bug::beetle_moves(Position::new(0, 0), &board).len(), 5);
@@ -979,8 +975,8 @@ mod tests {
             Position::new(0, 0),
             Piece::new_from(Bug::Grasshopper, Color::White, 1),
         );
-        for pos in board.positions_around(Position::new(0, 0)).iter() {
-            board.insert(*pos, Piece::new_from(Bug::Beetle, Color::White, 1));
+        for pos in Position::new(0, 0).positions_around() {
+            board.insert(pos, Piece::new_from(Bug::Beetle, Color::White, 1));
         }
         assert_eq!(Bug::grasshopper_moves(Position::new(0, 0), &board).len(), 6);
 
