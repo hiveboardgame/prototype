@@ -1,13 +1,17 @@
 use hive_lib::game_error::GameError;
 use hive_lib::game_result::GameResult;
 use hive_lib::game_status::GameStatus;
+use hive_lib::game_type::GameType;
 use hive_lib::history::History;
 use hive_lib::state::State;
 use std::env;
 
 fn play_game_from_file(file_path: &str) -> Result<(), GameError> {
     let history = History::from_filepath(file_path)?;
-    let state = State::new_from_history(&history)?;
+    let mut state: State = State::new(GameType::default(), false);
+    for _ in 0..100 {
+        state = State::new_from_history(&history)?;
+    }
     if let GameStatus::Finished(GameResult::Winner(winner)) = state.game_status {
         println!("State says {} won!", winner);
     }

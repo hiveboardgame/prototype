@@ -4,12 +4,20 @@ use crate::game_error::GameError;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::str::FromStr;
+use bitfield_struct::bitfield;
 
-#[derive(Serialize, Deserialize, PartialEq, Clone, Hash, Eq, Copy)]
+#[bitfield(u8)]
+#[derive(Serialize, Deserialize, PartialEq, Hash, Eq)]
 pub struct Piece {
-    pub bug: Bug,
+    #[bits(1)]
     pub color: Color,
-    pub order: Option<i8>,
+    #[bits(3)]
+    pub bug: Bug,
+    #[bits(2)]
+    pub order: usize,
+    /// we need to fill the u8
+    #[bits(2)]
+    _padding: usize,
 }
 
 impl FromStr for Piece {
@@ -20,13 +28,14 @@ impl FromStr for Piece {
             let color: Color = c_chars.to_string().parse()?;
             if let Some(b_chars) = s.chars().nth(1) {
                 let bug: Bug = b_chars.to_string().parse()?;
-                let mut order = None;
+                let mut order = 0;
                 if let Some(ch) = s.chars().nth(2) {
                     if let Ok(ord) = ch.to_string().parse() {
-                        order = Some(ord)
+                        order = ord;
                     }
                 }
-                return Ok(Piece::new(bug, color, order));
+                // TODO
+                return Ok(Piece::new_from(bug, color, order));// bug, color, order));
             }
         }
         Err(GameError::ParsingError {
@@ -37,31 +46,21 @@ impl FromStr for Piece {
 }
 
 impl Piece {
-    pub fn new(bug: Bug, color: Color, order: Option<i8>) -> Piece {
-        Piece { bug, color, order }
+    pub fn new_from(bug: Bug, color: Color, order: usize) -> Piece {
+        Piece::new().with_color(color).with_bug(bug).with_order(order)
     }
 
-    pub fn is_color(&self, color: &Color) -> bool {
-        *color == self.color
+    pub fn is_color(&self, color: Color) -> bool {
+        color == self.color()
     }
 }
 
 impl fmt::Display for Piece {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        if let Some(order) = self.order {
-            write!(f, "{}{}{}", self.color, self.bug, order)
+        if self.order() > 0 {
+            write!(f, "{}{}{}", self.color(), self.bug(), self.order())
         } else {
-            write!(f, "{}{}", self.color, self.bug)
-        }
-    }
-}
-
-impl fmt::Debug for Piece {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        if let Some(order) = self.order {
-            write!(f, "{}{}{}", self.color, self.bug, order)
-        } else {
-            write!(f, "{}{}", self.color, self.bug)
+            write!(f, "{}{}", self.color(), self.bug())
         }
     }
 }
