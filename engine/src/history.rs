@@ -40,9 +40,9 @@ impl History {
 
     pub fn new_from_str(moves: String) -> Result<Self, GameError> {
         let mut history = History::new();
-        for mov in moves.split(";") {
+        for mov in moves.split(';') {
             let split = mov.split_whitespace().collect::<Vec<&str>>();
-            let piece = split.get(0).ok_or(GameError::ParsingError {
+            let piece = split.first().ok_or(GameError::ParsingError {
                 found: "NA".to_string(),
                 typ: "Piece".to_string(),
             })?;

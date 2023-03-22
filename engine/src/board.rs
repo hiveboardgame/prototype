@@ -5,9 +5,8 @@ use std::collections::HashSet;
 use std::fmt::{self, Write};
 
 use crate::{
-    bug::Bug, bug_stack::BugStack, color::Color, game_error::GameError,
-    game_result::GameResult, game_type::GameType, piece::Piece, position::Position,
-    torus_array::TorusArray,
+    bug::Bug, bug_stack::BugStack, color::Color, game_error::GameError, game_result::GameResult,
+    game_type::GameType, piece::Piece, position::Position, torus_array::TorusArray,
 };
 
 pub const BOARD_SIZE: i32 = 32;
@@ -16,7 +15,13 @@ pub const BOARD_SIZE: i32 = 32;
 pub struct Board {
     pub board: TorusArray<BugStack>,
     pub last_moved: Option<(Piece, Position)>,
-    pub piece_positions: Vec<Option<Position>>,
+    pub piece_positions: [Option<Position>; 48],
+}
+
+impl Default for Board {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Board {
@@ -24,7 +29,7 @@ impl Board {
         Self {
             board: TorusArray::new(BugStack::new()),
             last_moved: None,
-            piece_positions: vec![None; 48],
+            piece_positions: [None; 48],
         }
     }
 
@@ -47,7 +52,7 @@ impl Board {
         let number_of_bugs = 24;
         let color = piece.color() as usize;
         let bug = piece.bug() as usize;
-        let num = piece.order().checked_sub(1).unwrap_or(0) as usize;
+        let num = piece.order().saturating_sub(1);
         self.piece_positions[color * number_of_bugs + bug * 3 + num] = Some(position);
     }
 
@@ -55,11 +60,11 @@ impl Board {
         let number_of_bugs = 24;
         let color = piece.color() as usize;
         let bug = piece.bug() as usize;
-        let num = piece.order().checked_sub(1).unwrap_or(0) as usize;
-        self.piece_positions
+        let num = piece.order().saturating_sub(1);
+        *self
+            .piece_positions
             .get(color * number_of_bugs + bug * 3 + num)
             .expect("The vec gets initialized to have space for all the bugs")
-            .clone()
     }
 
     pub fn piece_already_played(&self, piece: Piece) -> bool {
@@ -85,7 +90,7 @@ impl Board {
         let bug_stack = self.board.get_mut(current);
         let piece = bug_stack.pop_piece();
         self.insert(target, piece);
-        return Ok(());
+        Ok(())
     }
 
     pub fn neighbor_is_a(&self, position: Position, bug: Bug) -> bool {
@@ -119,7 +124,7 @@ impl Board {
         let (pos1, pos2) = from.common_adjacent_positions(to);
         let p1 = self.board.get(pos1);
         let p2 = self.board.get(pos2);
-        if p1.len() == 0 || p2.len() == 0 {
+        if p1.is_empty() || p2.is_empty() {
             return false;
         }
         p1.len() >= level && p2.len() >= level
@@ -135,10 +140,10 @@ impl Board {
         None
     }
 
-    pub fn positions_taken_around_iter<'this>(
-        &'this self,
+    pub fn positions_taken_around_iter(
+        &self,
         position: Position,
-    ) -> impl Iterator<Item = Position> + 'this {
+    ) -> impl Iterator<Item = Position> + '_ {
         position
             .positions_around()
             .filter(|pos| self.occupied(*pos))
@@ -264,7 +269,7 @@ impl Board {
         &self,
         position: Position,
         excluded_position: Position,
-        mut visited: &mut HashSet<Position>,
+        visited: &mut HashSet<Position>,
     ) {
         if visited.contains(&position) {
             return;
@@ -272,7 +277,7 @@ impl Board {
         visited.insert(position);
         for pos in self.positions_taken_around_iter(position) {
             if pos != excluded_position && !visited.contains(&pos) {
-                self.walk_board_inner(pos, excluded_position, &mut visited);
+                self.walk_board_inner(pos, excluded_position, visited);
             }
         }
     }
@@ -331,12 +336,10 @@ impl Board {
 
     pub fn negative_space(&self) -> Vec<Position> {
         let mut negative_space = HashSet::new();
-        for maybe_pos in self.piece_positions.iter() {
-            if let Some(pos) = maybe_pos {
-                for neighbor in pos.positions_around() {
-                    if self.is_negative_space(neighbor) {
-                        negative_space.insert(neighbor);
-                    }
+        for pos in self.piece_positions.iter().flatten() {
+            for neighbor in pos.positions_around() {
+                if self.is_negative_space(neighbor) {
+                    negative_space.insert(neighbor);
                 }
             }
         }
@@ -344,18 +347,14 @@ impl Board {
     }
 
     pub fn is_negative_space(&self, position: Position) -> bool {
-        if self.board.get(position).len() == 0 {
+        if self.board.get(position).is_empty() {
             return self.positions_taken_around_iter(position).count() > 0;
         }
         false
     }
 
     pub fn all_taken_positions(&self) -> impl Iterator<Item = Position> {
-        self.piece_positions
-            .clone()
-            .into_iter()
-            .filter_map(|maybe_pos| maybe_pos)
-            .into_iter()
+        self.piece_positions.clone().into_iter().flatten()
     }
 
     pub fn spawnable(&self, color: Color, position: Position) -> bool {
@@ -372,7 +371,7 @@ impl Board {
         !self
             .top_layer_neighbors(position)
             .iter()
-            .any(|piece| color == Color::from(Color::from(piece.color()).opposite()))
+            .any(|piece| color == Color::from(piece.color().opposite()))
     }
 
     pub fn insert(&mut self, position: Position, piece: Piece) {

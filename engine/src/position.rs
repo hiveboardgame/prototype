@@ -59,7 +59,7 @@ impl Position {
         if num == (-(BOARD_SIZE - 1)) {
             return 1;
         }
-        return num;
+        num
     }
 
     // this implements "odd-r horizontal" which offsets odd rows to the right

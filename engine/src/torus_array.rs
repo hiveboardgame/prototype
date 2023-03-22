@@ -1,5 +1,4 @@
 use crate::{board::BOARD_SIZE, position::Position};
-use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct TorusArray<T>
@@ -16,7 +15,7 @@ where
 {
     pub fn new(default: T) -> Self {
         Self {
-            data: [default.clone(); (BOARD_SIZE * BOARD_SIZE) as usize],
+            data: [default; (BOARD_SIZE * BOARD_SIZE) as usize],
             default,
         }
     }
@@ -35,7 +34,7 @@ where
 
     // TODO get rid of this
     pub fn remove(&mut self, position: Position) {
-        self.set(position, self.default.clone());
+        self.set(position, self.default);
     }
 
     pub fn set(&mut self, position: Position, element: T) {

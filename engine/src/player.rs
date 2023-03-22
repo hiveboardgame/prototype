@@ -8,8 +8,6 @@ pub struct Player {
 
 impl Player {
     pub fn new(color: Color) -> Player {
-        Player {
-            color,
-        }
+        Player { color }
     }
 }

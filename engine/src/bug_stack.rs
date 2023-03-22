@@ -1,10 +1,15 @@
-use crate::piece::Piece;
 use crate::color::Color;
+use crate::piece::Piece;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct BugStack {
     pub pieces: [Piece; 7],
     pub size: u8,
+}
+impl Default for BugStack {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl BugStack {
@@ -19,12 +24,12 @@ impl BugStack {
         self.size as usize
     }
 
-    pub fn empty(&self) -> bool {
+    pub fn is_empty(&self) -> bool {
         self.size == 0
     }
 
     pub fn top_bug_color(&self) -> Option<Color> {
-        if self.empty() {
+        if self.is_empty() {
             return None;
         }
         Some(self.pieces[self.size as usize].color())

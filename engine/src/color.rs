@@ -7,7 +7,7 @@ use std::str::FromStr;
 #[repr(u8)]
 pub enum Color {
     #[default]
-    White = 0 ,
+    White = 0,
     Black = 1,
 }
 

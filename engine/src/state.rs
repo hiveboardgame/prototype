@@ -112,7 +112,7 @@ impl State {
         if let Some((neighbor_piece, neighbor_pos)) = self.board.get_neighbor(target_position) {
             let dir = neighbor_pos.direction(target_position);
             let pos = dir.to_history_string(neighbor_piece.to_string());
-            self.history.record_move(piece.to_string(), pos.to_string());
+            self.history.record_move(piece.to_string(), pos);
             return;
         }
         unreachable!()
@@ -186,7 +186,8 @@ impl State {
         if !piece.is_color(self.turn_color) {
             err.update_reason(format!(
                 "It is {}'s turn, but {} tried to spawn a piece.",
-                self.turn_color, piece.color()
+                self.turn_color,
+                piece.color()
             ));
             return Err(err);
         }

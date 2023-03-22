@@ -1,10 +1,10 @@
 use crate::bug::Bug;
 use crate::color::Color;
 use crate::game_error::GameError;
+use bitfield_struct::bitfield;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::str::FromStr;
-use bitfield_struct::bitfield;
 
 #[bitfield(u8)]
 #[derive(Serialize, Deserialize, PartialEq, Hash, Eq)]
@@ -35,7 +35,7 @@ impl FromStr for Piece {
                     }
                 }
                 // TODO
-                return Ok(Piece::new_from(bug, color, order));// bug, color, order));
+                return Ok(Piece::new_from(bug, color, order)); // bug, color, order));
             }
         }
         Err(GameError::ParsingError {
@@ -47,7 +47,10 @@ impl FromStr for Piece {
 
 impl Piece {
     pub fn new_from(bug: Bug, color: Color, order: usize) -> Piece {
-        Piece::new().with_color(color).with_bug(bug).with_order(order)
+        Piece::new()
+            .with_color(color)
+            .with_bug(bug)
+            .with_order(order)
     }
 
     pub fn is_color(&self, color: Color) -> bool {

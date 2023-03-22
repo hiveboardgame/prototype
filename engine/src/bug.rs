@@ -189,10 +189,7 @@ impl Bug {
         }
     }
 
-    fn crawl<'board>(
-        position: Position,
-        board: &'board Board,
-    ) -> impl Iterator<Item = Position> + 'board {
+    fn crawl(position: Position, board: &Board) -> impl Iterator<Item = Position> + '_ {
         board
             .positions_taken_around_iter(position)
             .flat_map(move |pos| {
