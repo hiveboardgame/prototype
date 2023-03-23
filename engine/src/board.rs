@@ -153,13 +153,6 @@ impl Board {
         self.board.get(position).size > 0
     }
 
-    pub fn positions_taken_around(&self, position: Position) -> Vec<Position> {
-        position
-            .positions_around()
-            .filter(|pos| self.occupied(*pos))
-            .collect()
-    }
-
     pub fn positions_available_around(&self, position: Position) -> Vec<Position> {
         position
             .positions_around()
@@ -288,7 +281,9 @@ impl Board {
             return false;
         }
         // if there's only one neighbor the piece isn't pinned
-        let all_neighbor_positions = self.positions_taken_around(position);
+        let all_neighbor_positions = self
+            .positions_taken_around_iter(position)
+            .collect::<Vec<_>>();
         if all_neighbor_positions.len() < 2 {
             return false;
         }
@@ -354,7 +349,7 @@ impl Board {
     }
 
     pub fn all_taken_positions(&self) -> impl Iterator<Item = Position> {
-        self.piece_positions.clone().into_iter().flatten()
+        self.piece_positions.into_iter().flatten()
     }
 
     pub fn spawnable(&self, color: Color, position: Position) -> bool {
@@ -433,7 +428,9 @@ mod tests {
             Position::new(1, 0),
             Piece::new_from(Bug::Ant, Color::Black, 0),
         );
-        let pos = board.positions_taken_around(Position::new(0, 0));
+        let pos = board
+            .positions_taken_around_iter(Position::new(0, 0))
+            .collect::<Vec<_>>();
         assert_eq!(pos, vec![Position::new(1, 0)]);
     }
 
@@ -514,9 +511,11 @@ mod tests {
             .positions_around()
             .collect::<Vec<Position>>();
         let mut negative_space = board.negative_space();
-        assert_eq!(negative_space.sort(), positions.sort());
+        positions.sort();
+        negative_space.sort();
+        assert_eq!(negative_space, positions);
         board.insert(
-            Position::inital_spawn_position().to(&Direction::NW),
+            Position::inital_spawn_position().to(Direction::NW),
             Piece::new_from(Bug::Queen, Color::Black, 0),
         );
         assert_eq!(board.negative_space().len(), 8);
@@ -580,7 +579,7 @@ mod tests {
             Piece::new_from(Bug::Queen, Color::White, 0),
         );
         board.insert(
-            Position::inital_spawn_position().to(&Direction::E),
+            Position::inital_spawn_position().to(Direction::E),
             Piece::new_from(Bug::Ant, Color::Black, 1),
         );
         let positions = board.spawnable_positions(Color::Black);
@@ -589,8 +588,8 @@ mod tests {
         assert_eq!(positions.len(), 3);
         board.insert(
             Position::inital_spawn_position()
-                .to(&Direction::E)
-                .to(&Direction::E),
+                .to(Direction::E)
+                .to(Direction::E),
             Piece::new_from(Bug::Ant, Color::White, 2),
         );
         let positions = board.spawnable_positions(Color::White);
@@ -615,10 +614,10 @@ mod tests {
         // the second bug can always be played
         assert!(board.spawnable(
             Color::Black,
-            Position::inital_spawn_position().to(&Direction::E)
+            Position::inital_spawn_position().to(Direction::E)
         ));
         board.insert(
-            Position::inital_spawn_position().to(&Direction::E),
+            Position::inital_spawn_position().to(Direction::E),
             Piece::new_from(Bug::Ant, Color::Black, 1),
         );
 
@@ -631,22 +630,22 @@ mod tests {
         assert!(!board.spawnable(
             Color::White,
             Position::inital_spawn_position()
-                .to(&Direction::E)
-                .to(&Direction::E)
+                .to(Direction::E)
+                .to(Direction::E)
         ));
         assert!(board.spawnable(
             Color::White,
-            Position::inital_spawn_position().to(&Direction::W)
+            Position::inital_spawn_position().to(Direction::W)
         ));
         assert!(board.spawnable(
             Color::Black,
             Position::inital_spawn_position()
-                .to(&Direction::E)
-                .to(&Direction::E)
+                .to(Direction::E)
+                .to(Direction::E)
         ));
         assert!(!board.spawnable(
             Color::Black,
-            Position::inital_spawn_position().to(&Direction::W)
+            Position::inital_spawn_position().to(Direction::W)
         ));
     }
 

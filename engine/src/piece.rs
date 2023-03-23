@@ -34,8 +34,7 @@ impl FromStr for Piece {
                         order = ord;
                     }
                 }
-                // TODO
-                return Ok(Piece::new_from(bug, color, order)); // bug, color, order));
+                return Ok(Piece::new_from(bug, color, order));
             }
         }
         Err(GameError::ParsingError {

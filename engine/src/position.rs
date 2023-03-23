@@ -102,9 +102,10 @@ impl Position {
 
     pub fn common_adjacent_positions(&self, to: Position) -> (Position, Position) {
         let (dir1, dir2) = self.direction(to).adjacent_directions();
-        (self.to(&dir1), self.to(&dir2))
+        (self.to(dir1), self.to(dir2))
     }
 
+    // TODO fix lifetime and then test speed
     // pub fn positions_around(&self) -> impl Iterator<Item = Position> + '_  {
     //     // TODO this can be done statically
     //     static DIRS: [Direction; 6] = [
@@ -143,7 +144,7 @@ impl Position {
         .into_iter()
     }
 
-    pub fn to(&self, direction: &Direction) -> Position {
+    pub fn to(&self, direction: Direction) -> Position {
         // even rows
         if self.y.rem_euclid(2) == 0 {
             return match direction {
@@ -181,13 +182,13 @@ impl Position {
                 if !cap[1].is_empty() {
                     match &cap[1] {
                         "\\" => {
-                            position = position.to(&Direction::NW);
+                            position = position.to(Direction::NW);
                         }
                         "-" => {
-                            position = position.to(&Direction::W);
+                            position = position.to(Direction::W);
                         }
                         "/" => {
-                            position = position.to(&Direction::SW);
+                            position = position.to(Direction::SW);
                         }
                         any => {
                             return Err(GameError::InvalidDirection {
@@ -199,13 +200,13 @@ impl Position {
                 if !cap[3].is_empty() {
                     match &cap[3] {
                         "/" => {
-                            position = position.to(&Direction::NE);
+                            position = position.to(Direction::NE);
                         }
                         "-" => {
-                            position = position.to(&Direction::E);
+                            position = position.to(Direction::E);
                         }
                         "\\" => {
-                            position = position.to(&Direction::SE);
+                            position = position.to(Direction::SE);
                         }
                         any => {
                             return Err(GameError::InvalidDirection {
@@ -232,9 +233,9 @@ mod tests {
     fn tests_direction_and_to() {
         for position in [Position::new(0, 0), Position::new(0, 1)] {
             for direction in Direction::all() {
-                let new_position = position.to(&direction);
+                let new_position = position.to(direction);
                 let opposite_direction = new_position.direction(position);
-                let inital_position = new_position.to(&opposite_direction);
+                let inital_position = new_position.to(opposite_direction);
                 assert_eq!(position, inital_position);
             }
         }
@@ -244,22 +245,22 @@ mod tests {
     fn tests_direction_and_to_circles() {
         use Direction::*;
         let pos = Position::new(0, 0);
-        let nw = pos.to(&Direction::NW);
-        let sw = nw.to(&Direction::SW);
-        let e = sw.to(&Direction::E);
+        let nw = pos.to(Direction::NW);
+        let sw = nw.to(Direction::SW);
+        let e = sw.to(Direction::E);
         assert_eq!(e, pos);
         let dirs = vec![NW, NW, SW, SW, E, E];
         let pos_0_0 = Position::new(0, 0);
         let mut pos = Position::new(0, 0);
         for direction in dirs {
-            pos = pos.to(&direction)
+            pos = pos.to(direction)
         }
         assert_eq!(pos_0_0, pos);
         let dirs = vec![NW, SW, SE, E, NE, NW, SW];
         let pos_0_0 = Position::new(0, 0);
         let mut pos = Position::new(0, 0);
         for direction in dirs {
-            pos = pos.to(&direction)
+            pos = pos.to(direction)
         }
         assert_eq!(pos_0_0, pos);
     }

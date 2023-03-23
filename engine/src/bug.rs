@@ -1,7 +1,4 @@
-use crate::{
-    board::Board, direction::Direction, game_error::GameError, game_type::GameType,
-    position::Position,
-};
+use crate::{board::Board, game_error::GameError, game_type::GameType, position::Position};
 use fnv::FnvHashMap;
 use serde::{Deserialize, Serialize};
 use std::{collections::HashSet, fmt, str::FromStr};
@@ -207,10 +204,8 @@ impl Bug {
 
     fn climb(position: Position, board: &Board) -> Vec<Position> {
         board
-            .positions_taken_around(position)
-            .iter()
-            .filter(|pos| !board.gated(board.level(**pos) + 1, position, **pos))
-            .cloned()
+            .positions_taken_around_iter(position)
+            .filter(|pos| !board.gated(board.level(*pos) + 1, position, *pos))
             .collect()
     }
 
@@ -271,14 +266,12 @@ impl Bug {
 
     pub fn grasshopper_moves(position: Position, board: &Board) -> Vec<Position> {
         // get the directions of the grasshopper's neighbors
-        let direction_of_neighbors = board
-            .positions_taken_around(position)
-            .into_iter()
-            .map(|pos| position.direction(pos))
-            .collect::<Vec<Direction>>();
         let mut positions = vec![];
         // move in the given direction
-        for dir in direction_of_neighbors.iter() {
+        for dir in board
+            .positions_taken_around_iter(position)
+            .map(|pos| position.direction(pos))
+        {
             let mut cur_pos = position;
             // until there is a free position
             while board.occupied(cur_pos.to(dir)) {
@@ -356,10 +349,11 @@ impl Bug {
             .cloned()
             .collect::<Vec<Position>>();
         // get bugs around the pillbug that aren't pinned
-        for pos in board.positions_taken_around(position).iter().filter(|p| {
-            !board.pinned(**p) && !board.gated(2, **p, position) && board.level(**p) <= 1
-        }) {
-            moves.insert(*pos, to.clone());
+        for pos in board
+            .positions_taken_around_iter(position)
+            .filter(|p| !board.pinned(*p) && !board.gated(2, *p, position) && board.level(*p) <= 1)
+        {
+            moves.insert(pos, to.clone());
         }
         moves
     }
