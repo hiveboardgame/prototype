@@ -394,6 +394,7 @@ dependencies = [
  "diesel-async",
  "dotenvy",
  "env_logger",
+ "fnv",
  "futures-util",
  "hive",
  "jsonwebtoken-google",
