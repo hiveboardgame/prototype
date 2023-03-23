@@ -11,11 +11,29 @@ use crate::{
 
 pub const BOARD_SIZE: i32 = 32;
 
+#[derive(Clone, Debug)]
+pub struct PinnedInfo {
+    pub position: Position,
+    pub parent: Option<usize>,
+    pub piece: Piece,
+    pub visited: bool,
+    pub depth: usize,
+    pub low: usize,
+    pub pinned: bool,
+}
+
+impl fmt::Display for PinnedInfo {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}: {} {}", self.piece, self.pinned, self.visited)
+    }
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Board {
     pub board: TorusArray<BugStack>,
     pub last_moved: Option<(Piece, Position)>,
-    pub piece_positions: [Option<Position>; 48],
+    pub positions: [Option<Position>; 48],
+    pub pinned: [bool; 48],
 }
 
 impl Default for Board {
@@ -29,7 +47,8 @@ impl Board {
         Self {
             board: TorusArray::new(BugStack::new()),
             last_moved: None,
-            piece_positions: [None; 48],
+            positions: [None; 48],
+            pinned: [false; 48],
         }
     }
 
@@ -49,21 +68,13 @@ impl Board {
     }
 
     pub fn set_position_of_piece(&mut self, piece: Piece, position: Position) {
-        let number_of_bugs = 24;
-        let color = piece.color() as usize;
-        let bug = piece.bug() as usize;
-        let num = piece.order().saturating_sub(1);
-        self.piece_positions[color * number_of_bugs + bug * 3 + num] = Some(position);
+        self.positions[self.piece_to_offset(piece)] = Some(position);
     }
 
     pub fn position_of_piece(&self, piece: Piece) -> Option<Position> {
-        let number_of_bugs = 24;
-        let color = piece.color() as usize;
-        let bug = piece.bug() as usize;
-        let num = piece.order().saturating_sub(1);
         *self
-            .piece_positions
-            .get(color * number_of_bugs + bug * 3 + num)
+            .positions
+            .get(self.piece_to_offset(piece))
             .expect("The vec gets initialized to have space for all the bugs")
     }
 
@@ -101,6 +112,22 @@ impl Board {
 
     pub fn level(&self, position: Position) -> usize {
         self.board.get(position).size as usize
+    }
+
+    pub fn piece_to_offset(&self, piece: Piece) -> usize {
+        piece.color() as usize * 24 + piece.bug() as usize * 3 + piece.order().saturating_sub(1)
+    }
+
+    pub fn offset_to_piece(&self, offset: usize) -> Piece {
+        let color = offset as u8 / 24;
+        let bug = (offset as u8 - color * 24) / 3;
+        let order = (offset as u8 + 1 - bug * 3 - color * 24) as usize;
+        Piece::new_from(Bug::from(bug), Color::from(color), order)
+    }
+
+    pub fn is_pinned(&self, piece: Piece) -> bool {
+        let position = self.position_of_piece(piece).expect("Piece not found on board");
+        self.pinned[self.piece_to_offset(piece)] && self.board.get(position).len() == 1 
     }
 
     pub fn top_piece(&self, position: Position) -> Option<Piece> {
@@ -224,7 +251,7 @@ impl Board {
     }
 
     pub fn spawnable_positions(&self, color: Color) -> Vec<Position> {
-        if !self.piece_positions.iter().any(|piece| piece.is_some()) {
+        if !self.positions.iter().any(|position| position.is_some()) {
             return vec![Position::inital_spawn_position()];
         }
         self.negative_space()
@@ -248,55 +275,71 @@ impl Board {
         false
     }
 
-    fn walk_board(
-        &self,
-        position: Position,
-        excluded_position: Position,
-        mut visited: HashSet<Position>,
-    ) -> HashSet<Position> {
-        self.walk_board_inner(position, excluded_position, &mut visited);
-        visited
-    }
-
-    fn walk_board_inner(
-        &self,
-        position: Position,
-        excluded_position: Position,
-        visited: &mut HashSet<Position>,
-    ) {
-        if visited.contains(&position) {
-            return;
-        }
-        visited.insert(position);
-        for pos in self.positions_taken_around_iter(position) {
-            if pos != excluded_position && !visited.contains(&pos) {
-                self.walk_board_inner(pos, excluded_position, visited);
-            }
+    pub fn update_pinned(&mut self) {
+        for pinned_info in self.calculate_pinned().iter() {
+            self.pinned[self.piece_to_offset(pinned_info.piece)] = pinned_info.pinned
         }
     }
 
-    pub fn pinned(&self, position: Position) -> bool {
-        // pieces on top of the hive cannot be pinned (just gated)
-        if self.level(position) > 1 {
-            return false;
-        }
-        // if there's only one neighbor the piece isn't pinned
-        let all_neighbor_positions = self
-            .positions_taken_around_iter(position)
+    pub fn calculate_pinned(&self) -> Vec<PinnedInfo> {
+        // make sure to get only top pieces in this
+        let mut ap_info = self
+            .positions
+            .iter()
+            .enumerate()
+            .filter_map(|(i, maybe_pos)| {
+                if let Some(pos) = maybe_pos {
+                    if self.is_top_piece(self.offset_to_piece(i), *pos) {
+                        Some(PinnedInfo {
+                            position: *pos,
+                            piece: self.top_piece(*pos).unwrap(),
+                            visited: false,
+                            depth: 0,
+                            low: 0,
+                            pinned: false,
+                            parent: None,
+                        })
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            })
             .collect::<Vec<_>>();
-        if all_neighbor_positions.len() < 2 {
-            return false;
+        if ap_info.len() == 0 {
+            return ap_info;
         }
-        let mut visited = HashSet::new();
-        visited = self.walk_board(*all_neighbor_positions.last().unwrap(), position, visited);
-        for neighbor_pos in all_neighbor_positions {
-            // if we can't reach all neighbors starting from a random neighbor, the piece would
-            // break the hive into two
-            if !visited.contains(&neighbor_pos) {
-                return true;
+        self.bcc(0, 0, &mut ap_info);
+        ap_info
+    }
+
+    pub fn bcc(&self, i: usize, d: usize, ap_info: &mut Vec<PinnedInfo>) {
+        ap_info[i].visited = true;
+        ap_info[i].depth = d;
+        ap_info[i].low = d;
+        let mut child_count = 0;
+        let mut ap = false;
+
+        for pos in self.positions_taken_around_iter(ap_info[i].position) {
+            let ni = ap_info.iter().position(|e| e.position == pos).unwrap();
+            if !ap_info[ni].visited {
+                child_count += 1;
+                ap_info[ni].parent = Some(i);
+                self.bcc(ni, d + 1, ap_info);
+                if ap_info[ni].low >= ap_info[i].depth {
+                    ap = true;
+                }
+                ap_info[i].low = std::cmp::min(ap_info[i].low, ap_info[ni].low);
+            } else {
+                if ap_info[i].parent.is_some() && ni != ap_info[i].parent.unwrap() {
+                    ap_info[i].low = std::cmp::min(ap_info[i].low, ap_info[ni].depth);
+                }
             }
         }
-        false
+        if ap_info[i].parent.is_some() && ap || (ap_info[i].parent.is_none() && child_count > 1) {
+            ap_info[i].pinned = true;
+        }
     }
 
     pub fn top_layer_neighbors(&self, position: Position) -> Vec<Piece> {
@@ -318,7 +361,7 @@ impl Board {
         let start = 24 * color as usize;
         let end = 24 + start;
         let mut bugs = Bug::bugs_count(game_type);
-        for (i, maybe_pos) in self.piece_positions[start..end].iter().enumerate() {
+        for (i, maybe_pos) in self.positions[start..end].iter().enumerate() {
             if maybe_pos.is_some() {
                 let bug = Bug::from(i as u8 / 3);
                 if let Some(num) = bugs.get_mut(&bug) {
@@ -331,7 +374,7 @@ impl Board {
 
     pub fn negative_space(&self) -> Vec<Position> {
         let mut negative_space = HashSet::new();
-        for pos in self.piece_positions.iter().flatten() {
+        for pos in self.positions.iter().flatten() {
             for neighbor in pos.positions_around() {
                 if self.is_negative_space(neighbor) {
                     negative_space.insert(neighbor);
@@ -349,7 +392,8 @@ impl Board {
     }
 
     pub fn all_taken_positions(&self) -> impl Iterator<Item = Position> {
-        self.piece_positions.into_iter().flatten()
+        // TODO this does not uniq!
+        self.positions.into_iter().flatten()
     }
 
     pub fn spawnable(&self, color: Color, position: Position) -> bool {
@@ -373,6 +417,7 @@ impl Board {
         self.last_moved = Some((piece, position));
         self.board.get_mut(position).push_piece(piece);
         self.set_position_of_piece(piece, position);
+        self.update_pinned();
     }
 }
 
@@ -519,56 +564,6 @@ mod tests {
             Piece::new_from(Bug::Queen, Color::Black, 0),
         );
         assert_eq!(board.negative_space().len(), 8);
-    }
-
-    #[test]
-    fn tests_walk_board() {
-        let mut board = Board::new();
-        board.insert(
-            Position::new(0, 0),
-            Piece::new_from(Bug::Queen, Color::Black, 0),
-        );
-        board.insert(
-            Position::new(1, 0),
-            Piece::new_from(Bug::Ant, Color::Black, 1),
-        );
-        board.insert(
-            Position::new(2, 0),
-            Piece::new_from(Bug::Ant, Color::Black, 2),
-        );
-        board.insert(
-            Position::new(3, 0),
-            Piece::new_from(Bug::Ant, Color::Black, 3),
-        );
-        let excluded = Position::new(5, 0);
-        let visited = board.walk_board(Position::new(0, 0), excluded, HashSet::new());
-        assert_eq!(visited.len(), 4);
-        let excluded = Position::new(2, 0);
-        let visited = board.walk_board(Position::new(0, 0), excluded, HashSet::new());
-        assert_eq!(visited.len(), 2);
-        let visited = board.walk_board(Position::new(0, 0), excluded, HashSet::new());
-        assert_eq!(visited.len(), 2);
-        let visited = board.walk_board(Position::new(1, 0), excluded, HashSet::new());
-        assert_eq!(visited.len(), 2);
-        let visited = board.walk_board(Position::new(3, 0), excluded, HashSet::new());
-        assert_eq!(visited.len(), 1);
-
-        for (i, pos) in Position::new(0, 0).positions_around().enumerate() {
-            if i < 3 {
-                board.insert(pos, Piece::new_from(Bug::Ant, Color::Black, i));
-            }
-            if i > 2 {
-                board.insert(pos, Piece::new_from(Bug::Grasshopper, Color::Black, i - 3));
-            }
-        }
-        for pos in Position::new(0, 0).positions_around() {
-            let visited = board.walk_board(Position::new(3, 0), pos, HashSet::new());
-            if pos == Position::new(1, 0) {
-                assert_eq!(visited.len(), 2);
-            } else {
-                assert_eq!(visited.len(), 8);
-            }
-        }
     }
 
     #[test]

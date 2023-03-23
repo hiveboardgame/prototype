@@ -151,9 +151,16 @@ impl Bug {
         bugs
     }
 
+    pub fn has_order(&self) -> bool {
+        match self {
+            Bug::Ant | Bug::Beetle | Bug::Grasshopper | Bug::Spider => true,
+            Bug::Ladybug | Bug::Mosquito | Bug::Pillbug | Bug::Queen => false,
+        }
+    }
+
     pub fn available_moves(position: Position, board: &Board) -> HashMap<Position, Vec<Position>> {
         let mut moves = HashMap::default();
-        if !board.pinned(position) {
+        if !board.is_pinned(board.top_piece(position).expect("There must be something at this position")) {
             let positions = match board.top_bug(position) {
                 Some(Bug::Ant) => Bug::ant_moves(position, board),
                 Some(Bug::Beetle) => Bug::beetle_moves(position, board),
@@ -351,7 +358,7 @@ impl Bug {
         // get bugs around the pillbug that aren't pinned
         for pos in board
             .positions_taken_around_iter(position)
-            .filter(|p| !board.pinned(*p) && !board.gated(2, *p, position) && board.level(*p) <= 1)
+            .filter(|p| !board.is_pinned(board.top_piece(position).unwrap()) && !board.gated(2, *p, position) && board.level(*p) <= 1)
         {
             moves.insert(pos, to.clone());
         }

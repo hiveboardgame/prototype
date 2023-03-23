@@ -46,10 +46,13 @@ impl FromStr for Piece {
 
 impl Piece {
     pub fn new_from(bug: Bug, color: Color, order: usize) -> Piece {
-        Piece::new()
-            .with_color(color)
-            .with_bug(bug)
-            .with_order(order)
+        if bug.has_order() {
+            return Piece::new()
+                .with_color(color)
+                .with_bug(bug)
+                .with_order(order);
+        }
+        Piece::new().with_color(color).with_bug(bug)
     }
 
     pub fn is_color(&self, color: Color) -> bool {

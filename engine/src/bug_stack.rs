@@ -1,5 +1,6 @@
 use crate::color::Color;
 use crate::piece::Piece;
+use std::fmt;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct BugStack {
@@ -9,6 +10,18 @@ pub struct BugStack {
 impl Default for BugStack {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl fmt::Display for BugStack {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "BugStack len: {} top_piece: {:?} pieces: {:?}",
+            self.len(),
+            self.top_piece(),
+            self.pieces
+        )
     }
 }
 

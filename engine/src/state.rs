@@ -157,7 +157,7 @@ impl State {
             err.clone()
         })?;
         err.update_to(current_position.to_string());
-        if self.board.pinned(current_position) {
+        if self.board.is_pinned(piece) {
             err.update_reason("Piece is pinned.");
             return Err(err);
         }
