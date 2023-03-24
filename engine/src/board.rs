@@ -292,7 +292,7 @@ impl Board {
                     if self.is_top_piece(self.offset_to_piece(i), *pos) {
                         Some(PinnedInfo {
                             position: *pos,
-                            piece: self.top_piece(*pos).unwrap(),
+                            piece: self.board.get(*pos).base_piece().unwrap(),
                             visited: false,
                             depth: 0,
                             low: 0,
