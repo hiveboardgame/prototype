@@ -40,19 +40,19 @@ impl GameError {
         }
     }
 
-    pub fn update_to<S>(&mut self, to_new: S)
+    pub fn update_from<S>(&mut self, from_new: S)
     where
         S: Into<String>,
     {
         if let GameError::InvalidMove {
             piece: _,
-            from: _,
-            to,
+            from,
+            to: _,
             turn: _,
             reason: _,
         } = self
         {
-            *to = to_new.into();
+            *from = from_new.into();
         }
     }
 }
