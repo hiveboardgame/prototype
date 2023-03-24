@@ -358,7 +358,7 @@ impl Bug {
         // get bugs around the pillbug that aren't pinned
         for pos in board
             .positions_taken_around_iter(position)
-            .filter(|p| !board.is_pinned(board.top_piece(position).unwrap()) && !board.gated(2, *p, position) && board.level(*p) <= 1)
+            .filter(|p| !board.is_pinned(board.top_piece(*p).unwrap()) && !board.gated(2, *p, position) && board.level(*p) <= 1)
         {
             moves.insert(pos, to.clone());
         }
