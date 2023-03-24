@@ -48,7 +48,7 @@ mod tests {
     #[test]
     fn test_new_insert_get() {
         let mut arr = TorusArray::new(0_i32);
-        let position = Position::new_i32(0, 1);
+        let position = Position::new(0, 1);
         arr.set(position, 1);
         assert_eq!(*arr.get(position), 1);
     }

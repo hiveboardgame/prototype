@@ -12,7 +12,7 @@ use crate::{
 pub const BOARD_SIZE: i32 = 32;
 
 #[derive(Clone, Debug)]
-pub struct PinnedInfo {
+pub struct DfsInfo {
     pub position: Position,
     pub parent: Option<usize>,
     pub piece: Piece,
@@ -22,7 +22,7 @@ pub struct PinnedInfo {
     pub pinned: bool,
 }
 
-impl fmt::Display for PinnedInfo {
+impl fmt::Display for DfsInfo {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}: {} {}", self.piece, self.pinned, self.visited)
     }
@@ -280,16 +280,16 @@ impl Board {
         }
     }
 
-    pub fn calculate_pinned(&self) -> Vec<PinnedInfo> {
+    pub fn calculate_pinned(&self) -> Vec<DfsInfo> {
         // make sure to get only top pieces in this
-        let mut ap_info = self
+        let mut dfs_info = self
             .positions
             .iter()
             .enumerate()
             .filter_map(|(i, maybe_pos)| {
                 if let Some(pos) = maybe_pos {
                     if self.is_top_piece(self.offset_to_piece(i), *pos) {
-                        Some(PinnedInfo {
+                        Some(DfsInfo {
                             position: *pos,
                             piece: self.top_piece(*pos).unwrap(),
                             visited: false,
@@ -306,38 +306,38 @@ impl Board {
                 }
             })
             .collect::<Vec<_>>();
-        if ap_info.len() == 0 {
-            return ap_info;
+        if dfs_info.len() == 0 {
+            return dfs_info;
         }
-        self.bcc(0, 0, &mut ap_info);
-        ap_info
+        self.bcc(0, 0, &mut dfs_info);
+        dfs_info
     }
 
-    pub fn bcc(&self, i: usize, d: usize, ap_info: &mut Vec<PinnedInfo>) {
-        ap_info[i].visited = true;
-        ap_info[i].depth = d;
-        ap_info[i].low = d;
+    pub fn bcc(&self, i: usize, d: usize, dfs_info: &mut Vec<DfsInfo>) {
+        dfs_info[i].visited = true;
+        dfs_info[i].depth = d;
+        dfs_info[i].low = d;
         let mut child_count = 0;
         let mut ap = false;
 
-        for pos in self.positions_taken_around_iter(ap_info[i].position) {
-            let ni = ap_info.iter().position(|e| e.position == pos).unwrap();
-            if !ap_info[ni].visited {
+        for pos in self.positions_taken_around_iter(dfs_info[i].position) {
+            let ni = dfs_info.iter().position(|e| e.position == pos).unwrap();
+            if !dfs_info[ni].visited {
                 child_count += 1;
-                ap_info[ni].parent = Some(i);
-                self.bcc(ni, d + 1, ap_info);
-                if ap_info[ni].low >= ap_info[i].depth {
+                dfs_info[ni].parent = Some(i);
+                self.bcc(ni, d + 1, dfs_info);
+                if dfs_info[ni].low >= dfs_info[i].depth {
                     ap = true;
                 }
-                ap_info[i].low = std::cmp::min(ap_info[i].low, ap_info[ni].low);
+                dfs_info[i].low = std::cmp::min(dfs_info[i].low, dfs_info[ni].low);
             } else {
-                if ap_info[i].parent.is_some() && ni != ap_info[i].parent.unwrap() {
-                    ap_info[i].low = std::cmp::min(ap_info[i].low, ap_info[ni].depth);
+                if dfs_info[i].parent.is_some() && ni != dfs_info[i].parent.unwrap() {
+                    dfs_info[i].low = std::cmp::min(dfs_info[i].low, dfs_info[ni].depth);
                 }
             }
         }
-        if ap_info[i].parent.is_some() && ap || (ap_info[i].parent.is_none() && child_count > 1) {
-            ap_info[i].pinned = true;
+        if dfs_info[i].parent.is_some() && ap || (dfs_info[i].parent.is_none() && child_count > 1) {
+            dfs_info[i].pinned = true;
         }
     }
 
