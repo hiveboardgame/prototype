@@ -126,8 +126,10 @@ impl Board {
     }
 
     pub fn is_pinned(&self, piece: Piece) -> bool {
-        let position = self.position_of_piece(piece).expect("Piece not found on board");
-        self.pinned[self.piece_to_offset(piece)] && self.board.get(position).len() == 1 
+        let position = self
+            .position_of_piece(piece)
+            .expect("Piece not found on board");
+        self.pinned[self.piece_to_offset(piece)] && self.board.get(position).len() == 1
     }
 
     pub fn top_piece(&self, position: Position) -> Option<Piece> {
@@ -215,35 +217,32 @@ impl Board {
     }
 
     pub fn moves(&self, color: Color) -> HashMap<(Piece, Position), Vec<Position>> {
-        // TODO this needs caching
         let mut moves: HashMap<(Piece, Position), Vec<Position>> = HashMap::default();
         if !self.queen_played(color) {
             return moves;
         }
-        for x in 0..32 {
-            for y in 0..32 {
-                let pos = Position { x, y };
-                if let Some(piece) = self.top_piece(pos) {
-                    if piece.is_color(color) {
-                        // let's make sure pieces that were just moved cannot be moved again
-                        if let Some(last_moved) = self.last_moved {
-                            if last_moved == (piece, pos) {
-                                // now we skip it
-                                continue;
-                            }
+        for pos in self.positions.iter().flatten() {
+            if let Some(piece) = self.top_piece(*pos) {
+                if piece.is_color(color) {
+                    // let's make sure pieces that were just moved cannot be moved again
+                    if let Some(last_moved) = self.last_moved {
+                        if last_moved == (piece, *pos) {
+                            // now we skip it
+                            continue;
                         }
-                        for (start_pos, target_positions) in Bug::available_moves(pos, self) {
-                            if let Some(piece) = self.top_piece(start_pos) {
-                                moves
-                                    .entry((piece, start_pos))
-                                    .or_default()
-                                    .append(&mut target_positions.clone());
-                            }
+                    }
+                    for (start_pos, target_positions) in Bug::available_moves(*pos, self) {
+                        if let Some(piece) = self.top_piece(start_pos) {
+                            moves
+                                .entry((piece, start_pos))
+                                .or_default()
+                                .append(&mut target_positions.clone());
                         }
                     }
                 }
             }
         }
+
         if let Some(last_moved) = self.last_moved {
             moves.remove(&last_moved);
         }

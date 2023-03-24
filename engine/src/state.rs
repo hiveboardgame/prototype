@@ -8,22 +8,12 @@ use crate::piece::Piece;
 use crate::player::Player;
 use crate::position::Position;
 use crate::{board::Board, game_type::GameType};
-use serde::{Deserialize, Serialize};
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Default)]
-pub enum LastTurn {
-    Pass,
-    Move(Position, Position),
-    #[default]
-    None,
-}
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct State {
     pub game_id: u64,
     pub board: Board,
     pub history: History,
-    pub last_turn: LastTurn,
     pub turn: usize,
     pub turn_color: Color,
     pub players: (Player, Player),
@@ -38,7 +28,6 @@ impl State {
             game_id: 1,
             board: Board::new(),
             history: History::new(),
-            last_turn: LastTurn::None,
             turn: 0,
             turn_color: Color::White,
             players: (Player::new(Color::White), Player::new(Color::Black)),
@@ -169,7 +158,6 @@ impl State {
             err.update_reason("This move isn't valid.");
             return Err(err);
         }
-        self.last_turn = LastTurn::Move(current_position, target_position);
         self.board
             .move_piece(piece, current_position, target_position, self.turn)?;
         Ok(())
@@ -201,7 +189,6 @@ impl State {
         }
         if self.board.spawnable(piece.color(), target_position) {
             self.board.insert(target_position, piece);
-            self.last_turn = LastTurn::Move(target_position, target_position);
         } else {
             err.update_reason(format!("{} is not allowed to spawn here.", self.turn_color));
             return Err(err);
