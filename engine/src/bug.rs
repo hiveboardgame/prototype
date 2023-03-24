@@ -195,7 +195,7 @@ impl Bug {
 
     fn crawl(position: Position, board: &Board) -> impl Iterator<Item = Position> + '_ {
         board
-            .positions_taken_around_iter(position)
+            .positions_taken_around(position)
             .flat_map(move |pos| {
                 let mut positions = vec![];
                 let (pos1, pos2) = position.common_adjacent_positions(pos);
@@ -211,7 +211,7 @@ impl Bug {
 
     fn climb(position: Position, board: &Board) -> Vec<Position> {
         board
-            .positions_taken_around_iter(position)
+            .positions_taken_around(position)
             .filter(|pos| !board.gated(board.level(*pos) + 1, position, *pos))
             .collect()
     }
@@ -219,9 +219,7 @@ impl Bug {
     fn descend(position: Position, board: &Board) -> Vec<Position> {
         board
             .positions_available_around(position)
-            .iter()
-            .filter(|pos| !board.gated(board.level(position), position, **pos))
-            .cloned()
+            .filter(|pos| !board.gated(board.level(position), position, *pos))
             .collect()
     }
 
@@ -276,7 +274,7 @@ impl Bug {
         let mut positions = vec![];
         // move in the given direction
         for dir in board
-            .positions_taken_around_iter(position)
+            .positions_taken_around(position)
             .map(|pos| position.direction(pos))
         {
             let mut cur_pos = position;
@@ -310,9 +308,7 @@ impl Bug {
             .flat_map(|pos| {
                 board
                     .positions_available_around(*pos)
-                    .iter()
-                    .filter(|p| !board.gated(board.level(*pos) + 1, *pos, **p) && **p != position)
-                    .cloned()
+                    .filter(|p| !board.gated(board.level(*pos) + 1, *pos, *p) && *p != position)
                     .collect::<HashSet<Position>>()
             })
             .collect::<HashSet<Position>>();
@@ -323,7 +319,6 @@ impl Bug {
         return if board.level(position) == 1 {
             board
                 .neighbors(position)
-                .iter()
                 .flat_map(|pieces| {
                     match pieces.top_piece().expect("Could not get last piece").bug() {
                         Bug::Ant => Bug::ant_moves(position, board),
@@ -351,13 +346,11 @@ impl Bug {
         // get all the positions the pillbug can throw a bug to
         let to = board
             .positions_available_around(position)
-            .iter()
-            .filter(|pos| !board.gated(2, position, **pos))
-            .cloned()
+            .filter(|pos| !board.gated(2, position, *pos))
             .collect::<Vec<Position>>();
         // get bugs around the pillbug that aren't pinned
         for pos in board
-            .positions_taken_around_iter(position)
+            .positions_taken_around(position)
             .filter(|p| !board.is_pinned(board.top_piece(*p).unwrap()) && !board.gated(2, *p, position) && board.level(*p) <= 1)
         {
             moves.insert(pos, to.clone());

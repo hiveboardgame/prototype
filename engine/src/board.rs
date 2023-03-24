@@ -55,10 +55,10 @@ impl Board {
     pub fn game_result(&self) -> GameResult {
         let black = self
             .position_of_piece(Piece::new_from(Bug::Queen, Color::White, 0))
-            .map(|pos| self.neighbors(pos).len() == 6);
+            .map(|pos| self.neighbors(pos).count() == 6);
         let white = self
             .position_of_piece(Piece::new_from(Bug::Queen, Color::Black, 0))
-            .map(|pos| self.neighbors(pos).len() == 6);
+            .map(|pos| self.neighbors(pos).count() == 6);
         match (black, white) {
             (Some(true), Some(true)) => GameResult::Draw,
             (Some(true), Some(false)) => GameResult::Winner(Color::Black),
@@ -106,7 +106,6 @@ impl Board {
 
     pub fn neighbor_is_a(&self, position: Position, bug: Bug) -> bool {
         self.top_layer_neighbors(position)
-            .iter()
             .any(|piece| piece.bug() == bug)
     }
 
@@ -161,15 +160,14 @@ impl Board {
 
     pub fn get_neighbor(&self, position: Position) -> Option<(Piece, Position)> {
         for pos in position.positions_around() {
-            let pieces = self.board.get(pos);
-            if let Some(piece) = pieces.top_piece() {
+            if let Some(piece) = self.top_piece(pos) {
                 return Some((piece, pos));
             }
         }
         None
     }
 
-    pub fn positions_taken_around_iter(
+    pub fn positions_taken_around(
         &self,
         position: Position,
     ) -> impl Iterator<Item = Position> + '_ {
@@ -182,25 +180,25 @@ impl Board {
         self.board.get(position).size > 0
     }
 
-    pub fn positions_available_around(&self, position: Position) -> Vec<Position> {
+    pub fn positions_available_around(
+        &self,
+        position: Position,
+    ) -> impl Iterator<Item = Position> + '_ {
         position
             .positions_around()
             .filter(|pos| !self.occupied(*pos))
-            .collect()
     }
 
-    pub fn neighbors(&self, position: Position) -> Vec<BugStack> {
+    pub fn neighbors(&self, position: Position) -> impl Iterator<Item = BugStack> + '_ {
         position
             .positions_around()
-            .filter_map(|pos| {
+            .filter_map(move |pos| {
                 if self.occupied(pos) {
-                    Some(self.board.get(pos))
+                    Some(self.board.get(pos).clone())
                 } else {
                     None
                 }
             })
-            .cloned()
-            .collect()
     }
 
     pub fn is_valid_move(
@@ -249,15 +247,10 @@ impl Board {
         moves
     }
 
-    pub fn spawnable_positions(&self, color: Color) -> Vec<Position> {
-        if !self.positions.iter().any(|position| position.is_some()) {
-            return vec![Position::inital_spawn_position()];
-        }
-        self.negative_space()
-            .iter()
-            .filter(|pos| self.spawnable(color, **pos))
-            .cloned()
-            .collect()
+    pub fn spawnable_positions(&self, color: Color) -> impl Iterator<Item = Position> + '_ {
+        std::iter::once(Position::inital_spawn_position())
+            .chain(self.negative_space())
+            .filter(move |pos| self.spawnable(color, *pos))
     }
 
     pub fn queen_played(&self, color: Color) -> bool {
@@ -306,7 +299,7 @@ impl Board {
                 }
             })
             .collect::<Vec<_>>();
-        if dfs_info.len() == 0 {
+        if dfs_info.is_empty() {
             return dfs_info;
         }
         self.bcc(0, 0, &mut dfs_info);
@@ -320,7 +313,7 @@ impl Board {
         let mut child_count = 0;
         let mut ap = false;
 
-        for pos in self.positions_taken_around_iter(dfs_info[i].position) {
+        for pos in self.positions_taken_around(dfs_info[i].position) {
             let ni = dfs_info.iter().position(|e| e.position == pos).unwrap();
             if !dfs_info[ni].visited {
                 child_count += 1;
@@ -330,10 +323,8 @@ impl Board {
                     ap = true;
                 }
                 dfs_info[i].low = std::cmp::min(dfs_info[i].low, dfs_info[ni].low);
-            } else {
-                if dfs_info[i].parent.is_some() && ni != dfs_info[i].parent.unwrap() {
-                    dfs_info[i].low = std::cmp::min(dfs_info[i].low, dfs_info[ni].depth);
-                }
+            } else if dfs_info[i].parent.is_some() && ni != dfs_info[i].parent.unwrap() {
+                dfs_info[i].low = std::cmp::min(dfs_info[i].low, dfs_info[ni].depth);
             }
         }
         if dfs_info[i].parent.is_some() && ap || (dfs_info[i].parent.is_none() && child_count > 1) {
@@ -341,11 +332,10 @@ impl Board {
         }
     }
 
-    pub fn top_layer_neighbors(&self, position: Position) -> Vec<Piece> {
+    pub fn top_layer_neighbors(&self, position: Position) -> impl Iterator<Item = Piece> + '_ {
         position
             .positions_around()
             .filter_map(|pos| self.board.get(pos).top_piece())
-            .collect()
     }
 
     pub fn spawns_left(&self, color: Color, game_type: GameType) -> bool {
@@ -353,7 +343,7 @@ impl Board {
             .reserve(color, game_type)
             .iter()
             .fold(0, |acc, (_bug, count)| acc + count);
-        !self.spawnable_positions(color).is_empty() && reserve_bugs_count > 0
+        !self.spawnable_positions(color).count() == 0 && reserve_bugs_count > 0
     }
 
     pub fn reserve(&self, color: Color, game_type: GameType) -> HashMap<Bug, i8> {
@@ -371,7 +361,7 @@ impl Board {
         bugs
     }
 
-    pub fn negative_space(&self) -> Vec<Position> {
+    pub fn negative_space(&self) -> impl Iterator<Item = Position> {
         let mut negative_space = HashSet::new();
         for pos in self.positions.iter().flatten() {
             for neighbor in pos.positions_around() {
@@ -380,12 +370,12 @@ impl Board {
                 }
             }
         }
-        Vec::from_iter(negative_space)
+        negative_space.into_iter()
     }
 
     pub fn is_negative_space(&self, position: Position) -> bool {
         if self.board.get(position).is_empty() {
-            return self.positions_taken_around_iter(position).count() > 0;
+            return self.positions_taken_around(position).count() > 0;
         }
         false
     }
@@ -408,7 +398,6 @@ impl Board {
         }
         !self
             .top_layer_neighbors(position)
-            .iter()
             .any(|piece| color == Color::from(piece.color().opposite()))
     }
 
@@ -462,7 +451,7 @@ mod tests {
     }
 
     #[test]
-    fn tests_positions_taken_around() {
+    fn tests_positions_taken_around_iter() {
         let mut board = Board::new();
         board.insert(
             Position::new(0, 0),
@@ -473,7 +462,7 @@ mod tests {
             Piece::new_from(Bug::Ant, Color::Black, 0),
         );
         let pos = board
-            .positions_taken_around_iter(Position::new(0, 0))
+            .positions_taken_around(Position::new(0, 0))
             .collect::<Vec<_>>();
         assert_eq!(pos, vec![Position::new(1, 0)]);
     }
