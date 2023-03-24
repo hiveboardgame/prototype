@@ -126,8 +126,10 @@ impl Board {
     }
 
     pub fn is_pinned(&self, piece: Piece) -> bool {
-        let position = self.position_of_piece(piece).expect("Piece not found on board");
-        self.pinned[self.piece_to_offset(piece)] && self.board.get(position).len() == 1 
+        let position = self
+            .position_of_piece(piece)
+            .expect("Piece not found on board");
+        self.pinned[self.piece_to_offset(piece)] && self.board.get(position).len() == 1
     }
 
     pub fn top_piece(&self, position: Position) -> Option<Piece> {
@@ -307,7 +309,7 @@ impl Board {
                 }
             })
             .collect::<Vec<_>>();
-        if ap_info.len() == 0 {
+        if ap_info.is_empty() {
             return ap_info;
         }
         self.bcc(0, 0, &mut ap_info);
@@ -331,10 +333,8 @@ impl Board {
                     ap = true;
                 }
                 ap_info[i].low = std::cmp::min(ap_info[i].low, ap_info[ni].low);
-            } else {
-                if ap_info[i].parent.is_some() && ni != ap_info[i].parent.unwrap() {
-                    ap_info[i].low = std::cmp::min(ap_info[i].low, ap_info[ni].depth);
-                }
+            } else if ap_info[i].parent.is_some() && ni != ap_info[i].parent.unwrap() {
+                ap_info[i].low = std::cmp::min(ap_info[i].low, ap_info[ni].depth);
             }
         }
         if ap_info[i].parent.is_some() && ap || (ap_info[i].parent.is_none() && child_count > 1) {
@@ -664,13 +664,29 @@ mod tests {
             Piece::new_from(Bug::Ant, Color::Black, 3),
         );
 
-        assert!(!board.is_pinned(board.top_piece(Position::new(0, 0)).expect("Piece is there")));
-        assert!(board.is_pinned(board.top_piece(Position::new(1, 0)).expect("Piece is there")));
-        assert!(board.is_pinned(board.top_piece(Position::new(2, 0)).expect("Piece is there")));
-        assert!(!board.is_pinned(board.top_piece(Position::new(3, 0)).expect("Piece is there")));
+        assert!(!board.is_pinned(
+            board
+                .top_piece(Position::new(0, 0))
+                .expect("Piece is there")
+        ));
+        assert!(board.is_pinned(
+            board
+                .top_piece(Position::new(1, 0))
+                .expect("Piece is there")
+        ));
+        assert!(board.is_pinned(
+            board
+                .top_piece(Position::new(2, 0))
+                .expect("Piece is there")
+        ));
+        assert!(!board.is_pinned(
+            board
+                .top_piece(Position::new(3, 0))
+                .expect("Piece is there")
+        ));
         //TODO Not sure how to fix/change this part as it causes panics when trying to do the same
         //as above
-        
+
         //for pos in Position::new(0, 0).positions_around() {
         //    if pos == Position::new(1, 0) {
         //        continue;

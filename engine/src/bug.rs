@@ -160,7 +160,11 @@ impl Bug {
 
     pub fn available_moves(position: Position, board: &Board) -> HashMap<Position, Vec<Position>> {
         let mut moves = HashMap::default();
-        if !board.is_pinned(board.top_piece(position).expect("There must be something at this position")) {
+        if !board.is_pinned(
+            board
+                .top_piece(position)
+                .expect("There must be something at this position"),
+        ) {
             let positions = match board.top_bug(position) {
                 Some(Bug::Ant) => Bug::ant_moves(position, board),
                 Some(Bug::Beetle) => Bug::beetle_moves(position, board),
@@ -356,10 +360,11 @@ impl Bug {
             .cloned()
             .collect::<Vec<Position>>();
         // get bugs around the pillbug that aren't pinned
-        for pos in board
-            .positions_taken_around_iter(position)
-            .filter(|p| !board.is_pinned(board.top_piece(position).unwrap()) && !board.gated(2, *p, position) && board.level(*p) <= 1)
-        {
+        for pos in board.positions_taken_around_iter(position).filter(|p| {
+            !board.is_pinned(board.top_piece(position).unwrap())
+                && !board.gated(2, *p, position)
+                && board.level(*p) <= 1
+        }) {
             moves.insert(pos, to.clone());
         }
         moves

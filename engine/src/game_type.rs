@@ -28,7 +28,7 @@ impl fmt::Display for GameType {
             GameType::LP => "Base+LP",
             GameType::MLP => "Base+MLP",
         };
-        write!(f, "{}", game_type)
+        write!(f, "{game_type}")
     }
 }
 
