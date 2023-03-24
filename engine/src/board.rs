@@ -428,7 +428,7 @@ impl fmt::Display for Board {
                 write!(s, "  ")?;
             }
             for x in 0..BOARD_SIZE {
-                let pieces = self.board.get(Position::new_i32(x, y));
+                let pieces = self.board.get(Position::new(x, y));
                 if let Some(last) = pieces.top_piece() {
                     if last.to_string().len() < 3 {
                         write!(s, "{last}  ")?;

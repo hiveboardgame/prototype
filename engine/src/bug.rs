@@ -956,7 +956,7 @@ mod tests {
         );
         assert_eq!(
             board
-                .neighbors(Position { x: 0, y: 0 })
+                .neighbors(Position::new_i32(0,0))
                 .last()
                 .unwrap()
                 .top_piece()

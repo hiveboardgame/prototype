@@ -21,13 +21,13 @@ where
     }
 
     pub fn get(&self, position: Position) -> &T {
-        self.data.get((position.y * BOARD_SIZE + position.x) as usize).expect(
+        self.data.get((position.r * BOARD_SIZE + position.q) as usize).expect(
             "TorusArray found an empty position, this should not happen because it's initialized",
         )
     }
 
     pub fn get_mut(&mut self, position: Position) -> &mut T {
-        self.data.get_mut((position.y * BOARD_SIZE + position.x) as usize).expect(
+        self.data.get_mut((position.r * BOARD_SIZE + position.q) as usize).expect(
             "TorusArray found an empty position, this should not happen because it's initialized",
         )
     }
@@ -38,7 +38,7 @@ where
     }
 
     pub fn set(&mut self, position: Position, element: T) {
-        self.data[(position.y * BOARD_SIZE + position.x) as usize] = element;
+        self.data[(position.r * BOARD_SIZE + position.q) as usize] = element;
     }
 }
 
@@ -48,7 +48,7 @@ mod tests {
     #[test]
     fn test_new_insert_get() {
         let mut arr = TorusArray::new(0_i32);
-        let position = Position { x: 0, y: 1 };
+        let position = Position::new_i32(0, 1);
         arr.set(position, 1);
         assert_eq!(*arr.get(position), 1);
     }

@@ -12,51 +12,33 @@ use crate::{
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord, Deserialize, Serialize)]
 pub struct Position {
-    pub x: i32,
-    pub y: i32,
+    pub q: i32,
+    pub r: i32,
 }
 
 impl fmt::Display for Position {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "x:{}, y:{}", self.x, self.y)
+        write!(f, "q:{}, r:{}", self.q, self.r)
     }
 }
 
 impl Position {
-    pub fn new(x: i8, y: i8) -> Self {
-        let x = x.rem_euclid(BOARD_SIZE as i8);
-        let y = y.rem_euclid(BOARD_SIZE as i8);
-        Self {
-            x: x as i32,
-            y: y as i32,
-        }
-    }
-
-    pub fn new_i32(x: i32, y: i32) -> Self {
-        let x = x.rem_euclid(BOARD_SIZE);
-        let y = y.rem_euclid(BOARD_SIZE);
-        Self { x, y }
-    }
-
-    pub fn new_i8(x: i8, y: i8) -> Self {
-        let x = x.rem_euclid(BOARD_SIZE as i8);
-        let y = y.rem_euclid(BOARD_SIZE as i8);
-        Self {
-            x: x as i32,
-            y: y as i32,
-        }
+    pub fn new(q: i32, r: i32) -> Self {
+        let q = q.rem_euclid(BOARD_SIZE);
+        let r = r.rem_euclid(BOARD_SIZE);
+        Self { q, r }
     }
 
     pub fn inital_spawn_position() -> Self {
         // TODO make this depenedent on BOARD_SIZE
-        Self { x: 15, y: 15 }
+        Self { q: 15, r: 15 }
     }
 
     fn wrap_around(num: i32) -> i32 {
         if num == (BOARD_SIZE - 1) {
             return -1;
         }
-        if num == (-(BOARD_SIZE - 1)) {
+        if num == -(BOARD_SIZE - 1) {
             return 1;
         }
         num
@@ -65,37 +47,22 @@ impl Position {
     // this implements "odd-r horizontal" which offsets odd rows to the right
     pub fn direction(&self, to: Position) -> Direction {
         let diff = (
-            Self::wrap_around(to.x - self.x),
-            Self::wrap_around(to.y - self.y),
+            Self::wrap_around(to.q - self.q),
+            Self::wrap_around(to.r - self.r),
         );
-        // even rows
-        if self.y.rem_euclid(2) == 0 {
-            return match diff {
-                (-1, -1) => Direction::NW,
-                (0, -1) => Direction::NE,
-                (1, 0) => Direction::E,
-                (0, 1) => Direction::SE,
-                (-1, 1) => Direction::SW,
-                (-1, 0) => Direction::W,
-                // This panic is okay, because if it ever gets called with an invalid move, it
-                // implies there is a problem with the engine itself, not with user input
-                (x, y) => {
-                    panic!("(even) Direction of movement unknown, from: {self} to: {to} ({x},{y})")
-                }
-            };
-        }
-        // odd rows
         match diff {
             (0, -1) => Direction::NW,
+            (0, 1) => Direction::SE,
+
             (1, -1) => Direction::NE,
-            (1, 0) => Direction::E,
-            (1, 1) => Direction::SE,
-            (0, 1) => Direction::SW,
+            (-1, 1) => Direction::SW,
+
             (-1, 0) => Direction::W,
+            (1, 0) => Direction::E,
             // This panic is okay, because if it ever gets called with an invalid move, it
             // implies there is a problem with the engine itself, not with user input
-            (x, y) => {
-                panic!("(odd) Direction of movement unknown, from: {self} to: {to} ({x},{y})")
+            (q, r) => {
+                panic!("(odd) Direction of movement unknown, from: {self} to: {to} ({q},{r})")
             }
         }
     }
@@ -105,65 +72,25 @@ impl Position {
         (self.to(dir1), self.to(dir2))
     }
 
-    // TODO fix lifetime and then test speed
-    // pub fn positions_around(&self) -> impl Iterator<Item = Position> + '_  {
-    //     // TODO this can be done statically
-    //     static DIRS: [Direction; 6] = [
-    //         Direction::NW,
-    //         Direction::NE,
-    //         Direction::E,
-    //         Direction::SE,
-    //         Direction::SW,
-    //         Direction::W,
-    //     ];
-    //     DIRS.iter().map(move |dir| self.to(dir))
-    // }
-
     pub fn positions_around(&self) -> impl Iterator<Item = Position> {
-        // even rows
-        if self.y.rem_euclid(2) == 0 {
-            return [
-                Position::new_i32(self.x - 1, self.y - 1),
-                Position::new_i32(self.x, self.y - 1),
-                Position::new_i32(self.x + 1, self.y),
-                Position::new_i32(self.x, self.y + 1),
-                Position::new_i32(self.x - 1, self.y + 1),
-                Position::new_i32(self.x - 1, self.y),
-            ]
-            .into_iter();
-        }
-        // odd rows
         [
-            Position::new_i32(self.x, self.y - 1),
-            Position::new_i32(self.x + 1, self.y - 1),
-            Position::new_i32(self.x + 1, self.y),
-            Position::new_i32(self.x + 1, self.y + 1),
-            Position::new_i32(self.x, self.y + 1),
-            Position::new_i32(self.x - 1, self.y),
-        ]
-        .into_iter()
+            Position::new(self.q, self.r - 1),     // NW
+            Position::new(self.q, self.r + 1),     //SE
+            Position::new(self.q + 1, self.r - 1), // NE
+            Position::new(self.q - 1, self.r + 1), // SW
+            Position::new(self.q - 1, self.r),     // W
+            Position::new(self.q + 1, self.r),     // E
+        ].into_iter()
     }
 
     pub fn to(&self, direction: Direction) -> Position {
-        // even rows
-        if self.y.rem_euclid(2) == 0 {
-            return match direction {
-                Direction::NW => Position::new_i32(self.x - 1, self.y - 1),
-                Direction::NE => Position::new_i32(self.x, self.y - 1),
-                Direction::E => Position::new_i32(self.x + 1, self.y),
-                Direction::SE => Position::new_i32(self.x, self.y + 1),
-                Direction::SW => Position::new_i32(self.x - 1, self.y + 1),
-                Direction::W => Position::new_i32(self.x - 1, self.y),
-            };
-        }
-        // odd rows
         match direction {
-            Direction::NW => Position::new_i32(self.x, self.y - 1),
-            Direction::NE => Position::new_i32(self.x + 1, self.y - 1),
-            Direction::E => Position::new_i32(self.x + 1, self.y),
-            Direction::SE => Position::new_i32(self.x + 1, self.y + 1),
-            Direction::SW => Position::new_i32(self.x, self.y + 1),
-            Direction::W => Position::new_i32(self.x - 1, self.y),
+            Direction::NW => Position::new(self.q, self.r - 1),
+            Direction::SE => Position::new(self.q, self.r + 1),
+            Direction::NE => Position::new(self.q + 1, self.r - 1),
+            Direction::SW => Position::new(self.q - 1, self.r + 1),
+            Direction::W => Position::new(self.q - 1, self.r),
+            Direction::E => Position::new(self.q + 1, self.r),
         }
     }
 
