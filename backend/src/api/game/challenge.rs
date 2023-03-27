@@ -1,6 +1,9 @@
 use std::fmt::Display;
+use std::str::FromStr;
 
 use actix_web::{delete, get, post, web, HttpResponse};
+use chrono::{DateTime, Utc};
+use hive_lib::game_error::GameError;
 use hive_lib::game_type::GameType;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -19,7 +22,7 @@ pub enum ChallengeError {
     OwnChallenge,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 pub enum ColorChoice {
     White,
     Black,
@@ -32,6 +35,22 @@ impl Display for ColorChoice {
             Self::White => write!(f, "White"),
             Self::Black => write!(f, "Black"),
             Self::Random => write!(f, "Random"),
+        }
+    }
+}
+
+impl FromStr for ColorChoice {
+    type Err = GameError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "White" => Ok(ColorChoice::White),
+            "Black" => Ok(ColorChoice::Black),
+            "Random" => Ok(ColorChoice::Random),
+            _ => Err(GameError::ParsingError {
+                found: s.to_string(),
+                typ: "color choice string".to_string(),
+            }),
         }
     }
 }
@@ -57,9 +76,53 @@ pub struct NewGameChallengeRequest {
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct GameChallengeWithChallenger {
-    challenge: GameChallenge,
-    challenger: User,
+pub struct GameChallengeResponse {
+    pub id: Uuid,
+    pub challenger: User,
+    pub game_type: GameType,
+    pub ranked: bool,
+    pub public: bool,
+    pub tournament_queen_rule: bool,
+    pub color_choice: ColorChoice,
+    pub created_at: DateTime<Utc>,
+}
+
+impl GameChallengeResponse {
+    pub async fn from_model(challenge: &GameChallenge, pool: &DbPool) -> Result<Self, ServerError> {
+        let challenger = match challenge.get_challenger(&pool).await {
+            Ok(challenger) => challenger,
+            Err(diesel::result::Error::NotFound) => {
+                let uid = challenge.challenger_uid.clone();
+                return Err(ChallengeError::MissingChallenger(uid).into());
+            }
+            Err(err) => return Err(err.into()),
+        };
+        GameChallengeResponse::from_model_with_user(challenge, challenger)
+    }
+
+    pub fn from_model_with_user(
+        challenge: &GameChallenge,
+        challenger: User,
+    ) -> Result<Self, ServerError> {
+        let game_type: GameType = challenge
+            .game_type
+            .parse()
+            .map_err(|err| ServerError::InternalGameError(err))?;
+        let color_choice: ColorChoice = challenge
+            .color_choice
+            .parse()
+            .map_err(|err| ServerError::InternalGameError(err))?;
+        Ok(GameChallengeResponse {
+            id: challenge.id,
+            challenger,
+            game_type,
+            ranked: challenge.ranked,
+            public: challenge.public,
+            tournament_queen_rule: challenge.tournament_queen_rule,
+            color_choice,
+            created_at: challenge.created_at,
+        })
+    }
 }
 
 #[post("/game/challenge")]
@@ -69,7 +132,8 @@ pub async fn create_game_challenge(
     pool: web::Data<DbPool>,
 ) -> Result<HttpResponse, ServerError> {
     let challenge = GameChallenge::create(&auth_user, &game, &pool).await?;
-    Ok(HttpResponse::Created().json(challenge))
+    let response = GameChallengeResponse::from_model(&challenge, &pool).await?;
+    Ok(HttpResponse::Created().json(response))
 }
 
 #[get("/game/challenge/{id}")]
@@ -78,18 +142,8 @@ pub async fn get_game_challenge(
     pool: web::Data<DbPool>,
 ) -> Result<HttpResponse, ServerError> {
     let challenge = GameChallenge::get(&id, &pool).await?;
-    let challenger = match challenge.get_challenger(&pool).await {
-        Ok(challenger) => challenger,
-        Err(diesel::result::Error::NotFound) => {
-            let uid = challenge.challenger_uid.clone();
-            return Err(ChallengeError::MissingChallenger(uid).into());
-        }
-        Err(err) => return Err(err.into()),
-    };
-    Ok(HttpResponse::Ok().json(GameChallengeWithChallenger {
-        challenge,
-        challenger,
-    }))
+    let response = GameChallengeResponse::from_model(&challenge, &pool).await?;
+    Ok(HttpResponse::Ok().json(response))
 }
 
 #[post("/game/challenge/{id}/accept")]

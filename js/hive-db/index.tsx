@@ -2,6 +2,7 @@ export * from './src/game/game';
 export * from './src/game/challenge';
 export * from './src/user/user';
 export * from './src/PlayerProvider';
+export * from './src/api';
 export * from './src/util';
 
 export * from './src/db/acceptGameInvitation';

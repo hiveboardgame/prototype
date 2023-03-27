@@ -4,24 +4,39 @@ import { GameOptions } from 'hive-lib';
 import { newGameOptions } from '../game/options';
 import { postJSON } from '../api';
 import { Game } from './game';
+import useSWR, { Fetcher } from 'swr';
+import { usePlayer } from '../PlayerProvider';
 
-export interface GameChallenge {
+export interface GameChallengeResponse {
   id: string,
-  challengerUid: string,
   gameType: string,
   ranked: boolean,
   public: boolean,
   tournamentQueenRule: boolean,
   colorChoice: string,
   createdAt: Date,
-  challengeUrl: string
-  challenger?: UserData,
+  challenger: UserData,
 }
 
-function initializeChallenge(challenge: GameChallenge, challenger?: UserData) {
-  challenge.createdAt = new Date(challenge.createdAt);
-  challenge.challengeUrl = `${window.location.origin}/challenge/${challenge.id}`;
-  challenge.challenger = challenger;
+export class GameChallenge {
+  public id: string;
+  public gameType: ExpansionsChoice;
+  public ranked: boolean;
+  public public: boolean;
+  public tournamentQueenRule: boolean;
+  public colorChoice: ColorChoice;
+  public createdAt: Date;
+  public challenger: UserData;
+
+  constructor(res: GameChallengeResponse) {
+    Object.assign(this, res);
+    this.gameType = gameOptionsFromString(res.gameType);
+    this.createdAt = new Date(res.createdAt);
+  }
+
+  public getChallengeUrl() {
+    return `${window.location.origin}/challenge/${this.id}`;
+  }
 }
 
 export type ColorChoice = 'Black' | 'White' | 'Random';
@@ -55,19 +70,16 @@ export async function createGameChallenge(
     gameType,
     colorChoice,
   };
-  let challenge = await postJSON<GameChallenge>('/api/game/challenge', reqBody, authToken);
-  initializeChallenge(challenge);
-  return challenge;
+  let res = await postJSON<GameChallengeResponse>('/api/game/challenge', reqBody, authToken);
+  return new GameChallenge(res);
 }
 
 export async function getGameChallenge(id: string): Promise<GameChallenge> {
-  let res = await getJSON<GameChallengeWithUser>(`/api/game/challenge/${id}`);
+  let res = await getJSON<GameChallengeResponse>(`/api/game/challenge/${id}`);
   if (!res) {
       throw new Error(`No such challenge found`);
   }
-  const challenge = res.challenge as GameChallenge;
-  initializeChallenge(challenge, res.challenger);
-  return challenge;
+  return new GameChallenge(res);
 }
 
 export async function acceptGameChallenge(id: string, authToken: string): Promise<Game> {
@@ -76,7 +88,6 @@ export async function acceptGameChallenge(id: string, authToken: string): Promis
 
 export async function deleteGameChallenge(id: string, authToken: string): Promise<void> {
   await deleteReq(`/api/game/challenge/${id}`, authToken);
-  return;
 }
 
 function gameOptionsToString(opts: GameOptions): string {
@@ -90,13 +101,36 @@ function gameOptionsToString(opts: GameOptions): string {
   }
 }
 
-export interface GameChallengeWithUser {
-  challenger: UserData,
-  challenge: Omit<GameChallenge, 'challengeUrl' | 'challenger'>,
+function gameOptionsFromString(gameType: string): GameOptions {
+  const m = gameType.includes('M');
+  const l = gameType.includes('L');
+  const p = gameType.includes('P');
+  return newGameOptions(l, m, p);
 }
 
-export async function getUserChallenges(user: UserData, authToken: string): Promise<GameChallenge[]> {
-  let responses = await getJSON<GameChallenge[]>(`/api/user/${user.uid}/challenges`, authToken);
-  responses.forEach((challenge) => initializeChallenge(challenge));
-  return responses;
+async function gameChallengesFetcher([uri, authToken]): Promise<GameChallenge[] | null> {
+  if (!uri) {
+    return null;
+  }
+  const data = await getJSON<GameChallengeResponse[]>(uri, authToken);
+  if (data) {
+    return data.map((res) => new GameChallenge(res));
+  }
+  return null;
+}
+
+export function usePlayerChallenges() {
+  const { user, authToken } = usePlayer();
+  const uri = user ? `/api/user/${user.uid}/challenges` : null;
+  let { data: challenges, error, isLoading, mutate } = useSWR<GameChallenge[] | null>([uri, authToken], gameChallengesFetcher);
+  if (!error && !isLoading && !challenges) {
+    error = new Error(`No challenges found for user ${user}`);
+  }
+
+  return {
+    challenges,
+    error,
+    isLoading,
+    mutate,
+  };
 }

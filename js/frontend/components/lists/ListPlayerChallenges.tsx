@@ -2,12 +2,12 @@ import { Button, Input, Popover, PopoverArrow, PopoverBody, PopoverCloseButton, 
 import {
   deleteGameChallenge,
   GameChallenge,
+  usePlayerChallenges,
   usePlayer,
 } from 'hive-db';
 import { HTMLAttributes, useState } from 'react';
 import { Header, HeaderItem } from './Header';
 import { ExpansionsItem } from './items/ExpansionsItem';
-import { usePlayerChallenges } from '../../hooks/usePlayerChallenges';
 import { Row, RowItem } from './Row';
 
 const ShareLinkButton = ({ text }: { text: string }) => {
@@ -62,13 +62,14 @@ interface PlayerChallengeRowProps {
 
 const PlayerChallengeRow = ({ challenge }: PlayerChallengeRowProps) => {
   const [deleted, setDeleted] = useState<boolean>(false);
+  const { mutate } = usePlayerChallenges();
   const id = challenge.id;
   const isPublic = challenge.public;
   const isRanked = challenge.ranked;
   const tournament = challenge.tournamentQueenRule;
-  const mosquito = challenge.gameType.includes('M');
-  const ladybug = challenge.gameType.includes('L');
-  const pillbug = challenge.gameType.includes('P');
+  const mosquito = challenge.gameType.mosquito;
+  const ladybug = challenge.gameType.ladybug;
+  const pillbug = challenge.gameType.pillbug;
   return (
     !deleted &&
     <Row>
@@ -78,10 +79,14 @@ const PlayerChallengeRow = ({ challenge }: PlayerChallengeRowProps) => {
       <ExpansionsItem ladybug={ladybug} mosquito={mosquito} pillbug={pillbug} />
       <RowItem>{challenge.createdAt.toDateString()}</RowItem>
       <RowItem>
-        <ShareLinkButton text={challenge.challengeUrl} />
+        <ShareLinkButton text={challenge.getChallengeUrl()} />
       </RowItem>
       <RowItem>
-        <DeleteButton id={id} onDelete={() => setDeleted(true)} />
+        <DeleteButton id={id} onDelete={() => {
+          mutate((challenges) => challenges.filter((other) => {
+            return other.id == challenge.id;
+          }));
+        }} />
       </RowItem>
     </Row>
   );

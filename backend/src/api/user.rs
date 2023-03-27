@@ -2,9 +2,9 @@ use actix_web::{get, post, web, HttpResponse};
 use names::{Generator, Name};
 use serde::Deserialize;
 
+use crate::api::game::challenge::GameChallengeResponse;
 use crate::db::util::DbPool;
 use crate::extractors::auth::AuthenticatedUser;
-use crate::model::challenge::GameChallenge;
 use crate::model::user::User;
 use crate::server_error::ServerError;
 
@@ -23,6 +23,7 @@ pub struct NewUserBody {
 }
 
 fn random_guest_name() -> String {
+    // we might consider storing the generator for (slightly) more efficient RNG
     let mut generator = Generator::with_naming(Name::Numbered);
     format!("guest-{}", generator.next().unwrap())
 }
@@ -56,7 +57,13 @@ pub async fn get_user_challenges(
 ) -> Result<HttpResponse, ServerError> {
     auth_user.authorize(&uid)?;
     let user = User::find_by_uid(pool.get_ref(), uid.as_ref()).await?;
-    let response: Vec<GameChallenge> = user.get_challenges(&pool).await?;
+    let mut response: Vec<GameChallengeResponse> = Vec::new();
+    for challenge in &user.get_challenges(&pool).await? {
+        response.push(GameChallengeResponse::from_model_with_user(
+            challenge,
+            user.clone(),
+        )?);
+    }
     Ok(HttpResponse::Ok().json(response))
 }
 

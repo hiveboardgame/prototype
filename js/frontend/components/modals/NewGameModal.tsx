@@ -24,7 +24,7 @@ import {
   Game
 } from 'hive-db';
 import { CardPicker } from '../forms/CardPicker';
-import { usePlayerChallenges } from '../../hooks/usePlayerChallenges';
+import { usePlayerChallenges } from 'hive-db';
 
 const NewGameModal = (props: Omit<ModalProps, 'children'>) => {
   const DEFAULT_COLOR_CHOICE: ColorChoice = "Random";
@@ -59,7 +59,7 @@ const NewGameModal = (props: Omit<ModalProps, 'children'>) => {
         authToken,
       ).then((challenge: GameChallenge) => {
         // immediately update the local view of the challenge list
-        mutate(async (challenges: GameChallenge[]) => challenges.concat([challenge]));
+        mutate(async (challenges) => [...challenges, challenge]);
         props.onClose();
       })
       .catch((error) => console.error(error))
