@@ -4,6 +4,7 @@ import {
   GameChallenge,
   usePlayerChallenges,
   usePlayer,
+  useLobbyChallenges,
 } from 'hive-db';
 import { HTMLAttributes, useState } from 'react';
 import { Header, HeaderItem } from './Header';
@@ -61,8 +62,8 @@ interface PlayerChallengeRowProps {
 }
 
 const PlayerChallengeRow = ({ challenge }: PlayerChallengeRowProps) => {
-  const [deleted, setDeleted] = useState<boolean>(false);
-  const { mutate } = usePlayerChallenges();
+  const { mutate: mutatePlayerChallenges } = usePlayerChallenges();
+  const { mutate: mutateLobbyChallenges } = useLobbyChallenges();
   const id = challenge.id;
   const isPublic = challenge.public;
   const isRanked = challenge.ranked;
@@ -71,7 +72,6 @@ const PlayerChallengeRow = ({ challenge }: PlayerChallengeRowProps) => {
   const ladybug = challenge.gameType.ladybug;
   const pillbug = challenge.gameType.pillbug;
   return (
-    !deleted &&
     <Row>
       <RowItem>{isRanked ? 'Ranked' : 'Unranked'}</RowItem>
       <RowItem>{isPublic ? 'Public' : 'Private'}</RowItem>
@@ -83,9 +83,13 @@ const PlayerChallengeRow = ({ challenge }: PlayerChallengeRowProps) => {
       </RowItem>
       <RowItem>
         <DeleteButton id={id} onDelete={() => {
-          mutate((challenges) => challenges.filter((other) => {
+          const removeChallenge = (challenges) => challenges.filter((other) => {
             return other.id == challenge.id;
-          }));
+          });
+          mutatePlayerChallenges(removeChallenge);
+          if (challenge.public) {
+            mutateLobbyChallenges(removeChallenge);
+          }
         }} />
       </RowItem>
     </Row>

@@ -21,7 +21,8 @@ import {
   usePlayer,
   VisibilityChoice,
   GameChallenge,
-  Game
+  Game,
+  useLobbyChallenges
 } from 'hive-db';
 import { CardPicker } from '../forms/CardPicker';
 import { usePlayerChallenges } from 'hive-db';
@@ -32,7 +33,8 @@ const NewGameModal = (props: Omit<ModalProps, 'children'>) => {
 
   const router = useRouter();
   const { user, authToken } = usePlayer();
-  const { mutate } = usePlayerChallenges();
+  const { mutate: mutatePlayerChallenges } = usePlayerChallenges();
+  const { mutate: mutateLobbyChallenges } = useLobbyChallenges();
 
   const [color, setColor] = useState<ColorChoice>(DEFAULT_COLOR_CHOICE);
   const [visibility, setVisibility] = useState<VisibilityChoice>(DEFAULT_VISIBILITY_CHOICE);
@@ -59,7 +61,10 @@ const NewGameModal = (props: Omit<ModalProps, 'children'>) => {
         authToken,
       ).then((challenge: GameChallenge) => {
         // immediately update the local view of the challenge list
-        mutate(async (challenges) => [...challenges, challenge]);
+        mutatePlayerChallenges(async (challenges) => [challenge, ...challenges]);
+        if (challenge.public) {
+          mutateLobbyChallenges(async (challenges) => [challenge, ...challenges]);
+        }
         props.onClose();
       })
       .catch((error) => console.error(error))

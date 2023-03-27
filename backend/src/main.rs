@@ -43,6 +43,7 @@ async fn main() -> std::io::Result<()> {
             .service(web::resource("/ws/").route(web::get().to(echo_ws)))
             .service(
                 web::scope("/api")
+                    .service(challenge::get_lobby_challenges)
                     .service(challenge::create_game_challenge)
                     .service(challenge::get_game_challenge)
                     .service(challenge::accept_game_challenge)

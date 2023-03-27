@@ -119,6 +119,11 @@ async function gameChallengesFetcher([uri, authToken]): Promise<GameChallenge[] 
   return null;
 }
 
+export function useLobbyChallenges() {
+  const uri = `/api/game/lobby`;
+  return useSWR<GameChallenge[] | null>([uri], gameChallengesFetcher);
+}
+
 export function usePlayerChallenges() {
   const { user, authToken } = usePlayer();
   const uri = user ? `/api/user/${user.uid}/challenges` : null;

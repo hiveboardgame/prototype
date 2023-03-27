@@ -125,6 +125,17 @@ impl GameChallengeResponse {
     }
 }
 
+#[get("/game/lobby")]
+pub async fn get_lobby_challenges(pool: web::Data<DbPool>) -> Result<HttpResponse, ServerError> {
+    let challenges = GameChallenge::get_public(&pool).await?;
+    let mut responses = Vec::new();
+    // TODO: batch all users into one query
+    for challenge in challenges {
+        responses.push(GameChallengeResponse::from_model(&challenge, &pool).await?);
+    }
+    Ok(HttpResponse::Ok().json(responses))
+}
+
 #[post("/game/challenge")]
 pub async fn create_game_challenge(
     game: web::Json<NewGameChallengeRequest>,

@@ -59,6 +59,14 @@ impl GameChallenge {
             .await
     }
 
+    pub async fn get_public(pool: &DbPool) -> Result<Vec<GameChallenge>, Error> {
+        let conn = &mut get_conn(pool).await?;
+        game_challenges::table
+            .filter(game_challenges::public.eq(true))
+            .get_results(conn)
+            .await
+    }
+
     pub async fn get(id: &Uuid, pool: &DbPool) -> Result<GameChallenge, Error> {
         let conn = &mut get_conn(pool).await?;
         game_challenges::table.find(id).first(conn).await
