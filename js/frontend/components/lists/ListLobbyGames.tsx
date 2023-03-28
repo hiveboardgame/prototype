@@ -5,10 +5,11 @@ import {
   useLobbyChallenges,
   usePlayer,
 } from 'hive-db';
-import { Button, Spinner } from '@chakra-ui/react';
+import { Button } from '@chakra-ui/react';
 import { Header, HeaderItem } from './Header';
 import { ExpansionsItem } from './items/ExpansionsItem';
 import { Row, RowItem } from './Row';
+import { Spinner } from '../nav/Spinner';
 
 interface LobbyChallengeRowProps {
   challenge: GameChallenge;

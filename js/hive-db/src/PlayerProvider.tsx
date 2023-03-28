@@ -15,10 +15,10 @@ import {
   signOut
 } from 'firebase/auth';
 import { Game, getGameIsEnded, getGameIsStarted, getUserGames } from './game/game';
-import { GameChallenge, getUserChallenges } from './game/challenge';
 import { createGuestUser, createUser, getUser } from '..';
 
 export interface PlayerContextProps {
+  isLoading: boolean;
   user: UserData | null;
   authToken: string | null;
   incompleteProfile: boolean;
@@ -47,6 +47,7 @@ const usePlayer = () => {
 
 function usePlayerState(): PlayerContextProps {
   const auth = getAuth(app);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [user, setUser] = useState<UserData | null>(null);
   const [authToken, setAuthToken] = useState<string | null>(null);
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
@@ -85,6 +86,7 @@ function usePlayerState(): PlayerContextProps {
       return;
     }
 
+    setIsLoading(false);
     const uid = firebaseUser.uid;
     const isGuest = firebaseUser.isAnonymous;
     const token = await firebaseUser.getIdToken();
@@ -146,6 +148,7 @@ function usePlayerState(): PlayerContextProps {
   };
 
   return {
+    isLoading,
     user,
     authToken,
     incompleteProfile,
@@ -161,6 +164,7 @@ function usePlayerState(): PlayerContextProps {
 function defaultPlayerContext(): PlayerContextProps {
   const message = 'Player context not properly initialized.';
   return {
+    isLoading: false,
     user: null,
     authToken: null,
     incompleteProfile: false,
