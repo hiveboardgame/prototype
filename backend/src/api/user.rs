@@ -73,7 +73,7 @@ pub async fn get_user_games(
     pool: web::Data<DbPool>,
 ) -> Result<HttpResponse, ServerError> {
     let _user = User::find_by_uid(pool.get_ref(), uid.as_ref()).await?;
-    // FIXME: actually return the user's games once that's implemented
+    // TODO @leex actually return the user's games once that's implemented
     // Ok(HttpResponse::Ok().json(user.get_games().await?))
     Ok(HttpResponse::Ok().json(Vec::<u8>::new()))
 }
