@@ -33,6 +33,7 @@ pub struct Board {
     pub board: TorusArray<BugStack>,
     pub last_moved: Option<(Piece, Position)>,
     pub positions: [Option<Position>; 48],
+    pub negative_space: HashSet<Position>,
     pub pinned: [bool; 48],
 }
 
@@ -48,6 +49,7 @@ impl Board {
             board: TorusArray::new(BugStack::new()),
             last_moved: None,
             positions: [None; 48],
+            negative_space: HashSet::new(),
             pinned: [false; 48],
         }
     }
@@ -100,8 +102,35 @@ impl Board {
         }
         let bug_stack = self.board.get_mut(current);
         let piece = bug_stack.pop_piece();
+        self.negative_space_remove(current);
         self.insert(target, piece);
         Ok(())
+    }
+
+    pub fn negative_space_remove(&mut self, position: Position) {
+        if !self.board.get(position).is_empty() {
+            return;
+        }
+        self.negative_space.insert(position);
+        // meh borrow checker...
+        let pos_around = self
+            .positions_available_around(position)
+            .collect::<Vec<_>>();
+        for pos in pos_around.into_iter() {
+            if self.get_neighbor(pos).is_none() {
+                self.negative_space.remove(&pos);
+            }
+        }
+    }
+
+    pub fn negative_space_add(&mut self, position: Position) {
+        self.negative_space.remove(&position);
+        for pos in self
+            .positions_available_around(position)
+            .collect::<Vec<_>>()
+        {
+            self.negative_space.insert(pos);
+        }
     }
 
     pub fn neighbor_is_a(&self, position: Position, bug: Bug) -> bool {
@@ -190,15 +219,13 @@ impl Board {
     }
 
     pub fn neighbors(&self, position: Position) -> impl Iterator<Item = BugStack> + '_ {
-        position
-            .positions_around()
-            .filter_map(move |pos| {
-                if self.occupied(pos) {
-                    Some(self.board.get(pos).clone())
-                } else {
-                    None
-                }
-            })
+        position.positions_around().filter_map(move |pos| {
+            if self.occupied(pos) {
+                Some(self.board.get(pos).clone())
+            } else {
+                None
+            }
+        })
     }
 
     pub fn is_valid_move(
@@ -248,8 +275,8 @@ impl Board {
     }
 
     pub fn spawnable_positions(&self, color: Color) -> impl Iterator<Item = Position> + '_ {
-        std::iter::once(Position::inital_spawn_position())
-            .chain(self.negative_space())
+        std::iter::once(Position::initial_spawn_position())
+            .chain(self.negative_space.clone().into_iter())
             .filter(move |pos| self.spawnable(color, *pos))
     }
 
@@ -361,25 +388,6 @@ impl Board {
         bugs
     }
 
-    pub fn negative_space(&self) -> impl Iterator<Item = Position> {
-        let mut negative_space = HashSet::new();
-        for pos in self.positions.iter().flatten() {
-            for neighbor in pos.positions_around() {
-                if self.is_negative_space(neighbor) {
-                    negative_space.insert(neighbor);
-                }
-            }
-        }
-        negative_space.into_iter()
-    }
-
-    pub fn is_negative_space(&self, position: Position) -> bool {
-        if self.board.get(position).is_empty() {
-            return self.positions_taken_around(position).count() > 0;
-        }
-        false
-    }
-
     pub fn all_taken_positions(&self) -> impl Iterator<Item = Position> {
         // TODO this does not uniq!
         self.positions.into_iter().flatten()
@@ -391,10 +399,10 @@ impl Board {
         }
         let number_of_positions = self.all_taken_positions().count();
         if number_of_positions == 0 {
-            return position == Position::inital_spawn_position();
+            return position == Position::initial_spawn_position();
         }
         if number_of_positions == 1 {
-            return self.is_negative_space(position);
+            return self.negative_space.contains(&position);
         }
         !self
             .top_layer_neighbors(position)
@@ -405,6 +413,7 @@ impl Board {
         self.last_moved = Some((piece, position));
         self.board.get_mut(position).push_piece(piece);
         self.set_position_of_piece(piece, position);
+        self.negative_space_add(position);
         self.update_pinned();
     }
 }
@@ -412,12 +421,12 @@ impl Board {
 impl fmt::Display for Board {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut s = "".to_string();
-        for y in 0..BOARD_SIZE {
-            if y.rem_euclid(2) == 1 {
+        for r in 0..BOARD_SIZE {
+            if r.rem_euclid(2) == 1 {
                 write!(s, "  ")?;
             }
-            for x in 0..BOARD_SIZE {
-                let pieces = self.board.get(Position::new(x, y));
+            for q in 0..BOARD_SIZE {
+                let pieces = self.board.get(Position::new(q - r / 2, r + 15));
                 if let Some(last) = pieces.top_piece() {
                     if last.to_string().len() < 3 {
                         write!(s, "{last}  ")?;
@@ -537,10 +546,10 @@ mod tests {
     fn tests_negative_space() {
         let mut board = Board::new();
         board.insert(
-            Position::inital_spawn_position(),
+            Position::initial_spawn_position(),
             Piece::new_from(Bug::Queen, Color::White, 0),
         );
-        let mut positions = Position::inital_spawn_position()
+        let mut positions = Position::initial_spawn_position()
             .positions_around()
             .collect::<Vec<Position>>();
         let mut negative_space = board.negative_space();
@@ -548,7 +557,7 @@ mod tests {
         negative_space.sort();
         assert_eq!(negative_space, positions);
         board.insert(
-            Position::inital_spawn_position().to(Direction::NW),
+            Position::initial_spawn_position().to(Direction::NW),
             Piece::new_from(Bug::Queen, Color::Black, 0),
         );
         assert_eq!(board.negative_space().len(), 8);
@@ -558,11 +567,11 @@ mod tests {
     fn tests_spawnable_positions() {
         let mut board = Board::new();
         board.insert(
-            Position::inital_spawn_position(),
+            Position::initial_spawn_position(),
             Piece::new_from(Bug::Queen, Color::White, 0),
         );
         board.insert(
-            Position::inital_spawn_position().to(Direction::E),
+            Position::initial_spawn_position().to(Direction::E),
             Piece::new_from(Bug::Ant, Color::Black, 1),
         );
         let positions = board.spawnable_positions(Color::Black);
@@ -570,7 +579,7 @@ mod tests {
         let positions = board.spawnable_positions(Color::White);
         assert_eq!(positions.len(), 3);
         board.insert(
-            Position::inital_spawn_position()
+            Position::initial_spawn_position()
                 .to(Direction::E)
                 .to(Direction::E),
             Piece::new_from(Bug::Ant, Color::White, 2),
@@ -585,50 +594,50 @@ mod tests {
     fn tests_spawnable() {
         let mut board = Board::new();
         // if board is empty you can spawn
-        assert!(board.spawnable(Color::White, Position::inital_spawn_position()));
+        assert!(board.spawnable(Color::White, Position::initial_spawn_position()));
         board.insert(
-            Position::inital_spawn_position(),
+            Position::initial_spawn_position(),
             Piece::new_from(Bug::Ant, Color::White, 1),
         );
 
         // if position is already occupied, a bug can't be spawned there
-        assert!(!board.spawnable(Color::White, Position::inital_spawn_position()));
+        assert!(!board.spawnable(Color::White, Position::initial_spawn_position()));
 
         // the second bug can always be played
         assert!(board.spawnable(
             Color::Black,
-            Position::inital_spawn_position().to(Direction::E)
+            Position::initial_spawn_position().to(Direction::E)
         ));
         board.insert(
-            Position::inital_spawn_position().to(Direction::E),
+            Position::initial_spawn_position().to(Direction::E),
             Piece::new_from(Bug::Ant, Color::Black, 1),
         );
 
         // now no other black bug can be spawned around the white one
-        for pos in Position::inital_spawn_position().positions_around() {
+        for pos in Position::initial_spawn_position().positions_around() {
             assert!(!board.spawnable(Color::Black, pos));
         }
 
         // a white bug can be added adjacent to a white, but not a black bug
         assert!(!board.spawnable(
             Color::White,
-            Position::inital_spawn_position()
+            Position::initial_spawn_position()
                 .to(Direction::E)
                 .to(Direction::E)
         ));
         assert!(board.spawnable(
             Color::White,
-            Position::inital_spawn_position().to(Direction::W)
+            Position::initial_spawn_position().to(Direction::W)
         ));
         assert!(board.spawnable(
             Color::Black,
-            Position::inital_spawn_position()
+            Position::initial_spawn_position()
                 .to(Direction::E)
                 .to(Direction::E)
         ));
         assert!(!board.spawnable(
             Color::Black,
-            Position::inital_spawn_position().to(Direction::W)
+            Position::initial_spawn_position().to(Direction::W)
         ));
     }
 

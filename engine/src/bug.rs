@@ -233,6 +233,8 @@ impl Bug {
         Bug::ant_rec(&mut found, &mut unexplored, &board);
         found.remove(&position);
         return found.iter().cloned().collect();
+        // TODO implement get_ant_moves_from_negative_space
+        // return Vec::from_iter(board.negative_space.clone());
     }
 
     fn ant_rec(found: &mut HashSet<Position>, unexplored: &mut HashSet<Position>, board: &Board) {

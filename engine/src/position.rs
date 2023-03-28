@@ -29,9 +29,9 @@ impl Position {
         Self { q, r }
     }
 
-    pub fn inital_spawn_position() -> Self {
+    pub fn initial_spawn_position() -> Self {
         // TODO make this depenedent on BOARD_SIZE
-        Self { q: 15, r: 15 }
+        Self { q: 0, r: 0 }
     }
 
     fn wrap_around(num: i32) -> i32 {
@@ -96,7 +96,7 @@ impl Position {
 
     pub fn from_string(s: &str, board: &Board) -> Result<Position, GameError> {
         if s.starts_with('.') {
-            return Ok(Position::inital_spawn_position());
+            return Ok(Position::initial_spawn_position());
         }
 
         lazy_static! {
@@ -162,8 +162,8 @@ mod tests {
             for direction in Direction::all() {
                 let new_position = position.to(direction);
                 let opposite_direction = new_position.direction(position);
-                let inital_position = new_position.to(opposite_direction);
-                assert_eq!(position, inital_position);
+                let initial_position = new_position.to(opposite_direction);
+                assert_eq!(position, initial_position);
             }
         }
     }

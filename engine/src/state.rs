@@ -1,3 +1,6 @@
+use std::str::FromStr;
+
+use crate::board::BOARD_SIZE;
 use crate::bug::Bug;
 use crate::color::Color;
 use crate::game_error::GameError;
@@ -69,6 +72,7 @@ impl State {
         piece: &str,
         position: &str,
     ) -> Result<(), GameError> {
+        // println!("{piece} {position}");
         match piece {
             "pass" => {
                 if self.board.moves(self.turn_color).is_empty() {
