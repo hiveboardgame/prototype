@@ -10,6 +10,7 @@ pub mod game_status;
 pub mod game_type;
 pub mod history;
 pub mod last_turn;
+pub mod tile;
 pub mod negative_space;
 pub mod piece;
 pub mod player;

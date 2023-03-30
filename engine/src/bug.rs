@@ -160,7 +160,11 @@ impl Bug {
 
     pub fn available_moves(position: Position, board: &Board) -> HashMap<Position, Vec<Position>> {
         let mut moves = HashMap::default();
-        if !board.is_pinned(board.top_piece(position).expect("There must be something at this position")) {
+        if !board.is_pinned(
+            board
+                .top_piece(position)
+                .expect("There must be something at this position"),
+        ) {
             let positions = match board.top_bug(position) {
                 Some(Bug::Ant) => Bug::ant_moves(position, board),
                 Some(Bug::Beetle) => Bug::beetle_moves(position, board),
@@ -194,19 +198,17 @@ impl Bug {
     }
 
     fn crawl(position: Position, board: &Board) -> impl Iterator<Item = Position> + '_ {
-        board
-            .positions_taken_around(position)
-            .flat_map(move |pos| {
-                let mut positions = vec![];
-                let (pos1, pos2) = position.common_adjacent_positions(pos);
-                if !board.gated(1, position, pos1) && !board.occupied(pos1) {
-                    positions.push(pos1);
-                }
-                if !board.gated(1, position, pos2) && !board.occupied(pos2) {
-                    positions.push(pos2);
-                }
-                positions
-            })
+        board.positions_taken_around(position).flat_map(move |pos| {
+            let mut positions = vec![];
+            let (pos1, pos2) = position.common_adjacent_positions(pos);
+            if !board.gated(1, position, pos1) && !board.occupied(pos1) {
+                positions.push(pos1);
+            }
+            if !board.gated(1, position, pos2) && !board.occupied(pos2) {
+                positions.push(pos2);
+            }
+            positions
+        })
     }
 
     fn climb(position: Position, board: &Board) -> Vec<Position> {
@@ -351,10 +353,11 @@ impl Bug {
             .filter(|pos| !board.gated(2, position, *pos))
             .collect::<Vec<Position>>();
         // get bugs around the pillbug that aren't pinned
-        for pos in board
-            .positions_taken_around(position)
-            .filter(|p| !board.is_pinned(board.top_piece(*p).unwrap()) && !board.gated(2, *p, position) && board.level(*p) <= 1)
-        {
+        for pos in board.positions_taken_around(position).filter(|p| {
+            !board.is_pinned(board.top_piece(*p).unwrap())
+                && !board.gated(2, *p, position)
+                && board.level(*p) <= 1
+        }) {
             moves.insert(pos, to.clone());
         }
         moves
@@ -558,7 +561,7 @@ mod tests {
         );
         board.insert(
             Position::new(0, 1),
-            Piece::new_from(Bug::Beetle, Color::Black, 1),
+            Piece::new_from(Bug::Beetle, Color::Black, 2),
         );
         board.insert(
             Position::new(0, -1),
@@ -566,9 +569,11 @@ mod tests {
         );
         board.insert(
             Position::new(0, -1),
-            Piece::new_from(Bug::Beetle, Color::Black, 1),
+            Piece::new_from(Bug::Mosquito, Color::Black, 0),
         );
         let positions = Bug::descend(Position::new(0, 0), &board);
+        println!("{board}");
+        println!("{positions:?}");
         assert_eq!(positions.len(), 3);
         assert!(positions.contains(&Position::new(-1, -1)));
         assert!(positions.contains(&Position::new(-1, 0)));
@@ -596,7 +601,7 @@ mod tests {
             Piece::new_from(Bug::Beetle, Color::White, 1),
         );
         for (i, pos) in Position::new(0, 0).positions_around().enumerate() {
-            board.insert(pos, Piece::new_from(Bug::Queen, Color::Black, 0));
+            board.insert(pos, Piece::new_from(Bug::Grasshopper, Color::from((i%2) as u8), i/2+1));
             let positions = Bug::climb(Position::new(0, 0), &board);
             assert_eq!(positions.len(), i + 1);
         }
@@ -606,16 +611,16 @@ mod tests {
             Position::new(0, 0),
             Piece::new_from(Bug::Beetle, Color::White, 1),
         );
-        for pos in Position::new(0, 0).positions_around() {
-            board.insert(pos, Piece::new_from(Bug::Queen, Color::Black, 0));
+        for (i, pos) in Position::new(0, 0).positions_around().enumerate() {
+            board.insert(pos, Piece::new_from(Bug::Grasshopper, Color::from((i%2) as u8), i/2+1));
         }
         board.insert(
-            Position::new(0, 1),
-            Piece::new_from(Bug::Beetle, Color::White, 1),
+            Position::new(0, 0).to(crate::direction::Direction::NE),
+            Piece::new_from(Bug::Beetle, Color::Black, 1),
         );
         board.insert(
-            Position::new(0, -1),
-            Piece::new_from(Bug::Beetle, Color::White, 2),
+            Position::new(0, 0).to(crate::direction::Direction::SE),
+            Piece::new_from(Bug::Beetle, Color::Black, 2),
         );
         let positions = Bug::climb(Position::new(0, 0), &board);
         assert_eq!(positions.len(), 5);
@@ -623,6 +628,7 @@ mod tests {
 
     #[test]
     fn tests_crawl() {
+        use crate::direction::Direction;
         // one neighbor gives 2 positions to move to
         let mut board = Board::new();
         board.insert(
@@ -631,12 +637,12 @@ mod tests {
         );
         board.insert(
             Position::new(1, 0),
-            Piece::new_from(Bug::Ant, Color::Black, 1),
+            Piece::new_from(Bug::Queen, Color::Black, 0),
         );
         let positions = Bug::crawl(Position::new(0, 0), &board).collect::<Vec<_>>();
         assert_eq!(positions.len(), 2);
-        assert!(positions.contains(&Position::new(0, -1)));
-        assert!(positions.contains(&Position::new(0, 1)));
+        assert!(positions.contains(&Position::new(0, 0).to(Direction::NE)));
+        assert!(positions.contains(&Position::new(0, 0).to(Direction::SE)));
 
         // just a quick sanity check
         let mut board = Board::new();
@@ -659,16 +665,16 @@ mod tests {
         );
         board.insert(
             Position::new(1, 0),
-            Piece::new_from(Bug::Ant, Color::Black, 1),
+            Piece::new_from(Bug::Queen, Color::Black, 0),
         );
         board.insert(
             Position::new(0, 1),
-            Piece::new_from(Bug::Ant, Color::Black, 2),
+            Piece::new_from(Bug::Ant, Color::White, 1),
         );
         let positions = Bug::crawl(Position::new(0, 0), &board).collect::<Vec<_>>();
         assert_eq!(positions.len(), 2);
-        assert!(positions.contains(&Position::new(0, -1)));
-        assert!(positions.contains(&Position::new(-1, 1)));
+        assert!(positions.contains(&Position::new(0, 0).to(Direction::NE)));
+        assert!(positions.contains(&Position::new(0, 0).to(Direction::SW)));
 
         // two (opposite) neighbors give 4 positions to move to
         let mut board = Board::new();
@@ -686,10 +692,10 @@ mod tests {
         );
         let positions = Bug::crawl(Position::new(0, 0), &board).collect::<Vec<_>>();
         assert_eq!(positions.len(), 4);
-        assert!(positions.contains(&Position::new(0, -1)));
-        assert!(positions.contains(&Position::new(0, 1)));
-        assert!(positions.contains(&Position::new(-1, -1)));
-        assert!(positions.contains(&Position::new(-1, 1)));
+        assert!(positions.contains(&Position::new(0, 0).to(Direction::NE)));
+        assert!(positions.contains(&Position::new(0, 0).to(Direction::SE)));
+        assert!(positions.contains(&Position::new(0, 0).to(Direction::SW)));
+        assert!(positions.contains(&Position::new(0, 0).to(Direction::NW)));
 
         // two neighbors that form a gate
         let mut board = Board::new();
@@ -707,8 +713,8 @@ mod tests {
         );
         let positions = Bug::crawl(Position::new(0, 0), &board).collect::<Vec<_>>();
         assert_eq!(positions.len(), 2);
-        assert!(positions.contains(&Position::new(0, -1)));
-        assert!(positions.contains(&Position::new(-1, 0)));
+        assert!(positions.contains(&Position::new(0, 0).to(Direction::NE)));
+        assert!(positions.contains(&Position::new(0, 0).to(Direction::W)));
 
         // a third neighbor forms a gate so we are back to 2 positions
         let mut board = Board::new();
@@ -740,15 +746,15 @@ mod tests {
             Piece::new_from(Bug::Queen, Color::White, 1),
         );
         board.insert(
-            Position::new(1, 0),
+            Position::new(0, 0).to(Direction::NE),
             Piece::new_from(Bug::Ant, Color::Black, 1),
         );
         board.insert(
-            Position::new(-1, 1),
+            Position::new(0, 0).to(Direction::SE),
             Piece::new_from(Bug::Ant, Color::Black, 2),
         );
         board.insert(
-            Position::new(-1, -1),
+            Position::new(0, 0).to(Direction::W),
             Piece::new_from(Bug::Ant, Color::Black, 3),
         );
         let positions = Bug::crawl(Position::new(0, 0), &board).collect::<Vec<_>>();
@@ -761,21 +767,21 @@ mod tests {
             Piece::new_from(Bug::Queen, Color::White, 1),
         );
         board.insert(
-            Position::new(1, 0),
+            Position::new(0, 0).to(Direction::NE),
             Piece::new_from(Bug::Ant, Color::Black, 1),
         );
         board.insert(
-            Position::new(0, -1),
+            Position::new(0, 0).to(Direction::E),
             Piece::new_from(Bug::Ant, Color::Black, 2),
         );
         board.insert(
-            Position::new(0, 1),
+            Position::new(0, 0).to(Direction::SE),
             Piece::new_from(Bug::Ant, Color::Black, 3),
         );
         let positions = Bug::crawl(Position::new(0, 0), &board).collect::<Vec<_>>();
         assert_eq!(positions.len(), 2);
-        assert!(positions.contains(&Position::new(-1, -1)));
-        assert!(positions.contains(&Position::new(-1, 1)));
+        assert!(positions.contains(&Position::new(0, 0).to(Direction::SW)));
+        assert!(positions.contains(&Position::new(0, 0).to(Direction::NW)));
 
         // four neighbors no gate -> 2 positions
         let mut board = Board::new();
@@ -784,25 +790,25 @@ mod tests {
             Piece::new_from(Bug::Queen, Color::White, 1),
         );
         board.insert(
-            Position::new(1, 0),
+            Position::new(0, 0).to(Direction::NE),
             Piece::new_from(Bug::Ant, Color::Black, 1),
         );
         board.insert(
-            Position::new(0, -1),
+            Position::new(0, 0).to(Direction::E),
             Piece::new_from(Bug::Ant, Color::Black, 2),
         );
         board.insert(
-            Position::new(0, 1),
+            Position::new(0, 0).to(Direction::SE),
             Piece::new_from(Bug::Ant, Color::Black, 3),
         );
         board.insert(
-            Position::new(-1, 1),
+            Position::new(0, 0).to(Direction::SW),
             Piece::new_from(Bug::Ladybug, Color::Black, 1),
         );
         let positions = Bug::crawl(Position::new(0, 0), &board).collect::<Vec<_>>();
         assert_eq!(positions.len(), 2);
-        assert!(positions.contains(&Position::new(-1, -1)));
-        assert!(positions.contains(&Position::new(-1, 0)));
+        assert!(positions.contains(&Position::new(0, 0).to(Direction::W)));
+        assert!(positions.contains(&Position::new(0, 0).to(Direction::NW)));
 
         // five neighbors -> 0 positions
         let mut board = Board::new();
@@ -828,7 +834,7 @@ mod tests {
         );
         board.insert(
             Position::new(-1, 0),
-            Piece::new_from(Bug::Ladybug, Color::Black, 0),
+            Piece::new_from(Bug::Ladybug, Color::White, 0),
         );
         let positions = Bug::crawl(Position::new(0, 0), &board).collect::<Vec<_>>();
         assert_eq!(positions.len(), 0);
@@ -877,8 +883,8 @@ mod tests {
             Position::new(0, 0),
             Piece::new_from(Bug::Ladybug, Color::White, 0),
         );
-        for pos in Position::new(0, 0).positions_around() {
-            board.insert(pos, Piece::new_from(Bug::Grasshopper, Color::Black, 1));
+        for (i, pos) in Position::new(0, 0).positions_around().enumerate() {
+            board.insert(pos, Piece::new_from(Bug::Grasshopper, Color::from((i%2) as u8), i/2+1));
         }
         board.board.remove(Position::new(1, 0));
         assert_eq!(Bug::ladybug_moves(Position::new(0, 0), &board).len(), 12);
@@ -888,12 +894,12 @@ mod tests {
             Position::new(0, 0),
             Piece::new_from(Bug::Ladybug, Color::White, 0),
         );
-        for pos in Position::new(0, 0).positions_around() {
-            board.insert(pos, Piece::new_from(Bug::Grasshopper, Color::Black, 1));
+        for (i, pos) in Position::new(0, 0).positions_around().enumerate() {
+            board.insert(pos, Piece::new_from(Bug::Grasshopper, Color::from((i%2) as u8), i/2+1));
         }
         board.insert(
             Position::new(-2, 0),
-            Piece::new_from(Bug::Grasshopper, Color::Black, 1),
+            Piece::new_from(Bug::Ant, Color::Black, 1),
         );
         board.board.remove(Position::new(1, 0));
         assert_eq!(Bug::ladybug_moves(Position::new(0, 0), &board).len(), 14);
@@ -921,8 +927,8 @@ mod tests {
             Position::new(0, 0),
             Piece::new_from(Bug::Beetle, Color::White, 1),
         );
-        for pos in Position::new(0, 0).positions_around() {
-            board.insert(pos, Piece::new_from(Bug::Grasshopper, Color::White, 1));
+        for (i, pos) in Position::new(0, 0).positions_around().enumerate() {
+            board.insert(pos, Piece::new_from(Bug::Grasshopper, Color::from((i%2) as u8), i/2+1));
         }
         assert_eq!(Bug::beetle_moves(Position::new(0, 0), &board).len(), 6);
 
@@ -931,8 +937,8 @@ mod tests {
             Position::new(0, 0),
             Piece::new_from(Bug::Beetle, Color::White, 1),
         );
-        for pos in Position::new(0, 0).positions_around() {
-            board.insert(pos, Piece::new_from(Bug::Grasshopper, Color::White, 1));
+        for (i, pos) in Position::new(0, 0).positions_around().enumerate() {
+            board.insert(pos, Piece::new_from(Bug::Grasshopper, Color::from((i%2) as u8), i/2+1));
         }
         board.board.remove(Position::new(1, 0));
         assert_eq!(Bug::beetle_moves(Position::new(0, 0), &board).len(), 5);
@@ -951,7 +957,7 @@ mod tests {
         );
         assert_eq!(
             board
-                .neighbors(Position::new(0,0))
+                .neighbors(Position::new(0, 0))
                 .last()
                 .unwrap()
                 .top_piece()

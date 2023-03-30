@@ -468,7 +468,7 @@ mod tests {
         );
         board.insert(
             Position::new(1, 0),
-            Piece::new_from(Bug::Ant, Color::Black, 0),
+            Piece::new_from(Bug::Ant, Color::Black, 1),
         );
         let pos = board
             .positions_taken_around(Position::new(0, 0))
@@ -490,7 +490,7 @@ mod tests {
             Position::new(1, 0),
             bug_stack.top_piece().expect("This is in test neighbors"),
         );
-        let neighbors = board.neighbors(Position::new(0, 0));
+        let neighbors = board.neighbors(Position::new(0, 0)).collect::<Vec<_>>();
         assert_eq!(neighbors, vec![bug_stack]);
 
         bug_stack.push_piece(Piece::new_from(Bug::Beetle, Color::Black, 1));
@@ -498,14 +498,14 @@ mod tests {
             Position::new(1, 0),
             bug_stack.top_piece().expect("This is in test neighbors"),
         );
-        let neighbors = board.neighbors(Position::new(0, 0));
+        let neighbors = board.neighbors(Position::new(0, 0)).collect::<Vec<_>>();
         assert_eq!(neighbors, vec![bug_stack]);
 
         board.insert(
             Position::new(0, 2),
             Piece::new_from(Bug::Ladybug, Color::Black, 0),
         );
-        let neighbors = board.neighbors(Position::new(0, 0));
+        let neighbors = board.neighbors(Position::new(0, 0)).collect::<Vec<_>>();
         assert_eq!(neighbors, vec![bug_stack]);
     }
 
@@ -536,10 +536,34 @@ mod tests {
             Position::new(3, 1),
             Piece::new_from(Bug::Grasshopper, Color::Black, 2),
         );
-        assert_eq!(board.top_layer_neighbors(Position::new(0, 0)).len(), 1);
-        assert_eq!(board.top_layer_neighbors(Position::new(1, 0)).len(), 2);
-        assert_eq!(board.top_layer_neighbors(Position::new(2, 0)).len(), 2);
-        assert_eq!(board.top_layer_neighbors(Position::new(3, 0)).len(), 3);
+        assert_eq!(
+            board
+                .top_layer_neighbors(Position::new(0, 0))
+                .collect::<Vec<_>>()
+                .len(),
+            1
+        );
+        assert_eq!(
+            board
+                .top_layer_neighbors(Position::new(1, 0))
+                .collect::<Vec<_>>()
+                .len(),
+            2
+        );
+        assert_eq!(
+            board
+                .top_layer_neighbors(Position::new(2, 0))
+                .collect::<Vec<_>>()
+                .len(),
+            2
+        );
+        assert_eq!(
+            board
+                .top_layer_neighbors(Position::new(3, 0))
+                .collect::<Vec<_>>()
+                .len(),
+            3
+        );
     }
 
     #[test]
@@ -549,18 +573,14 @@ mod tests {
             Position::initial_spawn_position(),
             Piece::new_from(Bug::Queen, Color::White, 0),
         );
-        let mut positions = Position::initial_spawn_position()
-            .positions_around()
-            .collect::<Vec<Position>>();
-        let mut negative_space = board.negative_space();
-        positions.sort();
-        negative_space.sort();
-        assert_eq!(negative_space, positions);
+        for pos in Position::initial_spawn_position().positions_around() {
+            assert!(board.negative_space.contains(&pos));
+        }
         board.insert(
             Position::initial_spawn_position().to(Direction::NW),
             Piece::new_from(Bug::Queen, Color::Black, 0),
         );
-        assert_eq!(board.negative_space().len(), 8);
+        assert_eq!(board.negative_space.len(), 8);
     }
 
     #[test]
@@ -575,9 +595,9 @@ mod tests {
             Piece::new_from(Bug::Ant, Color::Black, 1),
         );
         let positions = board.spawnable_positions(Color::Black);
-        assert_eq!(positions.len(), 3);
+        assert_eq!(positions.count(), 3);
         let positions = board.spawnable_positions(Color::White);
-        assert_eq!(positions.len(), 3);
+        assert_eq!(positions.count(), 3);
         board.insert(
             Position::initial_spawn_position()
                 .to(Direction::E)
@@ -585,9 +605,9 @@ mod tests {
             Piece::new_from(Bug::Ant, Color::White, 2),
         );
         let positions = board.spawnable_positions(Color::White);
-        assert_eq!(positions.len(), 6);
+        assert_eq!(positions.count(), 6);
         let positions = board.spawnable_positions(Color::Black);
-        assert_eq!(positions.len(), 0);
+        assert_eq!(positions.count(), 0);
     }
 
     #[test]
@@ -660,21 +680,26 @@ mod tests {
             Position::new(3, 0),
             Piece::new_from(Bug::Ant, Color::Black, 3),
         );
-        assert!(!board.pinned(Position::new(0, 0)));
-        assert!(board.pinned(Position::new(1, 0)));
-        assert!(board.pinned(Position::new(2, 0)));
-        assert!(!board.pinned(Position::new(3, 0)));
-        for pos in Position::new(0, 0).positions_around() {
+        assert!(!board.is_pinned(Piece::new_from(Bug::Queen, Color::Black, 0)));
+        assert!(board.is_pinned(Piece::new_from(Bug::Ant, Color::Black, 1)));
+        assert!(board.is_pinned(Piece::new_from(Bug::Ant, Color::Black, 2)));
+        assert!(!board.is_pinned(Piece::new_from(Bug::Ant, Color::Black, 3)));
+
+        for (i, pos) in Position::new(0, 0).positions_around().enumerate() {
             if pos == Position::new(1, 0) {
                 continue;
             }
-            board.insert(pos, Piece::new_from(Bug::Ant, Color::Black, 1));
+            if i % 2 == 0 {
+                board.insert(pos, Piece::new_from(Bug::Grasshopper, Color::Black, i/2 + 1));
+            } else {
+                board.insert(pos, Piece::new_from(Bug::Grasshopper, Color::White, i/2 + 1));
+            }
         }
         for pos in Position::new(0, 0).positions_around() {
             if pos == Position::new(1, 0) {
-                assert!(board.pinned(pos));
+                assert!(board.is_pinned(board.top_piece(pos).unwrap()));
             } else {
-                assert!(!board.pinned(pos));
+                assert!(!board.is_pinned(board.top_piece(pos).unwrap()));
             };
         }
     }
