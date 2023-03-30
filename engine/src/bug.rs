@@ -556,28 +556,28 @@ mod tests {
             Piece::new_from(Bug::Beetle, Color::Black, 1),
         );
         board.insert(
-            Position::new(0, 1),
+            Position::new(0, 0).to(crate::direction::Direction::NE),
             Piece::new_from(Bug::Ant, Color::White, 1),
         );
         board.insert(
-            Position::new(0, 1),
+            Position::new(0, 0).to(crate::direction::Direction::NE),
             Piece::new_from(Bug::Beetle, Color::Black, 2),
         );
         board.insert(
-            Position::new(0, -1),
+            Position::new(0, 0).to(crate::direction::Direction::SE),
             Piece::new_from(Bug::Ant, Color::White, 1),
         );
         board.insert(
-            Position::new(0, -1),
+            Position::new(0, 0).to(crate::direction::Direction::SE),
             Piece::new_from(Bug::Mosquito, Color::Black, 0),
         );
         let positions = Bug::descend(Position::new(0, 0), &board);
         println!("{board}");
         println!("{positions:?}");
         assert_eq!(positions.len(), 3);
-        assert!(positions.contains(&Position::new(-1, -1)));
-        assert!(positions.contains(&Position::new(-1, 0)));
-        assert!(positions.contains(&Position::new(-1, 1)));
+        assert!(positions.contains(&Position::new(0, 0).to(crate::direction::Direction::SW)));
+        assert!(positions.contains(&Position::new(0, 0).to(crate::direction::Direction::W)));
+        assert!(positions.contains(&Position::new(0, 0).to(crate::direction::Direction::NW)));
     }
 
     #[test]
@@ -601,7 +601,10 @@ mod tests {
             Piece::new_from(Bug::Beetle, Color::White, 1),
         );
         for (i, pos) in Position::new(0, 0).positions_around().enumerate() {
-            board.insert(pos, Piece::new_from(Bug::Grasshopper, Color::from((i%2) as u8), i/2+1));
+            board.insert(
+                pos,
+                Piece::new_from(Bug::Grasshopper, Color::from((i % 2) as u8), i / 2 + 1),
+            );
             let positions = Bug::climb(Position::new(0, 0), &board);
             assert_eq!(positions.len(), i + 1);
         }
@@ -612,7 +615,10 @@ mod tests {
             Piece::new_from(Bug::Beetle, Color::White, 1),
         );
         for (i, pos) in Position::new(0, 0).positions_around().enumerate() {
-            board.insert(pos, Piece::new_from(Bug::Grasshopper, Color::from((i%2) as u8), i/2+1));
+            board.insert(
+                pos,
+                Piece::new_from(Bug::Grasshopper, Color::from((i % 2) as u8), i / 2 + 1),
+            );
         }
         board.insert(
             Position::new(0, 0).to(crate::direction::Direction::NE),
@@ -884,7 +890,10 @@ mod tests {
             Piece::new_from(Bug::Ladybug, Color::White, 0),
         );
         for (i, pos) in Position::new(0, 0).positions_around().enumerate() {
-            board.insert(pos, Piece::new_from(Bug::Grasshopper, Color::from((i%2) as u8), i/2+1));
+            board.insert(
+                pos,
+                Piece::new_from(Bug::Grasshopper, Color::from((i % 2) as u8), i / 2 + 1),
+            );
         }
         board.board.remove(Position::new(1, 0));
         assert_eq!(Bug::ladybug_moves(Position::new(0, 0), &board).len(), 12);
@@ -895,7 +904,10 @@ mod tests {
             Piece::new_from(Bug::Ladybug, Color::White, 0),
         );
         for (i, pos) in Position::new(0, 0).positions_around().enumerate() {
-            board.insert(pos, Piece::new_from(Bug::Grasshopper, Color::from((i%2) as u8), i/2+1));
+            board.insert(
+                pos,
+                Piece::new_from(Bug::Grasshopper, Color::from((i % 2) as u8), i / 2 + 1),
+            );
         }
         board.insert(
             Position::new(-2, 0),
@@ -928,7 +940,10 @@ mod tests {
             Piece::new_from(Bug::Beetle, Color::White, 1),
         );
         for (i, pos) in Position::new(0, 0).positions_around().enumerate() {
-            board.insert(pos, Piece::new_from(Bug::Grasshopper, Color::from((i%2) as u8), i/2+1));
+            board.insert(
+                pos,
+                Piece::new_from(Bug::Grasshopper, Color::from((i % 2) as u8), i / 2 + 1),
+            );
         }
         assert_eq!(Bug::beetle_moves(Position::new(0, 0), &board).len(), 6);
 
@@ -938,7 +953,10 @@ mod tests {
             Piece::new_from(Bug::Beetle, Color::White, 1),
         );
         for (i, pos) in Position::new(0, 0).positions_around().enumerate() {
-            board.insert(pos, Piece::new_from(Bug::Grasshopper, Color::from((i%2) as u8), i/2+1));
+            board.insert(
+                pos,
+                Piece::new_from(Bug::Grasshopper, Color::from((i % 2) as u8), i / 2 + 1),
+            );
         }
         board.board.remove(Position::new(1, 0));
         assert_eq!(Bug::beetle_moves(Position::new(0, 0), &board).len(), 5);
@@ -974,8 +992,11 @@ mod tests {
             Position::new(0, 0),
             Piece::new_from(Bug::Grasshopper, Color::White, 1),
         );
-        for pos in Position::new(0, 0).positions_around() {
-            board.insert(pos, Piece::new_from(Bug::Beetle, Color::White, 1));
+        for (i, pos) in Position::new(0, 0).positions_around().enumerate() {
+            board.insert(
+                pos,
+                Piece::new_from(Bug::Ant, Color::from((i % 2) as u8), i / 2 + 1),
+            );
         }
         assert_eq!(Bug::grasshopper_moves(Position::new(0, 0), &board).len(), 6);
 
@@ -986,10 +1007,6 @@ mod tests {
         );
         board.insert(
             Position::new(1, 0),
-            Piece::new_from(Bug::Beetle, Color::Black, 1),
-        );
-        board.insert(
-            Position::new(3, 0),
             Piece::new_from(Bug::Beetle, Color::Black, 1),
         );
         assert_eq!(Bug::grasshopper_moves(Position::new(0, 0), &board).len(), 1);
