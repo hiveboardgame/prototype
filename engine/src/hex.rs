@@ -1,4 +1,4 @@
-use crate::{bug_stack::BugStack, piece::Piece};
+use crate::{bug_stack::BugStack};
 
 #[derive(Clone, Debug, Copy, PartialEq, Eq)]
 pub struct Hex {
@@ -59,6 +59,30 @@ impl Hex {
             is_negative_space: false,
             bug_stack: BugStack::new(),
         }
+    }
+
+    pub fn set_neighbor_e(&mut self, b: bool) {
+        self.neighbor_e = b
+    }
+
+    pub fn set_neighbor_ne(&mut self, b: bool) {
+        self.neighbor_ne = b
+    }
+
+    pub fn set_neighbor_se(&mut self, b: bool) {
+        self.neighbor_se = b
+    }
+
+    pub fn set_neighbor_w(&mut self, b: bool) {
+        self.neighbor_w = b
+    }
+
+    pub fn set_neighbor_nw(&mut self, b: bool) {
+        self.neighbor_nw = b
+    }
+
+    pub fn set_neighbor_sw(&mut self, b: bool) {
+        self.neighbor_sw = b
     }
 }
 
