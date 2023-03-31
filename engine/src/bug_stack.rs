@@ -72,4 +72,11 @@ impl BugStack {
         }
         Some(self.pieces[(self.size - 1) as usize])
     }
+
+    pub fn bottom_piece(&self) -> Option<Piece> {
+        if self.size == 0 {
+            return None;
+        }
+        Some(self.pieces[0])
+    }
 }

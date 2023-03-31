@@ -160,8 +160,18 @@ impl Board {
         self.pinned[self.piece_to_offset(piece)] && self.board.get(position).len() == 1
     }
 
+    pub fn bottom_piece(&self, position: Position) -> Option<Piece> {
+        self.board.get(position).bottom_piece()
+    }
+
     pub fn top_piece(&self, position: Position) -> Option<Piece> {
         self.board.get(position).top_piece()
+    }
+
+    pub fn is_bottom_piece(&self, piece: Piece, position: Position) -> bool {
+        self.bottom_piece(position)
+            .map(|found| found == piece)
+            .unwrap_or(false)
     }
 
     pub fn is_top_piece(&self, piece: Piece, position: Position) -> bool {
@@ -308,10 +318,10 @@ impl Board {
             .enumerate()
             .filter_map(|(i, maybe_pos)| {
                 if let Some(pos) = maybe_pos {
-                    if self.is_top_piece(self.offset_to_piece(i), *pos) {
+                    if self.is_bottom_piece(self.offset_to_piece(i), *pos) {
                         Some(DfsInfo {
                             position: *pos,
-                            piece: self.top_piece(*pos).unwrap(),
+                            piece: self.bottom_piece(*pos).unwrap(),
                             visited: false,
                             depth: 0,
                             low: 0,

@@ -150,7 +150,7 @@ impl Bug {
         if !board.is_pinned(
             board
                 .top_piece(position)
-                .expect("There must be something at this position"),
+                .expect("There must be something at this position")
         ) {
             let positions = match board.top_bug(position) {
                 Some(Bug::Ant) => Bug::ant_moves(position, board),
@@ -547,7 +547,7 @@ mod tests {
         );
         board.insert(
             Position::new(0, 0).to(crate::direction::Direction::SE),
-            Piece::new_from(Bug::Ant, Color::White, 1),
+            Piece::new_from(Bug::Ant, Color::White, 2),
         );
         board.insert(
             Position::new(0, 0).to(crate::direction::Direction::SE),
