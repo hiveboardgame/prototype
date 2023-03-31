@@ -6,7 +6,7 @@ use std::fmt::{self, Write};
 
 use crate::{
     bug::Bug, bug_stack::BugStack, color::Color, game_error::GameError, game_result::GameResult,
-    game_type::GameType, piece::Piece, position::Position, torus_array::TorusArray,
+    game_type::GameType, piece::Piece, position::Position, torus_array::TorusArray, hex::Hex,
 };
 
 pub const BOARD_SIZE: i32 = 32;
@@ -30,10 +30,11 @@ impl fmt::Display for DfsInfo {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Board {
-    pub board: TorusArray<BugStack>,
+    pub board: TorusArray<Hex>,
     pub last_moved: Option<(Piece, Position)>,
     pub positions: [Option<Position>; 48],
     pub negative_space: HashSet<Position>,
+    // Vec<HashSet<Position>>
     pub pinned: [bool; 48],
 }
 
@@ -46,7 +47,7 @@ impl Default for Board {
 impl Board {
     pub fn new() -> Self {
         Self {
-            board: TorusArray::new(BugStack::new()),
+            board: TorusArray::new(Hex::new()),
             last_moved: None,
             positions: [None; 48],
             negative_space: HashSet::new(),
@@ -100,15 +101,15 @@ impl Board {
                 reason: "Trying to move a covered piece".to_string(),
             });
         }
-        let bug_stack = self.board.get_mut(current);
-        let piece = bug_stack.pop_piece();
+        let hex = self.board.get_mut(current);
+        let piece = hex.bug_stack.pop_piece();
         self.negative_space_remove(current);
         self.insert(target, piece);
         Ok(())
     }
 
     pub fn negative_space_remove(&mut self, position: Position) {
-        if !self.board.get(position).is_empty() {
+        if !self.board.get(position).bug_stack.is_empty() {
             return;
         }
         self.negative_space.insert(position);
@@ -139,7 +140,7 @@ impl Board {
     }
 
     pub fn level(&self, position: Position) -> usize {
-        self.board.get(position).size as usize
+        self.board.get(position).bug_stack.size as usize
     }
 
     pub fn piece_to_offset(&self, piece: Piece) -> usize {
@@ -157,15 +158,15 @@ impl Board {
         let position = self
             .position_of_piece(piece)
             .expect("Piece not found on board");
-        self.pinned[self.piece_to_offset(piece)] && self.board.get(position).len() == 1
+        self.pinned[self.piece_to_offset(piece)] && self.board.get(position).bug_stack.size == 1
     }
 
     pub fn bottom_piece(&self, position: Position) -> Option<Piece> {
-        self.board.get(position).bottom_piece()
+        self.board.get(position).bug_stack.bottom_piece()
     }
 
     pub fn top_piece(&self, position: Position) -> Option<Piece> {
-        self.board.get(position).top_piece()
+        self.board.get(position).bug_stack.top_piece()
     }
 
     pub fn is_bottom_piece(&self, piece: Piece, position: Position) -> bool {
@@ -191,10 +192,10 @@ impl Board {
         let (pos1, pos2) = from.common_adjacent_positions(to);
         let p1 = self.board.get(pos1);
         let p2 = self.board.get(pos2);
-        if p1.is_empty() || p2.is_empty() {
+        if p1.bug_stack.is_empty() || p2.bug_stack.is_empty() {
             return false;
         }
-        p1.len() >= level && p2.len() >= level
+        p1.bug_stack.len() >= level && p2.bug_stack.len() >= level
     }
 
     pub fn get_neighbor(&self, position: Position) -> Option<(Piece, Position)> {
@@ -216,7 +217,7 @@ impl Board {
     }
 
     pub fn occupied(&self, position: Position) -> bool {
-        self.board.get(position).size > 0
+        self.board.get(position).bug_stack.size > 0
     }
 
     pub fn positions_available_around(
@@ -231,7 +232,7 @@ impl Board {
     pub fn neighbors(&self, position: Position) -> impl Iterator<Item = BugStack> + '_ {
         position.positions_around().filter_map(move |pos| {
             if self.occupied(pos) {
-                Some(*self.board.get(pos))
+                Some(self.board.get(pos).bug_stack)
             } else {
                 None
             }
@@ -372,7 +373,7 @@ impl Board {
     pub fn top_layer_neighbors(&self, position: Position) -> impl Iterator<Item = Piece> + '_ {
         position
             .positions_around()
-            .filter_map(|pos| self.board.get(pos).top_piece())
+            .filter_map(|pos| self.board.get(pos).bug_stack.top_piece())
     }
 
     pub fn spawns_left(&self, color: Color, game_type: GameType) -> bool {
@@ -421,7 +422,7 @@ impl Board {
 
     pub fn insert(&mut self, position: Position, piece: Piece) {
         self.last_moved = Some((piece, position));
-        self.board.get_mut(position).push_piece(piece);
+        self.board.get_mut(position).bug_stack.push_piece(piece);
         self.set_position_of_piece(piece, position);
         self.negative_space_add(position);
         self.update_pinned();
@@ -436,8 +437,8 @@ impl fmt::Display for Board {
                 write!(s, "  ")?;
             }
             for q in 0..BOARD_SIZE {
-                let pieces = self.board.get(Position::new(q - r / 2, r + 15));
-                if let Some(last) = pieces.top_piece() {
+                let bug_stack = self.board.get(Position::new(q - r / 2, r + 15)).bug_stack;
+                if let Some(last) = bug_stack.top_piece() {
                     if last.to_string().len() < 3 {
                         write!(s, "{last}  ")?;
                     } else {
