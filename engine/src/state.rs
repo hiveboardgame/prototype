@@ -1,6 +1,3 @@
-use std::str::FromStr;
-
-use crate::board::BOARD_SIZE;
 use crate::bug::Bug;
 use crate::color::Color;
 use crate::game_error::GameError;

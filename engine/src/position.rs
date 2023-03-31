@@ -80,7 +80,8 @@ impl Position {
             Position::new(self.q - 1, self.r + 1), // SW
             Position::new(self.q - 1, self.r),     // W
             Position::new(self.q + 1, self.r),     // E
-        ].into_iter()
+        ]
+        .into_iter()
     }
 
     pub fn to(&self, direction: Direction) -> Position {

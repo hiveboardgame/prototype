@@ -231,7 +231,7 @@ impl Board {
     pub fn neighbors(&self, position: Position) -> impl Iterator<Item = BugStack> + '_ {
         position.positions_around().filter_map(move |pos| {
             if self.occupied(pos) {
-                Some(self.board.get(pos).clone())
+                Some(*self.board.get(pos))
             } else {
                 None
             }
@@ -700,9 +700,15 @@ mod tests {
                 continue;
             }
             if i % 2 == 0 {
-                board.insert(pos, Piece::new_from(Bug::Grasshopper, Color::Black, i/2 + 1));
+                board.insert(
+                    pos,
+                    Piece::new_from(Bug::Grasshopper, Color::Black, i / 2 + 1),
+                );
             } else {
-                board.insert(pos, Piece::new_from(Bug::Grasshopper, Color::White, i/2 + 1));
+                board.insert(
+                    pos,
+                    Piece::new_from(Bug::Grasshopper, Color::White, i / 2 + 1),
+                );
             }
         }
         for pos in Position::new(0, 0).positions_around() {

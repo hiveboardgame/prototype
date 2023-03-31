@@ -150,7 +150,7 @@ impl Bug {
         if !board.is_pinned(
             board
                 .top_piece(position)
-                .expect("There must be something at this position")
+                .expect("There must be something at this position"),
         ) {
             let positions = match board.top_bug(position) {
                 Some(Bug::Ant) => Bug::ant_moves(position, board),
