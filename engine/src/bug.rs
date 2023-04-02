@@ -372,75 +372,24 @@ impl Bug {
         Bug::crawl(position, board)
     }
 
-    fn spider_crawl(
-        last: Position,
-        current: Position,
-        board: &Board,
-    ) -> impl Iterator<Item = Position> + '_ {
-        board.positions_taken_around(current).flat_map(move |pos| {
-            let mut positions = vec![];
-            let (pos1, pos2) = current.common_adjacent_positions(pos);
-            if !board.gated(1, current, pos1) && !board.occupied(pos1) && pos1 != last {
-                positions.push(pos1);
-            }
-            if !board.gated(1, current, pos2) && !board.occupied(pos2) && pos2 != last {
-                positions.push(pos2);
-            }
-            positions
-        })
-    }
-
     fn spider_moves(position: Position, board: &Board) -> Vec<Position> {
-        // let mut res = Vec::new();
-        // for pos in Bug::crawl(position, board) {
-        //     for pos2 in Bug::spider_crawl(position, pos, board) {
-        //         for pos3 in Bug::spider_crawl(pos, pos2, board) {
-        //             if pos3 != position {
-        //                 res.push(pos3);
-        //             }
-        //         }
-        //     }
-        // }
-        // res.sort();
-        // res.dedup();
-        // res
-        let mut moves = vec![vec![position]];
-        let mut my_board = board.clone();
-        for i in 0..3 {
-            moves = moves
-                .iter()
-                .flat_map(|positions| {
-                    Bug::crawl(
-                        *positions.last().expect("Could not get last piece"),
-                        &my_board,
-                    )
-                    .map(|p| {
-                        let mut pos = positions.clone();
-                        pos.push(p);
-                        pos
-                    })
-                    .collect::<Vec<Vec<Position>>>()
-                })
-                .collect::<Vec<Vec<Position>>>();
-            if i == 0 {
-                my_board.board.get_mut(position).bug_stack.pop_piece();
-                my_board.mark_hex_unused(position);
+        let board = MidMoveBoard {
+            board,
+            position_in_flight: position,
+        };
+        let mut res = Vec::new();
+        for pos1 in Bug::crawl_negative_space(position, &board) {
+            for pos2 in Bug::crawl_negative_space(pos1, &board).filter(move |pos| *pos != position) {
+                for pos3 in Bug::crawl_negative_space(pos2, &board).filter(move |pos| *pos != pos1) {
+                    if pos3 != position {
+                        res.push(pos3);
+                    }
+                }
             }
         }
-        moves.retain(|positions| {
-            let len = positions.len();
-            let mut sorted = positions.clone();
-            sorted.sort_unstable();
-            sorted.dedup();
-            len == sorted.len()
-        });
-        let mut positions = moves
-            .iter()
-            .map(|positions| *positions.last().expect("Could not get last piece"))
-            .collect::<Vec<Position>>();
-        positions.sort_unstable();
-        positions.dedup();
-        positions
+        res.sort();
+        res.dedup();
+        res
     }
 }
 
