@@ -30,7 +30,6 @@ impl Position {
     }
 
     pub fn initial_spawn_position() -> Self {
-        // TODO make this depenedent on BOARD_SIZE
         Self { q: 0, r: 0 }
     }
 

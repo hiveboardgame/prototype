@@ -4,7 +4,6 @@ type HashMap<K, V> = FnvHashMap<K, V>;
 use std::collections::HashSet;
 use std::fmt::{self, Write};
 
-use crate::direction::Direction;
 use crate::{
     bug::Bug, bug_stack::BugStack, color::Color, game_error::GameError, game_result::GameResult,
     game_type::GameType, hex::Hex, piece::Piece, position::Position, torus_array::TorusArray,
@@ -104,70 +103,19 @@ impl Board {
         }
         let hex = self.board.get_mut(current);
         let piece = hex.bug_stack.pop_piece();
-        // TODO check whether piece.level > 1 because then we don't need to do this
-        self.mark_hex_unused(current);
+        if hex.bug_stack.size == 0 {
+            self.mark_hex_unused(current);
+        }
         self.insert(target, piece);
         Ok(())
     }
 
     pub fn mark_hex_used(&mut self, position: Position) {
         self.negative_space_add(position);
-        self.hex_neighbors_add(position);
     }
 
     pub fn mark_hex_unused(&mut self, position: Position) {
         self.negative_space_remove(position);
-        self.hex_neighbors_remove(position);
-    }
-
-    pub fn hex_neighbors_remove(&mut self, position: Position) {
-        for pos in position.positions_around() {
-            match pos.direction(position) {
-                Direction::E => {
-                    self.board.get_mut(pos).set_neighbor_e(false);
-                }
-                Direction::NE => {
-                    self.board.get_mut(pos).set_neighbor_ne(false);
-                }
-                Direction::SE => {
-                    self.board.get_mut(pos).set_neighbor_se(false);
-                }
-                Direction::W => {
-                    self.board.get_mut(pos).set_neighbor_w(false);
-                }
-                Direction::NW => {
-                    self.board.get_mut(pos).set_neighbor_nw(false);
-                }
-                Direction::SW => {
-                    self.board.get_mut(pos).set_neighbor_sw(false);
-                }
-            }
-        }
-    }
-
-    pub fn hex_neighbors_add(&mut self, position: Position) {
-        for pos in position.positions_around() {
-            match pos.direction(position) {
-                Direction::E => {
-                    self.board.get_mut(pos).set_neighbor_e(true);
-                }
-                Direction::NE => {
-                    self.board.get_mut(pos).set_neighbor_ne(true);
-                }
-                Direction::SE => {
-                    self.board.get_mut(pos).set_neighbor_se(true);
-                }
-                Direction::W => {
-                    self.board.get_mut(pos).set_neighbor_w(true);
-                }
-                Direction::NW => {
-                    self.board.get_mut(pos).set_neighbor_nw(true);
-                }
-                Direction::SW => {
-                    self.board.get_mut(pos).set_neighbor_sw(true);
-                }
-            }
-        }
     }
 
     pub fn negative_space_remove(&mut self, position: Position) {
@@ -186,6 +134,7 @@ impl Board {
         }
     }
 
+    // This tracks negative space when a piece gets added to the position
     pub fn negative_space_add(&mut self, position: Position) {
         self.negative_space.remove(&position);
         for pos in self
@@ -735,61 +684,6 @@ mod tests {
     }
 
     #[test]
-    fn tests_hex_neighbors_add() {
-        let mut board = Board::new();
-        let spawn_pos = Position::new(0, 0);
-        board.insert(
-            spawn_pos,
-            Piece::new_from(Bug::Queen, Color::White, 0),
-        );
-        assert!(!board.board.get(spawn_pos).neighbor_w);
-        assert!(!board.board.get(spawn_pos).neighbor_sw);
-        assert!(!board.board.get(spawn_pos).neighbor_nw);
-        assert!(!board.board.get(spawn_pos).neighbor_e);
-        assert!(!board.board.get(spawn_pos).neighbor_se);
-        assert!(!board.board.get(spawn_pos).neighbor_ne);
-        for pos in Position::new(0, 0).positions_around() {
-            let dir = pos.direction(spawn_pos);
-            let neighbor = board.board.get(pos);
-            match dir {
-                Direction::E => assert!(neighbor.neighbor_e),
-                Direction::SE => assert!(neighbor.neighbor_se),
-                Direction::NE => assert!(neighbor.neighbor_ne),
-                Direction::W => assert!(neighbor.neighbor_w),
-                Direction::SW => assert!(neighbor.neighbor_sw),
-                Direction::NW => assert!(neighbor.neighbor_nw),
-            }
-        }
-    }
-
-    #[test]
-    fn tests_hex_neighbors_remove() {
-        let mut board = Board::new();
-        let spawn_pos = Position::new(0, 0);
-        board.insert(
-            spawn_pos,
-            Piece::new_from(Bug::Queen, Color::White, 0),
-        );
-        board.insert(
-            spawn_pos,
-            Piece::new_from(Bug::Queen, Color::White, 0),
-        );
-        board.mark_hex_unused(spawn_pos);
-        for pos in Position::new(0, 0).positions_around() {
-            let dir = pos.direction(spawn_pos);
-            let neighbor = board.board.get(pos);
-            match dir {
-                Direction::E => assert!(!neighbor.neighbor_e),
-                Direction::SE => assert!(!neighbor.neighbor_se),
-                Direction::NE => assert!(!neighbor.neighbor_ne),
-                Direction::W => assert!(!neighbor.neighbor_w),
-                Direction::SW => assert!(!neighbor.neighbor_sw),
-                Direction::NW => assert!(!neighbor.neighbor_nw),
-            }
-        }
-    }
-
-    #[test]
     fn tests_move_splits_hive() {
         let mut board = Board::new();
         board.insert(
@@ -817,6 +711,11 @@ mod tests {
             if pos == Position::new(1, 0) {
                 continue;
             }
+            println!("{board}");
+            println!(
+                "pos: {pos}, piece: {}",
+                Piece::new_from(Bug::Grasshopper, Color::from((i % 2) as u8), i / 2 + 1)
+            );
             board.insert(
                 pos,
                 Piece::new_from(Bug::Grasshopper, Color::from((i % 2) as u8), i / 2 + 1),
@@ -828,6 +727,41 @@ mod tests {
             } else {
                 assert!(!board.is_pinned(board.top_piece(pos).unwrap()));
             };
+        }
+    }
+
+    #[test]
+    pub fn tests_positions_taken_around() {
+        let mut board = Board::new();
+        let pos = Position::new(0, 0);
+        board.insert(pos, Piece::new_from(Bug::Queen, Color::Black, 0));
+        board.insert(
+            Position::new(1, 0),
+            Piece::new_from(Bug::Ant, Color::Black, 1),
+        );
+        board.insert(
+            Position::new(-1, 0),
+            Piece::new_from(Bug::Ant, Color::Black, 2),
+        );
+        board.insert(
+            Position::new(0, 1),
+            Piece::new_from(Bug::Spider, Color::Black, 1),
+        );
+        board.insert(
+            Position::new(0, -1),
+            Piece::new_from(Bug::Spider, Color::Black, 2),
+        );
+        board.insert(
+            Position::new(1, -1),
+            Piece::new_from(Bug::Grasshopper, Color::Black, 1),
+        );
+        board.insert(
+            Position::new(-1, 1),
+            Piece::new_from(Bug::Grasshopper, Color::Black, 2),
+        );
+        assert_eq!(board.positions_taken_around(pos).count(), 6);
+        for pos in pos.positions_around() {
+            assert_eq!(board.positions_taken_around(pos).count(), 3);
         }
     }
 }

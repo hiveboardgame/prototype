@@ -2,14 +2,6 @@ use crate::{bug_stack::BugStack};
 
 #[derive(Clone, Debug, Copy, PartialEq, Eq)]
 pub struct Hex {
-    // Where are neighbors
-    pub neighbor_nw: bool,
-    pub neighbor_w: bool,
-    pub neighbor_sw: bool,
-    pub neighbor_se: bool,
-    pub neighbor_e: bool,
-    pub neighbor_ne: bool,
-
     // Is the move from current tile to direction gated
     pub gated_nw: bool,
     pub gated_w: bool,
@@ -35,13 +27,6 @@ pub struct Hex {
 impl Hex {
     pub fn new() -> Self {
         Self {
-            neighbor_nw: false,
-            neighbor_w: false,
-            neighbor_sw: false,
-            neighbor_se: false,
-            neighbor_e: false,
-            neighbor_ne: false,
-
             gated_nw: false,
             gated_w: false,
             gated_sw: false,
@@ -59,30 +44,6 @@ impl Hex {
             is_negative_space: false,
             bug_stack: BugStack::new(),
         }
-    }
-
-    pub fn set_neighbor_e(&mut self, b: bool) {
-        self.neighbor_e = b
-    }
-
-    pub fn set_neighbor_ne(&mut self, b: bool) {
-        self.neighbor_ne = b
-    }
-
-    pub fn set_neighbor_se(&mut self, b: bool) {
-        self.neighbor_se = b
-    }
-
-    pub fn set_neighbor_w(&mut self, b: bool) {
-        self.neighbor_w = b
-    }
-
-    pub fn set_neighbor_nw(&mut self, b: bool) {
-        self.neighbor_nw = b
-    }
-
-    pub fn set_neighbor_sw(&mut self, b: bool) {
-        self.neighbor_sw = b
     }
 }
 

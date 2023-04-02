@@ -184,6 +184,20 @@ impl Bug {
         }
     }
 
+    fn crawl_negative_space(position: Position, board: &Board) -> impl Iterator<Item = Position> + '_ {
+        board.positions_taken_around(position).flat_map(move |pos| {
+            let mut positions = vec![];
+            let (pos1, pos2) = position.common_adjacent_positions(pos);
+            if !board.gated(1, position, pos1) && !board.occupied(pos1) {
+                positions.push(pos1);
+            }
+            if !board.gated(1, position, pos2) && !board.occupied(pos2) {
+                positions.push(pos2);
+            }
+            positions
+        })
+    }
+
     fn crawl(position: Position, board: &Board) -> impl Iterator<Item = Position> + '_ {
         board.positions_taken_around(position).flat_map(move |pos| {
             let mut positions = vec![];
@@ -215,25 +229,26 @@ impl Bug {
         let mut unexplored = HashSet::new();
         unexplored.insert(position);
         // TODO this could be nicer...
-        let mut board = board.clone();
-        board.board.remove(position);
-        Bug::ant_rec(&mut found, &mut unexplored, &board);
+        let mut my_board = board.clone();
+        my_board.board.get_mut(position).bug_stack.pop_piece();
+        // TODO maybe this is BS vvvvvvvvvvvv
+        my_board.mark_hex_unused(position);
+        Bug::ant_rec(&mut found, &mut unexplored, &my_board);
         found.remove(&position);
         return found.iter().cloned().collect();
         // TODO implement get_ant_moves_from_negative_space
-        // return Vec::from_iter(board.negative_space.clone());
+        // return Vec::from_iter(board.negative_space.cloned());
     }
 
     fn ant_rec(found: &mut HashSet<Position>, unexplored: &mut HashSet<Position>, board: &Board) {
-        if let Some(position) = unexplored.iter().next().cloned() {
+        while let Some(position) = unexplored.iter().next().cloned() {
             unexplored.remove(&position);
             found.insert(position);
             for pos in Bug::crawl(position, board) {
-                if !found.contains(&pos) {
+                if !found.contains(&pos) && board.negative_space.contains(&pos) {
                     unexplored.insert(pos);
                 }
             }
-            Bug::ant_rec(found, unexplored, board)
         }
     }
 
@@ -351,22 +366,26 @@ impl Bug {
 
     fn spider_moves(position: Position, board: &Board) -> Vec<Position> {
         let mut moves = vec![vec![position]];
-        let mut board = board.clone();
+        let mut my_board = board.clone();
         for i in 0..3 {
             moves = moves
                 .iter()
                 .flat_map(|positions| {
-                    Bug::crawl(*positions.last().expect("Could not get last piece"), &board)
-                        .map(|p| {
-                            let mut pos = positions.clone();
-                            pos.push(p);
-                            pos
-                        })
-                        .collect::<Vec<Vec<Position>>>()
+                    Bug::crawl(
+                        *positions.last().expect("Could not get last piece"),
+                        &my_board,
+                    )
+                    .map(|p| {
+                        let mut pos = positions.clone();
+                        pos.push(p);
+                        pos
+                    })
+                    .collect::<Vec<Vec<Position>>>()
                 })
                 .collect::<Vec<Vec<Position>>>();
             if i == 0 {
-                board.board.remove(position);
+                my_board.board.get_mut(position).bug_stack.pop_piece();
+                my_board.mark_hex_unused(position);
             }
         }
         moves.retain(|positions| {
@@ -640,11 +659,15 @@ mod tests {
             Position::new(0, 1),
             Piece::new_from(Bug::Queen, Color::White, 0),
         );
-        for pos in Position::new(0, 1).positions_around() {
-            board.insert(pos, Piece::new_from(Bug::Queen, Color::Black, 0));
+        for (i, pos) in Position::new(0, 1).positions_around().enumerate() {
+            board.insert(
+                pos,
+                Piece::new_from(Bug::Grasshopper, Color::from((i % 2) as u8), i / 2 + 1),
+            );
             let positions = Bug::crawl(Position::new(0, 1), &board).collect::<Vec<Position>>();
             assert_eq!(positions.len(), 2);
-            board.board.remove(pos);
+            board.board.get_mut(pos).bug_stack.pop_piece();
+            board.mark_hex_unused(pos);
         }
 
         // two adjacent neighbors means two positions
@@ -879,7 +902,12 @@ mod tests {
                 Piece::new_from(Bug::Grasshopper, Color::from((i % 2) as u8), i / 2 + 1),
             );
         }
-        board.board.remove(Position::new(1, 0));
+        board
+            .board
+            .get_mut(Position::new(1, 0))
+            .bug_stack
+            .pop_piece();
+        board.mark_hex_unused(Position::new(1, 0));
         assert_eq!(Bug::ladybug_moves(Position::new(0, 0), &board).len(), 12);
 
         let mut board = Board::new();
@@ -897,7 +925,12 @@ mod tests {
             Position::new(-2, 0),
             Piece::new_from(Bug::Ant, Color::Black, 1),
         );
-        board.board.remove(Position::new(1, 0));
+        board
+            .board
+            .get_mut(Position::new(1, 0))
+            .bug_stack
+            .pop_piece();
+        board.mark_hex_unused(Position::new(1, 0));
         assert_eq!(Bug::ladybug_moves(Position::new(0, 0), &board).len(), 14);
     }
 
@@ -942,7 +975,12 @@ mod tests {
                 Piece::new_from(Bug::Grasshopper, Color::from((i % 2) as u8), i / 2 + 1),
             );
         }
-        board.board.remove(Position::new(1, 0));
+        board
+            .board
+            .get_mut(Position::new(1, 0))
+            .bug_stack
+            .pop_piece();
+        board.mark_hex_unused(Position::new(1, 0));
         assert_eq!(Bug::beetle_moves(Position::new(0, 0), &board).len(), 5);
     }
 

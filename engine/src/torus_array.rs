@@ -32,11 +32,6 @@ where
         )
     }
 
-    // TODO get rid of this
-    pub fn remove(&mut self, position: Position) {
-        self.set(position, self.default);
-    }
-
     pub fn set(&mut self, position: Position, element: T) {
         self.data[(position.r * BOARD_SIZE + position.q) as usize] = element;
     }
