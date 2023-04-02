@@ -22,6 +22,7 @@ serde = { version = "*", features = ["derive"] }
 thiserror = "*"
 fnv = "1.0.3"
 bitfield-struct = "0.3"
+itertools = "0.10.5"
 
 [profile.release]
 debug = true

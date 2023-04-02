@@ -1,8 +1,10 @@
-use crate::{board::Board, game_error::GameError, game_type::GameType, position::Position};
-use fnv::FnvHashMap;
+use crate::{
+    board::Board, game_error::GameError, game_type::GameType, position::Position,
+    torus_array::TorusArray,
+};
+use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use std::{collections::HashSet, fmt, str::FromStr};
-type HashMap<K, V> = FnvHashMap<K, V>;
 
 #[derive(Hash, Eq, PartialEq, Clone, Copy, Serialize, Deserialize, Debug)]
 #[repr(u8)]
@@ -100,7 +102,7 @@ impl Bug {
     }
 
     pub fn bugs_count(game_type: GameType) -> HashMap<Bug, i8> {
-        let mut bugs = HashMap::default();
+        let mut bugs = HashMap::new();
         bugs.insert(Bug::Ant, 3);
         bugs.insert(Bug::Beetle, 2);
         bugs.insert(Bug::Grasshopper, 3);
@@ -184,18 +186,14 @@ impl Bug {
         }
     }
 
-    fn crawl_negative_space(position: Position, board: &Board) -> impl Iterator<Item = Position> + '_ {
-        board.positions_taken_around(position).flat_map(move |pos| {
-            let mut positions = vec![];
-            let (pos1, pos2) = position.common_adjacent_positions(pos);
-            if !board.gated(1, position, pos1) && !board.occupied(pos1) {
-                positions.push(pos1);
-            }
-            if !board.gated(1, position, pos2) && !board.occupied(pos2) {
-                positions.push(pos2);
-            }
-            positions
-        })
+    fn crawl_negative_space(
+        position: Position,
+        board: &Board,
+    ) -> impl Iterator<Item = Position> + '_ {
+        position
+            .positions_around()
+            .filter(|pos| board.board.get(*pos).is_negative_space)
+            .filter(move |pos| !board.gated(1, position, *pos))
     }
 
     fn crawl(position: Position, board: &Board) -> impl Iterator<Item = Position> + '_ {
@@ -225,28 +223,36 @@ impl Bug {
     }
 
     fn ant_moves(position: Position, board: &Board) -> Vec<Position> {
-        let mut found = HashSet::new();
-        let mut unexplored = HashSet::new();
-        unexplored.insert(position);
-        // TODO this could be nicer...
+        //                               found  explored
+        let mut state = TorusArray::new((false, false));
+        state.set(position, (true, true));
+        let mut found_pos = Vec::with_capacity(24);
+        let mut unexplored = Vec::with_capacity(24);
+        unexplored.push(position);
         let mut my_board = board.clone();
         my_board.board.get_mut(position).bug_stack.pop_piece();
-        // TODO maybe this is BS vvvvvvvvvvvv
         my_board.mark_hex_unused(position);
-        Bug::ant_rec(&mut found, &mut unexplored, &my_board);
-        found.remove(&position);
-        return found.iter().cloned().collect();
-        // TODO implement get_ant_moves_from_negative_space
-        // return Vec::from_iter(board.negative_space.cloned());
+        Bug::ant_rec(&mut state, &mut found_pos, &mut unexplored, &my_board);
+        return found_pos;
     }
 
-    fn ant_rec(found: &mut HashSet<Position>, unexplored: &mut HashSet<Position>, board: &Board) {
-        while let Some(position) = unexplored.iter().next().cloned() {
-            unexplored.remove(&position);
-            found.insert(position);
-            for pos in Bug::crawl(position, board) {
-                if !found.contains(&pos) && board.negative_space.contains(&pos) {
-                    unexplored.insert(pos);
+    fn ant_rec(
+        state: &mut TorusArray<(bool, bool)>,
+        found_pos: &mut Vec<Position>,
+        unexplored: &mut Vec<Position>,
+        board: &Board,
+    ) {
+        while let Some(position) = unexplored.pop() {
+            let (found, explored) = state.get(position);
+            if !found {
+                state.set(position, (true, *explored));
+                found_pos.push(position);
+            }
+            for pos in Bug::crawl_negative_space(position, board) {
+                let (found, explored) = state.get(pos);
+                if !explored && !found && board.board.get(pos).is_negative_space {
+                    state.set(pos, (*found, true));
+                    unexplored.push(pos);
                 }
             }
         }

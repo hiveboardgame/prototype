@@ -1,13 +1,10 @@
-use fnv::FnvHashMap;
-type HashMap<K, V> = FnvHashMap<K, V>;
-
-use std::collections::HashSet;
-use std::fmt::{self, Write};
-
 use crate::{
     bug::Bug, bug_stack::BugStack, color::Color, game_error::GameError, game_result::GameResult,
     game_type::GameType, hex::Hex, piece::Piece, position::Position, torus_array::TorusArray,
 };
+use itertools::Itertools;
+use std::collections::HashMap;
+use std::fmt::{self, Write};
 
 pub const BOARD_SIZE: i32 = 32;
 
@@ -33,7 +30,6 @@ pub struct Board {
     pub board: TorusArray<Hex>,
     pub last_moved: Option<(Piece, Position)>,
     pub positions: [Option<Position>; 48],
-    pub negative_space: HashSet<Position>,
     // Vec<HashSet<Position>>
     pub pinned: [bool; 48],
 }
@@ -50,7 +46,6 @@ impl Board {
             board: TorusArray::new(Hex::new()),
             last_moved: None,
             positions: [None; 48],
-            negative_space: HashSet::new(),
             pinned: [false; 48],
         }
     }
@@ -122,26 +117,21 @@ impl Board {
         if !self.board.get(position).bug_stack.is_empty() {
             return;
         }
-        self.negative_space.insert(position);
-        // meh borrow checker...
-        let pos_around = self
-            .positions_available_around(position)
-            .collect::<Vec<_>>();
-        for pos in pos_around.into_iter() {
-            if self.get_neighbor(pos).is_none() {
-                self.negative_space.remove(&pos);
+        self.board.get_mut(position).set_is_negative_space(true);
+        for pos in position.positions_around() {
+            if !self.occupied(pos) && self.get_neighbor(pos).is_none() {
+                self.board.get_mut(pos).set_is_negative_space(false);
             }
         }
     }
 
     // This tracks negative space when a piece gets added to the position
     pub fn negative_space_add(&mut self, position: Position) {
-        self.negative_space.remove(&position);
-        for pos in self
-            .positions_available_around(position)
-            .collect::<Vec<_>>()
-        {
-            self.negative_space.insert(pos);
+        self.board.get_mut(position).set_is_negative_space(false);
+        for pos in position.positions_around() {
+            if !self.occupied(pos) {
+                self.board.get_mut(pos).set_is_negative_space(true);
+            }
         }
     }
 
@@ -298,7 +288,7 @@ impl Board {
 
     pub fn spawnable_positions(&self, color: Color) -> impl Iterator<Item = Position> + '_ {
         std::iter::once(Position::initial_spawn_position())
-            .chain(self.negative_space.clone().into_iter())
+            .chain(self.negative_space())
             .filter(move |pos| self.spawnable(color, *pos))
     }
 
@@ -419,16 +409,26 @@ impl Board {
         if self.occupied(position) {
             return false;
         }
+        // TODO maybe hand in state.turn and get rid of this 
         let number_of_positions = self.all_taken_positions().count();
         if number_of_positions == 0 {
             return position == Position::initial_spawn_position();
         }
         if number_of_positions == 1 {
-            return self.negative_space.contains(&position);
+            return self.is_negative_space(position);
         }
         !self
             .top_layer_neighbors(position)
             .any(|piece| color == Color::from(piece.color().opposite()))
+    }
+
+    pub fn negative_space(&self) -> impl Iterator<Item = Position> + '_ {
+        Self::all_positions().filter(move |pos| self.is_negative_space(*pos))
+
+    }
+
+    pub fn is_negative_space(&self, position: Position) -> bool {
+        self.board.get(position).is_negative_space
     }
 
     pub fn insert(&mut self, position: Position, piece: Piece) {
@@ -437,6 +437,12 @@ impl Board {
         self.set_position_of_piece(piece, position);
         self.mark_hex_used(position);
         self.update_pinned();
+    }
+
+    pub fn all_positions() -> impl Iterator<Item = Position> {
+        (0..BOARD_SIZE)
+            .cartesian_product(0..BOARD_SIZE)
+            .map(|(q, r)| Position { q, r })
     }
 }
 
@@ -469,6 +475,7 @@ impl fmt::Display for Board {
 mod tests {
     use super::*;
     use crate::direction::Direction;
+    use std::collections::HashSet;
 
     #[test]
     fn tests_positions_around() {
@@ -596,13 +603,13 @@ mod tests {
             Piece::new_from(Bug::Queen, Color::White, 0),
         );
         for pos in Position::initial_spawn_position().positions_around() {
-            assert!(board.negative_space.contains(&pos));
+            assert!(board.is_negative_space(pos));
         }
         board.insert(
             Position::initial_spawn_position().to(Direction::NW),
             Piece::new_from(Bug::Queen, Color::Black, 0),
         );
-        assert_eq!(board.negative_space.len(), 8);
+        assert_eq!(board.negative_space().count(), 8);
     }
 
     #[test]

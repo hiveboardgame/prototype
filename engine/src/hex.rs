@@ -45,6 +45,10 @@ impl Hex {
             bug_stack: BugStack::new(),
         }
     }
+
+    pub fn set_is_negative_space(&mut self, b: bool) {
+        self.is_negative_space = b
+    }
 }
 
 // use bitfield_struct::bitfield;

@@ -44,8 +44,7 @@
 //
 // impl fmt::Display for NegativeSpace {
 //     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-//         write!(
-//             f,
+//         write!( f,
 //             "Gated: {} NW: {} W: {} SW: {} SE: {} E: {} NE: {}",
 //             self.gated(),
 //             self.nw(),

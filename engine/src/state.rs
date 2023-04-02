@@ -1,4 +1,4 @@
-use crate::bug::Bug;
+use crate::bug::{Bug, self};
 use crate::color::Color;
 use crate::game_error::GameError;
 use crate::game_result::GameResult;
@@ -203,8 +203,23 @@ impl State {
         } else {
             self.turn_spawn(piece, target_position)?
         }
+        debug_assert!(self.check_board());
         self.update_history(piece, target_position);
         self.next_turn();
         Ok(())
+    }
+
+    pub fn check_board(&self) -> bool {
+        for r in 0..32 {
+            for q in 0..32 {
+                let pos = Position::new(q,r);
+                let hex = self.board.board.get(pos);
+                if false {
+                    println!("pos: {pos}");
+                    println!("{}", self.board);
+                }
+            }
+        }
+        true
     }
 }
