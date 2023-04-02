@@ -1,4 +1,4 @@
-use crate::bug::{Bug, self};
+use crate::bug::Bug;
 use crate::color::Color;
 use crate::game_error::GameError;
 use crate::game_result::GameResult;

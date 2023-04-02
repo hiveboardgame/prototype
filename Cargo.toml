@@ -4,3 +4,6 @@ members = [
     "engine",
     "backend",
 ]
+
+[profile.release]
+debug = true

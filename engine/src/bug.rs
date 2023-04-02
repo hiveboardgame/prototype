@@ -1,9 +1,10 @@
+use crate::board::MidMoveBoard;
 use crate::{
     board::Board, game_error::GameError, game_type::GameType, position::Position,
     torus_array::TorusArray,
 };
-use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::{collections::HashSet, fmt, str::FromStr};
 
 #[derive(Hash, Eq, PartialEq, Clone, Copy, Serialize, Deserialize, Debug)]
@@ -186,13 +187,13 @@ impl Bug {
         }
     }
 
-    fn crawl_negative_space(
+    fn crawl_negative_space<'a>(
         position: Position,
-        board: &Board,
-    ) -> impl Iterator<Item = Position> + '_ {
+        board: &'a MidMoveBoard<'a>,
+    ) -> impl Iterator<Item = Position> + 'a {
         position
             .positions_around()
-            .filter(|pos| board.board.get(*pos).is_negative_space)
+            .filter(|pos| board.is_negative_space(*pos))
             .filter(move |pos| !board.gated(1, position, *pos))
     }
 
@@ -226,13 +227,14 @@ impl Bug {
         //                               found  explored
         let mut state = TorusArray::new((false, false));
         state.set(position, (true, true));
+        let board = MidMoveBoard {
+            position_in_flight: position,
+            board,
+        };
         let mut found_pos = Vec::with_capacity(24);
         let mut unexplored = Vec::with_capacity(24);
         unexplored.push(position);
-        let mut my_board = board.clone();
-        my_board.board.get_mut(position).bug_stack.pop_piece();
-        my_board.mark_hex_unused(position);
-        Bug::ant_rec(&mut state, &mut found_pos, &mut unexplored, &my_board);
+        Bug::ant_rec(&mut state, &mut found_pos, &mut unexplored, &board);
         return found_pos;
     }
 
@@ -240,7 +242,7 @@ impl Bug {
         state: &mut TorusArray<(bool, bool)>,
         found_pos: &mut Vec<Position>,
         unexplored: &mut Vec<Position>,
-        board: &Board,
+        board: &MidMoveBoard,
     ) {
         while let Some(position) = unexplored.pop() {
             let (found, explored) = state.get(position);
@@ -250,7 +252,7 @@ impl Bug {
             }
             for pos in Bug::crawl_negative_space(position, board) {
                 let (found, explored) = state.get(pos);
-                if !explored && !found && board.board.get(pos).is_negative_space {
+                if !explored && !found && board.is_negative_space(pos) {
                     state.set(pos, (*found, true));
                     unexplored.push(pos);
                 }
@@ -370,7 +372,38 @@ impl Bug {
         Bug::crawl(position, board)
     }
 
+    fn spider_crawl(
+        last: Position,
+        current: Position,
+        board: &Board,
+    ) -> impl Iterator<Item = Position> + '_ {
+        board.positions_taken_around(current).flat_map(move |pos| {
+            let mut positions = vec![];
+            let (pos1, pos2) = current.common_adjacent_positions(pos);
+            if !board.gated(1, current, pos1) && !board.occupied(pos1) && pos1 != last {
+                positions.push(pos1);
+            }
+            if !board.gated(1, current, pos2) && !board.occupied(pos2) && pos2 != last {
+                positions.push(pos2);
+            }
+            positions
+        })
+    }
+
     fn spider_moves(position: Position, board: &Board) -> Vec<Position> {
+        // let mut res = Vec::new();
+        // for pos in Bug::crawl(position, board) {
+        //     for pos2 in Bug::spider_crawl(position, pos, board) {
+        //         for pos3 in Bug::spider_crawl(pos, pos2, board) {
+        //             if pos3 != position {
+        //                 res.push(pos3);
+        //             }
+        //         }
+        //     }
+        // }
+        // res.sort();
+        // res.dedup();
+        // res
         let mut moves = vec![vec![position]];
         let mut my_board = board.clone();
         for i in 0..3 {

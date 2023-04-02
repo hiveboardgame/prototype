@@ -43,6 +43,17 @@ impl Position {
         num
     }
 
+    pub fn is_neighbor(&self, to: Position) -> bool {
+        let diff = (
+            Self::wrap_around(to.q - self.q),
+            Self::wrap_around(to.r - self.r),
+        );
+        match diff {
+            (0, -1) | (0, 1) | (1, -1) | (-1, 1) | (-1, 0) | (1, 0) => true,
+            _ => false,
+        }
+    }
+
     // this implements "odd-r horizontal" which offsets odd rows to the right
     pub fn direction(&self, to: Position) -> Direction {
         let diff = (

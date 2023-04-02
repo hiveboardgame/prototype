@@ -34,6 +34,49 @@ pub struct Board {
     pub pinned: [bool; 48],
 }
 
+pub struct MidMoveBoard<'this> {
+    pub board: &'this Board,
+    pub position_in_flight: Position,
+}
+
+impl<'this> MidMoveBoard<'this> {
+    pub fn is_negative_space(&self, position: Position) -> bool {
+        if !self.get(position).bug_stack.is_empty() {
+            return false;
+        }
+        if position == self.position_in_flight {
+            return true;
+        }
+        if position.is_neighbor(self.position_in_flight) {
+            for pos_around in position.positions_around() {
+                if !self.get(pos_around).bug_stack.is_empty() {
+                    return true;
+                }
+            }
+            return false;
+        }
+        self.board.is_negative_space(position)
+    }
+
+    pub fn gated(&self, level: usize, from: Position, to: Position) -> bool {
+        let (pos1, pos2) = from.common_adjacent_positions(to);
+        let p1 = self.get(pos1);
+        let p2 = self.get(pos2);
+        if p1.bug_stack.is_empty() || p2.bug_stack.is_empty() {
+            return false;
+        }
+        p1.bug_stack.len() >= level && p2.bug_stack.len() >= level
+    }
+
+    pub fn get(&self, position: Position) -> Hex {
+        let mut hex = self.board.board.get(position).clone();
+        if position == self.position_in_flight {
+            hex.bug_stack.pop_piece();
+        }
+        hex
+    }
+}
+
 impl Default for Board {
     fn default() -> Self {
         Self::new()
@@ -409,7 +452,7 @@ impl Board {
         if self.occupied(position) {
             return false;
         }
-        // TODO maybe hand in state.turn and get rid of this 
+        // TODO maybe hand in state.turn and get rid of this
         let number_of_positions = self.all_taken_positions().count();
         if number_of_positions == 0 {
             return position == Position::initial_spawn_position();
@@ -424,7 +467,6 @@ impl Board {
 
     pub fn negative_space(&self) -> impl Iterator<Item = Position> + '_ {
         Self::all_positions().filter(move |pos| self.is_negative_space(*pos))
-
     }
 
     pub fn is_negative_space(&self, position: Position) -> bool {
