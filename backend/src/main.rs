@@ -7,8 +7,8 @@ mod server_error;
 mod static_files;
 mod websockets;
 
-use crate::api::user;
 use crate::api::game;
+use crate::api::user;
 use crate::config::ServerConfig;
 use crate::db::util::{get_pool, DbPool};
 
@@ -43,11 +43,15 @@ async fn main() -> std::io::Result<()> {
             .service(web::resource("/ws/").route(web::get().to(echo_ws)))
             .service(
                 web::scope("/api")
+                    .service(challenge::get_lobby_challenges)
                     .service(challenge::create_game_challenge)
+                    .service(challenge::get_game_challenge)
                     .service(challenge::accept_game_challenge)
                     .service(challenge::delete_game_challenge)
                     .service(game::play::game_play)
                     .service(user::get_user)
+                    .service(user::get_user_challenges)
+                    .service(user::get_user_games)
                     .service(user::create_user)
                     .service(user::create_guest_user),
             )

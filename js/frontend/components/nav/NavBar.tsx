@@ -11,7 +11,11 @@ import { Username } from './Username';
 
 const NavBarUsername = (props: NavBarProps) => {
   const { hideFinishProfile } = props;
-  const { user, incompleteProfile, signout } = usePlayer();
+  const { user, incompleteProfile, signout, isLoading } = usePlayer();
+
+  if (isLoading) {
+    return <Spinner />;
+  }
 
   if (user) {
     return <Username user={user} signout={signout} />;

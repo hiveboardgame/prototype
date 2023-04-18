@@ -1,11 +1,13 @@
-use crate::api::game::challenge::NewChallengeRequest;
+use crate::api::game::challenge::NewGameChallengeRequest;
 use crate::db::schema::{game_challenges, users};
 use crate::db::util::{get_conn, DbPool};
+use crate::extractors::auth::AuthenticatedUser;
 use crate::model::user::User;
 use chrono::prelude::*;
 use diesel::prelude::*;
 use diesel::result::Error;
 use diesel_async::RunQueryDsl;
+use serde::Serialize;
 use uuid::Uuid;
 
 #[derive(Insertable, Debug)]
@@ -16,10 +18,13 @@ struct NewGameChallenge {
     ranked: bool,
     public: bool,
     tournament_queen_rule: bool,
+    color_choice: String,
     created_at: DateTime<Utc>,
 }
 
-#[derive(Identifiable, Queryable, Debug)]
+#[derive(Associations, Identifiable, Queryable, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+#[diesel(belongs_to(User, foreign_key = challenger_uid))]
 #[diesel(table_name = game_challenges)]
 pub struct GameChallenge {
     pub id: Uuid,
@@ -28,18 +33,20 @@ pub struct GameChallenge {
     pub ranked: bool,
     pub public: bool,
     pub tournament_queen_rule: bool,
+    pub color_choice: String,
     pub created_at: DateTime<Utc>, // TODO: periodically cleanup expired challanges
 }
 
 impl GameChallenge {
     pub async fn create(
-        challenger_uid: &str,
-        game: &NewChallengeRequest,
+        challenger: &AuthenticatedUser,
+        game: &NewGameChallengeRequest,
         pool: &DbPool,
     ) -> Result<GameChallenge, Error> {
         let conn = &mut get_conn(pool).await?;
         let new_challenge = NewGameChallenge {
-            challenger_uid: challenger_uid.to_string(),
+            challenger_uid: challenger.uid.to_string(),
+            color_choice: game.color_choice.to_string(),
             game_type: game.game_type.to_string(),
             ranked: game.ranked,
             public: game.public,
@@ -49,6 +56,14 @@ impl GameChallenge {
         new_challenge
             .insert_into(game_challenges::table)
             .get_result(conn)
+            .await
+    }
+
+    pub async fn get_public(pool: &DbPool) -> Result<Vec<GameChallenge>, Error> {
+        let conn = &mut get_conn(pool).await?;
+        game_challenges::table
+            .filter(game_challenges::public.eq(true))
+            .get_results(conn)
             .await
     }
 

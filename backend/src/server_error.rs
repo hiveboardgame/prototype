@@ -1,4 +1,4 @@
-use crate::extractors::auth::AuthenticationError;
+use crate::{api::game::challenge::ChallengeError, extractors::auth::AuthenticationError};
 use actix_web::{error::ResponseError, http::StatusCode, HttpResponse};
 use diesel::result::Error as DieselError;
 use hive_lib::game_error::GameError;
@@ -19,8 +19,12 @@ pub enum ServerError {
     UserInputError { field: String, reason: String },
     #[error("Hive game error: {0}")]
     GameError(#[from] GameError),
+    #[error("Internal hive game error: {0}")]
+    InternalGameError(GameError),
     #[error("Database error: {0}")]
     DatabaseError(#[from] DieselError),
+    #[error("Challenge error: {0}")]
+    ChallengeError(#[from] ChallengeError),
     #[error("Unimplemented")]
     Unimplemented,
 }
@@ -29,6 +33,7 @@ impl ResponseError for ServerError {
     fn status_code(&self) -> StatusCode {
         match self {
             Self::GameError(_) => StatusCode::BAD_REQUEST,
+            Self::InternalGameError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             Self::AuthenticationError(err) => match err {
                 AuthenticationError::MissingToken => StatusCode::UNAUTHORIZED,
                 AuthenticationError::Forbidden => StatusCode::FORBIDDEN,
@@ -45,6 +50,10 @@ impl ResponseError for ServerError {
             Self::DatabaseError(err) => match err {
                 DieselError::NotFound => StatusCode::NOT_FOUND,
                 _ => StatusCode::INTERNAL_SERVER_ERROR,
+            },
+            Self::ChallengeError(err) => match err {
+                ChallengeError::MissingChallenger(_) => StatusCode::INTERNAL_SERVER_ERROR,
+                ChallengeError::OwnChallenge => StatusCode::BAD_REQUEST,
             },
             Self::Unimplemented => StatusCode::INTERNAL_SERVER_ERROR,
         }

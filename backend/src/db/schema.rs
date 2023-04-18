@@ -8,6 +8,7 @@ diesel::table! {
         ranked -> Bool,
         public -> Bool,
         tournament_queen_rule -> Bool,
+        color_choice -> Text,
         created_at -> Timestamptz,
     }
 }

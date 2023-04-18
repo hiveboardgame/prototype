@@ -2,9 +2,13 @@ use crate::db::schema::users;
 use crate::db::schema::users::dsl::users as users_table;
 use crate::db::util::{get_conn, DbPool};
 use crate::server_error::ServerError;
-use diesel::{result::Error, Identifiable, Insertable, QueryDsl, Queryable};
+use diesel::{
+    query_dsl::BelongingToDsl, result::Error, Identifiable, Insertable, QueryDsl, Queryable,
+};
 use diesel_async::RunQueryDsl;
 use serde::{Deserialize, Serialize};
+
+use super::challenge::GameChallenge;
 
 const MAX_USERNAME_LENGTH: usize = 40;
 const VALID_USERNAME_CHARS: &str = "-_";
@@ -44,7 +48,7 @@ fn validate_username(username: &str) -> Result<(), ServerError> {
     Ok(())
 }
 
-#[derive(Queryable, Identifiable, Insertable, Serialize, Deserialize, Debug)]
+#[derive(Queryable, Identifiable, Insertable, Serialize, Deserialize, Debug, Clone)]
 #[diesel(primary_key(uid))]
 pub struct User {
     uid: String,
@@ -72,5 +76,10 @@ impl User {
         let conn = &mut get_conn(pool).await?;
         self.insert_into(users_table).execute(conn).await?;
         Ok(())
+    }
+
+    pub async fn get_challenges(&self, pool: &DbPool) -> Result<Vec<GameChallenge>, Error> {
+        let conn = &mut get_conn(pool).await?;
+        GameChallenge::belonging_to(self).get_results(conn).await
     }
 }

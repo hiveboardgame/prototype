@@ -1,4 +1,4 @@
-import { getAuth, User as FirebaseUser } from '@firebase/auth';
+import { getAuth, User as FirebaseUser, onAuthStateChanged } from '@firebase/auth';
 import app from './db/app';
 import {
   createContext,
@@ -18,9 +18,10 @@ import { Game, getGameIsEnded, getGameIsStarted, getUserGames } from './game/gam
 import { createGuestUser, createUser, getUser } from '..';
 
 export interface PlayerContextProps {
+  isLoading: boolean;
   user: UserData | null;
+  authToken: string | null;
   incompleteProfile: boolean;
-  invitations: Game[];
   activeGames: Game[];
   completedGames: Game[];
   usernameChanged: (username: string) => Promise<void>;
@@ -29,7 +30,6 @@ export interface PlayerContextProps {
   signout: (redirect: string) => Promise<void>;
 }
 
-const auth = getAuth(app);
 const playerContext = createContext<PlayerContextProps>(defaultPlayerContext());
 
 const PlayerProvider = ({ children }: { children?: ReactNode }) => {
@@ -46,10 +46,12 @@ const usePlayer = () => {
 };
 
 function usePlayerState(): PlayerContextProps {
+  const auth = getAuth(app);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [user, setUser] = useState<UserData | null>(null);
+  const [authToken, setAuthToken] = useState<string | null>(null);
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [incompleteProfile, setIncompleteProfile] = useState<boolean>(false);
-  const [invitations, setInvitations] = useState<Game[]>([]);
   const [activeGames, setActiveGames] = useState<Game[]>([]);
   const [completedGames, setCompletedGames] = useState<Game[]>([]);
 
@@ -64,10 +66,8 @@ function usePlayerState(): PlayerContextProps {
           (game) => getGameIsStarted(game) && !getGameIsEnded(game)
         );
         const completedGames = games.filter((game) => getGameIsEnded(game));
-        const invitations = games.filter((game) => !getGameIsStarted(game));
         setActiveGames(activeGames);
         setCompletedGames(completedGames);
-        setInvitations(invitations);
       });
   }, [user]);
 
@@ -77,7 +77,7 @@ function usePlayerState(): PlayerContextProps {
     }
 
     // TODO: better error handling w/ helpful user-facing messages
-    setUser(await createUser(username));
+    setUser(await createUser(username, authToken));
     setIncompleteProfile(false);
   }
 
@@ -86,8 +86,11 @@ function usePlayerState(): PlayerContextProps {
       return;
     }
 
+    setIsLoading(false);
     const uid = firebaseUser.uid;
     const isGuest = firebaseUser.isAnonymous;
+    const token = await firebaseUser.getIdToken();
+    setAuthToken(token);
 
     // Check if a user already exists for this uid. If so, we're done.
     // Otherwise, either create a guest account or prompt for a username
@@ -95,11 +98,13 @@ function usePlayerState(): PlayerContextProps {
     if (user) {
       setUser(user);
     } else if (isGuest) {
-      setUser(await createGuestUser());
+      setUser(await createGuestUser(token));
     } else {
       setIncompleteProfile(true);
     }
   }
+
+  onAuthStateChanged(auth, setFirebaseUser)
 
   useEffect(() => {
     handleFirebaseUserChanged();
@@ -113,16 +118,14 @@ function usePlayerState(): PlayerContextProps {
     provider.setCustomParameters({
       prompt: 'select_account'
     });
-    const creds = await signInWithPopup(auth, provider);
-    setFirebaseUser(creds.user);
+    await signInWithPopup(auth, provider);
   };
 
   /**
    * Sign in anonymously.
    */
   const signInAsGuest = async () => {
-    const creds = await signInAnonymously(auth);
-    setFirebaseUser(creds.user);
+    await signInAnonymously(auth);
   }
 
   /**
@@ -137,7 +140,6 @@ function usePlayerState(): PlayerContextProps {
         setIncompleteProfile(false);
         setActiveGames([]);
         setCompletedGames([]);
-        setInvitations([]);
         if (redirect) { /* router.push(redirect) */ }
       })
       .catch((error) => {
@@ -146,11 +148,12 @@ function usePlayerState(): PlayerContextProps {
   };
 
   return {
+    isLoading,
     user,
+    authToken,
     incompleteProfile,
     activeGames,
     completedGames,
-    invitations,
     usernameChanged,
     signInWithGoogle,
     signInAsGuest,
@@ -161,11 +164,12 @@ function usePlayerState(): PlayerContextProps {
 function defaultPlayerContext(): PlayerContextProps {
   const message = 'Player context not properly initialized.';
   return {
+    isLoading: false,
     user: null,
+    authToken: null,
     incompleteProfile: false,
     activeGames: [],
     completedGames: [],
-    invitations: [],
     usernameChanged: (_) => Promise.reject(message),
     signInWithGoogle: () => Promise.reject(message),
     signInAsGuest: () => Promise.reject(message),
