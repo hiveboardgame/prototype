@@ -8,6 +8,7 @@ diesel::table! {
         ranked -> Bool,
         public -> Bool,
         tournament_queen_rule -> Bool,
+        color_choice -> Text,
         created_at -> Timestamptz,
     }
 }
@@ -44,4 +45,9 @@ diesel::joinable!(game_challenges -> users (challenger_uid));
 diesel::joinable!(games_users -> games (game_id));
 diesel::joinable!(games_users -> users (user_id));
 
-diesel::allow_tables_to_appear_in_same_query!(game_challenges, games, games_users, users,);
+diesel::allow_tables_to_appear_in_same_query!(
+    game_challenges,
+    games,
+    games_users,
+    users,
+);
