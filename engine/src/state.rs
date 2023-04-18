@@ -94,8 +94,8 @@ impl State {
     }
 
     fn update_history(&mut self, piece: Piece, target_position: Position) {
-        // if there's no piece on the board yet use "."
-        if self.board.all_taken_positions().count() == 1 {
+        // if it's the first played piece on the board yet use "."
+        if self.board.positions.into_iter().flatten().count() == 1 {
             self.history.record_move(piece.to_string(), ".".to_string());
             return;
         }

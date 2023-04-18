@@ -11,7 +11,6 @@ pub mod game_type;
 pub mod hex;
 pub mod history;
 pub mod last_turn;
-pub mod negative_space;
 pub mod piece;
 pub mod player;
 pub mod position;

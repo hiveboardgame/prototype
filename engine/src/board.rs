@@ -453,7 +453,7 @@ impl Board {
             return false;
         }
         // TODO maybe hand in state.turn and get rid of this
-        let number_of_positions = self.all_taken_positions().count();
+        let number_of_positions = self.positions.into_iter().flatten().count();
         if number_of_positions == 0 {
             return position == Position::initial_spawn_position();
         }

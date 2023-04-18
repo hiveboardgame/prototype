@@ -161,6 +161,7 @@ impl History {
         Ok(history)
     }
 
+    // TODO remove once DB is online
     pub fn write_move(&self, file_name: &str, turn: usize, board_move: String) {
         let mut file = OpenOptions::new()
             .append(true)
@@ -169,14 +170,6 @@ impl History {
         if let Err(e) = writeln!(file, "{turn}. {board_move}") {
             //TODO not sure what to do with this one
             panic!("{}", e);
-        }
-    }
-
-    pub fn write_file(&self, file_name: String) {
-        // TODO rewrite this to not open the file for every single line
-        for (i, (piece, pos)) in self.moves.iter().enumerate() {
-            let mov = format!("{piece} {pos}");
-            self.write_move(&file_name, i, mov);
         }
     }
 }
