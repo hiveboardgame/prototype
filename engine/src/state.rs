@@ -210,16 +210,21 @@ impl State {
     }
 
     pub fn check_board(&self) -> bool {
-        for r in 0..32 {
-            for q in 0..32 {
-                let pos = Position::new(q,r);
-                let hex = self.board.board.get(pos);
-                if false {
-                    println!("pos: {pos}");
-                    println!("{}", self.board);
-                }
-            }
-        }
-        true
+        // This function can be used to perform checks on the engine and for debugging engine
+        // issues on every turn
+        return true;
+        // for this remove the return true and then implement your check in the loop
+        // for r in 0..32 {
+        //     for q in 0..32 {
+        //         let pos = Position::new(q,r);
+        //         let hex = self.board.board.get(pos);
+        //         if false {
+        //             println!("pos: {pos}");
+        //             println!("hex: {hex:?}");
+        //             println!("{}", self.board);
+        //         }
+        //     }
+        // }
+        // true
     }
 }

@@ -1,5 +1,3 @@
-use fnv::FnvHashMap;
-
 use hive_lib::{
     bug::Bug, game_status::GameStatus, game_type::GameType, piece::Piece, position::Position,
     state::State,
@@ -23,7 +21,7 @@ pub struct GameResponse {
     #[serde_as(as = "Vec<(_, _)>")]
     moves: HashMap<String, Vec<Position>>,
     spawns: Vec<Position>,
-    reserve: FnvHashMap<Bug, i8>,
+    reserve: HashMap<Bug, i8>,
     history: Vec<(String, String)>,
 }
 
@@ -41,14 +39,14 @@ impl GameResponse {
             white_player,
             black_player,
             moves: GameResponse::moves_as_string(state.board.moves(state.turn_color)),
-            spawns: state.board.spawnable_positions(state.turn_color),
+            spawns: state.board.spawnable_positions(state.turn_color).collect::<Vec<_>>(),
             reserve: state.board.reserve(state.turn_color, state.game_type),
             history: state.history.moves.clone(),
         }
     }
 
     fn moves_as_string(
-        moves: FnvHashMap<(Piece, Position), Vec<Position>>,
+        moves: HashMap<(Piece, Position), Vec<Position>>,
     ) -> HashMap<String, Vec<Position>> {
         let mut mapped = HashMap::new();
         for ((piece, _pos), possible_pos) in moves.into_iter() {
