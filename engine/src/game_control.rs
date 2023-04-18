@@ -29,6 +29,6 @@ impl fmt::Display for GameControl {
             GameControl::TakebackOffer => "TakebackOffer",
             GameControl::TakebackReject => "TakebackReject",
         };
-        write!(f, "{}", game_control)
+        write!(f, "{game_control}")
     }
 }

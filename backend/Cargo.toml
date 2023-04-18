@@ -11,6 +11,7 @@ actix-cors = "*"
 actix-web = { version = "4.2.1" }
 actix-web-actors = "*"
 env_logger = "*"
+fnv = "1.0.3"
 log = "*"
 actix-files = "*"
 oauth2 = "4.2.3"

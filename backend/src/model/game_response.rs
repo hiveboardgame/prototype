@@ -1,3 +1,4 @@
+use crate::model::user::User;
 use hive_lib::{
     bug::Bug, game_status::GameStatus, game_type::GameType, piece::Piece, position::Position,
     state::State,
@@ -5,8 +6,6 @@ use hive_lib::{
 use serde::Serialize;
 use serde_with::serde_as;
 use std::collections::HashMap;
-
-use crate::model::user::User;
 
 #[serde_as]
 #[serde_with::skip_serializing_none]
@@ -39,9 +38,12 @@ impl GameResponse {
             turn: state.turn,
             white_player,
             black_player,
-            moves: GameResponse::moves_as_string(state.board.moves(&state.turn_color)),
-            spawns: state.board.spawnable_positions(&state.turn_color),
-            reserve: state.board.reserve(&state.turn_color, state.game_type),
+            moves: GameResponse::moves_as_string(state.board.moves(state.turn_color)),
+            spawns: state
+                .board
+                .spawnable_positions(state.turn_color)
+                .collect::<Vec<_>>(),
+            reserve: state.board.reserve(state.turn_color, state.game_type),
             history: state.history.moves.clone(),
         }
     }

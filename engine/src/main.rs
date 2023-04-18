@@ -1,21 +1,25 @@
 use hive_lib::game_error::GameError;
 use hive_lib::game_result::GameResult;
 use hive_lib::game_status::GameStatus;
+use hive_lib::game_type::GameType;
 use hive_lib::history::History;
 use hive_lib::state::State;
 use std::env;
 
 fn play_game_from_file(file_path: &str) -> Result<(), GameError> {
     let history = History::from_filepath(file_path)?;
-    let state = State::new_from_history(&history)?;
+    let mut state: State = State::new(GameType::default(), false);
+    for _ in 0..1 {
+        state = State::new_from_history(&history)?;
+    }
     if let GameStatus::Finished(GameResult::Winner(winner)) = state.game_status {
-        println!("State says {} won!", winner);
+        println!("State says {winner} won!");
     }
     if let GameStatus::Finished(GameResult::Draw) = state.game_status {
         println!("State says it's a draw");
     }
     if let GameResult::Winner(winner) = history.result {
-        println!("History says {} won!", winner);
+        println!("History says {winner} won!");
     }
     if let GameResult::Winner(hw) = history.result {
         if let GameStatus::Finished(GameResult::Winner(sw)) = state.game_status {
@@ -67,7 +71,7 @@ mod tests {
     fn test_play_games_from_valid_files() {
         for entry in fs::read_dir("./test_pgns/valid/").expect("Should be valid directory") {
             let entry = entry.expect("PGN").path().display().to_string();
-            println!("{}", entry);
+            println!("{entry}");
             assert!(play_game_from_file(&entry).is_ok());
         }
     }
@@ -75,7 +79,7 @@ mod tests {
     fn test_play_games_from_invalid_files() {
         for entry in fs::read_dir("./test_pgns/invalid/").expect("Should be valid directory") {
             let entry = entry.expect("PGN").path().display().to_string();
-            println!("{}", entry);
+            println!("{entry}");
             assert!(play_game_from_file(&entry).is_err());
         }
     }
