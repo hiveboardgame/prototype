@@ -1,4 +1,4 @@
-use crate::{bug_stack::BugStack};
+use crate::bug_stack::BugStack;
 
 #[derive(Clone, Debug, Copy, PartialEq, Eq)]
 pub struct Hex {
@@ -22,6 +22,12 @@ pub struct Hex {
 
     // what is actually at the current position
     pub bug_stack: BugStack,
+}
+
+impl Default for Hex {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Hex {

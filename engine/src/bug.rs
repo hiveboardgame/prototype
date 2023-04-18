@@ -235,7 +235,7 @@ impl Bug {
         let mut unexplored = Vec::with_capacity(24);
         unexplored.push(position);
         Bug::ant_rec(&mut state, &mut found_pos, &mut unexplored, &board);
-        return found_pos;
+        found_pos
     }
 
     fn ant_rec(
@@ -379,8 +379,10 @@ impl Bug {
         };
         let mut res = Vec::new();
         for pos1 in Bug::crawl_negative_space(position, &board) {
-            for pos2 in Bug::crawl_negative_space(pos1, &board).filter(move |pos| *pos != position) {
-                for pos3 in Bug::crawl_negative_space(pos2, &board).filter(move |pos| *pos != pos1) {
+            for pos2 in Bug::crawl_negative_space(pos1, &board).filter(move |pos| *pos != position)
+            {
+                for pos3 in Bug::crawl_negative_space(pos2, &board).filter(move |pos| *pos != pos1)
+                {
                     if pos3 != position {
                         res.push(pos3);
                     }

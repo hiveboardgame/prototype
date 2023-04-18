@@ -212,7 +212,7 @@ impl State {
     pub fn check_board(&self) -> bool {
         // This function can be used to perform checks on the engine and for debugging engine
         // issues on every turn
-        return true;
+        true
         // for this remove the return true and then implement your check in the loop
         // for r in 0..32 {
         //     for q in 0..32 {

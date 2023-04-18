@@ -69,7 +69,7 @@ impl<'this> MidMoveBoard<'this> {
     }
 
     pub fn get(&self, position: Position) -> Hex {
-        let mut hex = self.board.board.get(position).clone();
+        let mut hex = *self.board.board.get(position);
         if position == self.position_in_flight {
             hex.bug_stack.pop_piece();
         }
