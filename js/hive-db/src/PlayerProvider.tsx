@@ -47,13 +47,16 @@ const usePlayer = () => {
 
 function usePlayerState(): PlayerContextProps {
   const auth = getAuth(app);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [user, setUser] = useState<UserData | null>(null);
   const [authToken, setAuthToken] = useState<string | null>(null);
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [incompleteProfile, setIncompleteProfile] = useState<boolean>(false);
   const [activeGames, setActiveGames] = useState<Game[]>([]);
   const [completedGames, setCompletedGames] = useState<Game[]>([]);
+
+  // FIXME: until we can get handleFirebaseUserChanged to fire more reliably,
+  // isLoading will remain unused
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   /**
    * Handle a change to the player's games
@@ -81,12 +84,13 @@ function usePlayerState(): PlayerContextProps {
     setIncompleteProfile(false);
   }
 
+  // FIXME: for some reason, this fires twice when an already-logged-in user loads the page,
+  // once with firebaseUser set to null and the other with the correct user.
   async function handleFirebaseUserChanged() {
     if (!firebaseUser) {
       return;
     }
 
-    setIsLoading(false);
     const uid = firebaseUser.uid;
     const isGuest = firebaseUser.isAnonymous;
     const token = await firebaseUser.getIdToken();
@@ -104,7 +108,9 @@ function usePlayerState(): PlayerContextProps {
     }
   }
 
-  onAuthStateChanged(auth, setFirebaseUser)
+  useEffect(() => {
+    return onAuthStateChanged(auth, setFirebaseUser);
+  }, [])
 
   useEffect(() => {
     handleFirebaseUserChanged();
