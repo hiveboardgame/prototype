@@ -27,9 +27,9 @@ diesel::table! {
 }
 
 diesel::table! {
-    games_users (game_id, user_id) {
+    games_users (game_id, user_uid) {
         game_id -> Int4,
-        user_id -> Text,
+        user_uid -> Text,
     }
 }
 
@@ -43,7 +43,7 @@ diesel::table! {
 
 diesel::joinable!(game_challenges -> users (challenger_uid));
 diesel::joinable!(games_users -> games (game_id));
-diesel::joinable!(games_users -> users (user_id));
+diesel::joinable!(games_users -> users (user_uid));
 
 diesel::allow_tables_to_appear_in_same_query!(
     game_challenges,

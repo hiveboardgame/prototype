@@ -4,6 +4,8 @@ use crate::db::util::{get_conn, DbPool};
 use diesel::{prelude::*, result::Error, Identifiable, Insertable, QueryDsl, Queryable};
 use diesel_async::RunQueryDsl;
 use serde::{Deserialize, Serialize};
+use crate::model::games_users::GameUser;
+
 
 #[derive(Insertable, Debug)]
 #[diesel(table_name = games)]
@@ -35,7 +37,12 @@ pub struct Game {
 impl Game {
     pub async fn create(new_game: &NewGame, pool: &DbPool) -> Result<Game, Error> {
         let conn = &mut get_conn(pool).await?;
-        new_game.insert_into(games::table).get_result(conn).await
+        let game: Game = new_game.insert_into(games::table).get_result(conn).await?;
+        let game_user_white = GameUser::new(game.id, game.white_uid.clone());
+        game_user_white.insert(pool).await?;
+        let game_user_black = GameUser::new(game.id, game.black_uid.clone());
+        game_user_black.insert(pool).await?;
+        Ok(game)
     }
 
     pub async fn make_move(&self, board_move: String, pool: &DbPool) -> Result<Game, Error> {

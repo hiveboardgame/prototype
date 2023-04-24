@@ -10,6 +10,7 @@ use thiserror::Error;
 use uuid::Uuid;
 
 use crate::model::challenge::GameChallenge;
+use crate::model::game::{Game, NewGame};
 use crate::model::user::User;
 use crate::server_error::ServerError;
 use crate::{db::util::DbPool, extractors::auth::AuthenticatedUser};
@@ -55,7 +56,7 @@ impl FromStr for ColorChoice {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct NewGameChallengeRequest {
     // Whether this challenge should be listed publicly
@@ -167,9 +168,29 @@ pub async fn accept_game_challenge(
     if challenge.challenger_uid == auth_user.uid {
         return Err(ChallengeError::OwnChallenge.into());
     }
-    // TODO: delete the challenge, create a new game between auth_user and the
-    // challenger, and return the newly created game
-    Err(ServerError::Unimplemented)
+    let (white_uid, black_uid) = match challenge.color_choice.to_lowercase().as_str() {
+        "black" => (auth_user.uid, challenge.challenger_uid.clone()),
+        "white" => (challenge.challenger_uid.clone(), auth_user.uid),
+        _ => {
+            if rand::random() {
+                (challenge.challenger_uid.clone(), auth_user.uid)
+            } else {
+                (auth_user.uid, challenge.challenger_uid.clone())
+            }
+        }
+    };
+    let new_game = NewGame {
+        black_uid,
+        game_status: "NotStarted".to_string(),
+        game_type: challenge.game_type.clone(),
+        history: String::new(),
+        tournament_queen_rule: challenge.tournament_queen_rule.clone(),
+        turn: 0,
+        white_uid,
+    };
+    let game = Game::create(&new_game, &pool).await?;
+    challenge.delete(&pool).await?;
+    return Ok(HttpResponse::Ok().json(game));
 }
 
 #[delete("/game/challenge/{id}")]

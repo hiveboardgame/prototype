@@ -33,3 +33,4 @@ alcoholic_jwt = "4091.0.0"
 thiserror = "1.0.*"
 chrono = { version = "0.4.23", features = ["serde"] }
 names = { version = "0.14.0", default-features = false }
+rand = "0.8.5"
