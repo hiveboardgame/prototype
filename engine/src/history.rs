@@ -1,3 +1,4 @@
+use lazy_static::lazy_static;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -39,9 +40,9 @@ impl History {
 
     pub fn new_from_str(moves: String) -> Result<Self, GameError> {
         let mut history = History::new();
-        for mov in moves.split(";") {
+        for mov in moves.split(';') {
             let split = mov.split_whitespace().collect::<Vec<&str>>();
-            let piece = split.get(0).ok_or(GameError::ParsingError {
+            let piece = split.first().ok_or(GameError::ParsingError {
                 found: "NA".to_string(),
                 typ: "Piece".to_string(),
             })?;
@@ -54,8 +55,12 @@ impl History {
         Ok(history)
     }
 
-    pub fn record_move(&mut self, piece: &str, pos: &str) {
-        self.moves.push((piece.to_string(), pos.to_string()));
+    pub fn record_move<S1, S2>(&mut self, piece: S1, pos: S2)
+    where
+        S1: Into<String>,
+        S2: Into<String>,
+    {
+        self.moves.push((piece.into(), pos.into()));
     }
 
     fn parse_game_result(&mut self, str: &str) {
@@ -68,9 +73,11 @@ impl History {
     }
 
     fn parse_game_type(&mut self, line: &str) -> Result<(), GameError> {
-        let game_type = Regex::new(r#"\[GameType "(Base([+MLP]{2,4})?)"\]"#)
-            .expect("This regex should compile");
-        if let Some(caps) = game_type.captures(line) {
+        lazy_static! {
+            static ref GAME_TYPE: Regex = Regex::new(r#"\[GameType "(Base([+MLP]{2,4})?)"\]"#)
+                .expect("This regex should compile");
+        }
+        if let Some(caps) = GAME_TYPE.captures(line) {
             if let Some(mtch) = caps.get(1) {
                 self.game_type = mtch.as_str().parse()?;
             }
@@ -84,9 +91,11 @@ impl History {
     }
 
     fn parse_turn(&mut self, tokens: &[&str]) -> Result<(), GameError> {
-        let turn = Regex::new(r"\d+").expect("This regex should compile");
+        lazy_static! {
+            static ref TURN: Regex = Regex::new(r"\d+").expect("This regex should compile");
+        }
         if let Some(token) = tokens.first() {
-            if turn.is_match(token) {
+            if TURN.is_match(token) {
                 if let Some(piece) = tokens.get(1) {
                     if let Some(position) = tokens.get(2) {
                         self.moves.push((piece.to_string(), position.to_string()));
@@ -114,9 +123,16 @@ impl History {
 
     pub fn from_filepath(file_path: &str) -> Result<Self, GameError> {
         let mut history = History::new();
-        let header = Regex::new(r"\[.*").expect("This regex should compile");
-        let result = Regex::new(r"\[Result").expect("This regex should compile");
-        let game_type_line = Regex::new(r"\[GameType.*").expect("This regex should compile");
+        lazy_static! {
+            static ref HEADER: Regex = Regex::new(r"\[.*").expect("This regex should compile");
+        }
+        lazy_static! {
+            static ref RESULT: Regex = Regex::new(r"\[Result").expect("This regex should compile");
+        }
+        lazy_static! {
+            static ref GAME_TYPE_LINE: Regex =
+                Regex::new(r"\[GameType.*").expect("This regex should compile");
+        }
         match File::open(file_path) {
             Ok(file) => {
                 for line in io::BufReader::new(file).lines().flatten() {
@@ -124,15 +140,15 @@ impl History {
                         continue;
                     }
                     let tokens = line.split_whitespace().collect::<Vec<&str>>();
-                    if result.is_match(&line) {
+                    if RESULT.is_match(&line) {
                         if let Some(game_result) = tokens.get(1) {
                             history.parse_game_result(game_result);
                         }
                     }
-                    if game_type_line.is_match(&line) {
+                    if GAME_TYPE_LINE.is_match(&line) {
                         history.parse_game_type(&line)?;
                     }
-                    if header.is_match(&line) {
+                    if HEADER.is_match(&line) {
                         continue;
                     }
                     history.parse_turn(&tokens)?;
@@ -145,6 +161,7 @@ impl History {
         Ok(history)
     }
 
+    // TODO remove once DB is online
     pub fn write_move(&self, file_name: &str, turn: usize, board_move: String) {
         let mut file = OpenOptions::new()
             .append(true)
@@ -153,14 +170,6 @@ impl History {
         if let Err(e) = writeln!(file, "{turn}. {board_move}") {
             //TODO not sure what to do with this one
             panic!("{}", e);
-        }
-    }
-
-    pub fn write_file(&self, file_name: String) {
-        // TODO rewrite this to not open the file for every single line
-        for (i, (piece, pos)) in self.moves.iter().enumerate() {
-            let mov = format!("{piece} {pos}");
-            self.write_move(&file_name, i, mov);
         }
     }
 }

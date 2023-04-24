@@ -39,9 +39,12 @@ impl GameStateResponse {
             turn: state.turn,
             white_player: User::find_by_uid(pool, &game.white_uid).await?,
             black_player: User::find_by_uid(pool, &game.black_uid).await?,
-            moves: GameStateResponse::moves_as_string(state.board.moves(&state.turn_color)),
-            spawns: state.board.spawnable_positions(&state.turn_color),
-            reserve: state.board.reserve(&state.turn_color, state.game_type),
+            moves: GameStateResponse::moves_as_string(state.board.moves(state.turn_color)),
+            spawns: state
+                .board
+                .spawnable_positions(state.turn_color)
+                .collect::<Vec<_>>(),
+            reserve: state.board.reserve(state.turn_color, state.game_type),
             history: state.history.moves.clone(),
         })
     }

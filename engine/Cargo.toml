@@ -15,8 +15,15 @@ path = "src/main.rs" # replace bin.rs with name of your file
 [dependencies]
 lazy_static = "*"
 regex = "*"
-sha2 = "*"
-hex-literal = "*"
 serde_json = "*"
 serde = { version = "*", features = ["derive"] }
 thiserror = "*"
+bitfield-struct = "0.3"
+itertools = "0.10.5"
+
+[profile.release]
+debug = true
+
+[target.x86_64-unknown-linux-gnu]
+linker = "/usr/bin/clang"
+rustflags = ["-Clink-arg=-fuse-ld=lld", "-Clink-arg=-Wl,--no-rosegment"]
