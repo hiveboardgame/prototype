@@ -1,11 +1,10 @@
 use crate::db::schema::games;
 use crate::db::schema::games::dsl::*;
 use crate::db::util::{get_conn, DbPool};
+use crate::model::games_users::GameUser;
 use diesel::{prelude::*, result::Error, Identifiable, Insertable, QueryDsl, Queryable};
 use diesel_async::RunQueryDsl;
 use serde::{Deserialize, Serialize};
-use crate::model::games_users::GameUser;
-
 
 #[derive(Insertable, Debug)]
 #[diesel(table_name = games)]

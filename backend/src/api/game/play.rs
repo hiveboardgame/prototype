@@ -1,13 +1,10 @@
 use crate::{
-    api::game::game_state_response::GameStateResponse,
-    db::util::DbPool, model::game::Game, server_error::ServerError,
+    api::game::game_state_response::GameStateResponse, db::util::DbPool, model::game::Game,
+    server_error::ServerError,
 };
-use actix_web::web::{self, Json, Path};
 use actix_web::post;
-use hive_lib::{
-    game_control::GameControl, history::History, position::Position,
-    state::State,
-};
+use actix_web::web::{self, Json, Path};
+use hive_lib::{game_control::GameControl, history::History, position::Position, state::State};
 use serde::Deserialize;
 use serde::Serialize;
 use serde_with::serde_as;
