@@ -1,6 +1,6 @@
-use crate::db::schema::users::uid;
+
 use crate::extractors::auth::AuthenticatedUser;
-use crate::model::user::User;
+
 use crate::{
     api::game::game_state_response::GameStateResponse, db::util::DbPool, model::game::Game,
     server_error::ServerError,

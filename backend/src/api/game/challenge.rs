@@ -90,7 +90,7 @@ pub struct GameChallengeResponse {
 
 impl GameChallengeResponse {
     pub async fn from_model(challenge: &GameChallenge, pool: &DbPool) -> Result<Self, ServerError> {
-        let challenger = match challenge.get_challenger(&pool).await {
+        let challenger = match challenge.get_challenger(pool).await {
             Ok(challenger) => challenger,
             Err(diesel::result::Error::NotFound) => {
                 let uid = challenge.challenger_uid.clone();
@@ -108,11 +108,11 @@ impl GameChallengeResponse {
         let game_type: GameType = challenge
             .game_type
             .parse()
-            .map_err(|err| ServerError::InternalGameError(err))?;
+            .map_err(ServerError::InternalGameError)?;
         let color_choice: ColorChoice = challenge
             .color_choice
             .parse()
-            .map_err(|err| ServerError::InternalGameError(err))?;
+            .map_err(ServerError::InternalGameError)?;
         Ok(GameChallengeResponse {
             id: challenge.id,
             challenger,
@@ -184,13 +184,13 @@ pub async fn accept_game_challenge(
         game_status: "NotStarted".to_string(),
         game_type: challenge.game_type.clone(),
         history: String::new(),
-        tournament_queen_rule: challenge.tournament_queen_rule.clone(),
+        tournament_queen_rule: challenge.tournament_queen_rule,
         turn: 0,
         white_uid,
     };
     let game = Game::create(&new_game, &pool).await?;
     challenge.delete(&pool).await?;
-    return Ok(HttpResponse::Ok().json(game));
+    Ok(HttpResponse::Ok().json(game))
 }
 
 #[delete("/game/challenge/{id}")]

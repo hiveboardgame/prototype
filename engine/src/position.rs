@@ -48,7 +48,10 @@ impl Position {
             Self::wrap_around(to.q - self.q),
             Self::wrap_around(to.r - self.r),
         );
-        matches!(diff, (0, -1) | (0, 1) | (1, -1) | (-1, 1) | (-1, 0) | (1, 0))
+        matches!(
+            diff,
+            (0, -1) | (0, 1) | (1, -1) | (-1, 1) | (-1, 0) | (1, 0)
+        )
     }
 
     // this implements "odd-r horizontal" which offsets odd rows to the right
