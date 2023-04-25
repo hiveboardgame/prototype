@@ -34,6 +34,15 @@ impl FromStr for Piece {
                         order = ord;
                     }
                 }
+                match bug {
+                    Bug::Ant | Bug::Beetle | Bug::Grasshopper | Bug::Spider if order == 0 => {
+                        return Err(GameError::ParsingError {
+                            found: s.to_string(),
+                            typ: "piece".to_string(),
+                        })
+                    }
+                    _ => {}
+                }
                 return Ok(Piece::new_from(bug, color, order));
             }
         }

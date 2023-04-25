@@ -72,8 +72,7 @@ pub async fn get_user_games(
     uid: web::Path<String>,
     pool: web::Data<DbPool>,
 ) -> Result<HttpResponse, ServerError> {
-    let _user = User::find_by_uid(pool.get_ref(), uid.as_ref()).await?;
-    // TODO @leex actually return the user's games once that's implemented
-    // Ok(HttpResponse::Ok().json(user.get_games().await?))
-    Ok(HttpResponse::Ok().json(Vec::<u8>::new()))
+    let user = User::find_by_uid(pool.get_ref(), uid.as_ref()).await?;
+    let games = user.get_games(&pool).await?;
+    Ok(HttpResponse::Ok().json(games))
 }

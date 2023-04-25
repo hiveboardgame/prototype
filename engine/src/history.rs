@@ -43,8 +43,7 @@ impl History {
         if moves.is_empty() {
             return Ok(history);
         }
-        println!("Moves are {moves}");
-        for mov in moves.split(';') {
+        for mov in moves.split_terminator(';') {
             let split = mov.split_whitespace().collect::<Vec<&str>>();
             let piece = split.first().ok_or(GameError::ParsingError {
                 found: "NA".to_string(),
