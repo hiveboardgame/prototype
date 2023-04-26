@@ -35,7 +35,7 @@ pub async fn run(address: &str) -> Result<Server, std::io::Error> {
         .await
         .expect("failed to open connection to database");
 
-    let server =HttpServer::new(move || {
+    let server = HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(pool.clone()))
             .app_data(web::Data::new(config.clone()))
@@ -57,7 +57,6 @@ pub async fn run(address: &str) -> Result<Server, std::io::Error> {
                     .service(user::get_user_games)
                     .service(user::create_user)
                     .service(user::create_guest_user),
-
             )
             .service(static_files::static_file_service(
                 config.static_files_path.clone(),

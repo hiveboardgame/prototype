@@ -1,4 +1,3 @@
-
 use crate::extractors::auth::AuthenticatedUser;
 
 use crate::{

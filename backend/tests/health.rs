@@ -1,5 +1,7 @@
 async fn spawn_app() {
-    let server = backend::run("127.0.0.1:0").await.expect("Failed to bind address");
+    let server = backend::run("127.0.0.1:0")
+        .await
+        .expect("Failed to bind address");
     let _ = tokio::spawn(server);
 }
 
