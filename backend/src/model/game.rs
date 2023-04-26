@@ -15,6 +15,7 @@ pub struct NewGame {
     pub game_status: String,
     pub game_type: String,
     pub history: String,
+    pub ranked: bool,
     pub tournament_queen_rule: bool,
     pub turn: i32,
     pub white_uid: String, // uid of user
@@ -29,6 +30,7 @@ pub struct Game {
     pub game_status: String,
     pub game_type: String,
     pub history: String, //"piece pos;piece pos;piece pos;"
+    pub ranked: bool,
     pub tournament_queen_rule: bool,
     pub turn: i32,
     pub white_uid: String, // uid of user
@@ -63,7 +65,7 @@ impl Game {
             .get_result(conn)
             .await
     }
-
+    
     pub async fn get(other_id: i32, pool: &DbPool) -> Result<Game, Error> {
         let conn = &mut get_conn(pool).await?;
         games::table.find(other_id).first(conn).await
