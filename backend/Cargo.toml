@@ -3,6 +3,13 @@ name = "backend"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+path = "src/main.rs"
+name = "backend"
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
@@ -34,3 +41,6 @@ thiserror = "1.0.*"
 chrono = { version = "0.4.23", features = ["serde"] }
 names = { version = "0.14.0", default-features = false }
 rand = "0.8.5"
+
+[dev-dependencies]
+actix-rt = "2.8.0"
