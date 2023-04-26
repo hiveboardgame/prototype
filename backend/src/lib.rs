@@ -19,18 +19,18 @@ use actix_web_actors::ws;
 use api::game::challenge;
 use api::health;
 use websockets::echo::Echo;
+use std::net::TcpListener;
 
 /// WebSocket handshake and start `Echo` actor.
 async fn echo_ws(req: HttpRequest, stream: web::Payload) -> Result<HttpResponse, Error> {
     ws::start(Echo::new(), &req, stream)
 }
 
-pub async fn run(address: &str) -> Result<Server, std::io::Error> {
+pub async fn run(listener: TcpListener) -> Result<Server, std::io::Error> {
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
     let config = ServerConfig::from_env().expect("Not all env vars are set");
-
-    log::info!("starting HTTP server at http://127.0.0.1:8080");
-
+    let port = listener.local_addr().unwrap().port();
+    log::info!("starting HTTP server at http://127.0.0.1:{port}");
     let pool: DbPool = get_pool(&config.database_url)
         .await
         .expect("failed to open connection to database");
@@ -63,7 +63,7 @@ pub async fn run(address: &str) -> Result<Server, std::io::Error> {
             ))
     })
     .workers(4)
-    .bind(address)?
+    .listen(listener)?
     .run();
     Ok(server)
 }
