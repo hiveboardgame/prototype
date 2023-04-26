@@ -65,7 +65,7 @@ impl Game {
             .get_result(conn)
             .await
     }
-    
+
     pub async fn get(other_id: i32, pool: &DbPool) -> Result<Game, Error> {
         let conn = &mut get_conn(pool).await?;
         games::table.find(other_id).first(conn).await
