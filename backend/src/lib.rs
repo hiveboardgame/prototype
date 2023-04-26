@@ -25,7 +25,7 @@ async fn echo_ws(req: HttpRequest, stream: web::Payload) -> Result<HttpResponse,
     ws::start(Echo::new(), &req, stream)
 }
 
-pub async fn run() -> Result<Server, std::io::Error> {
+pub async fn run(address: &str) -> Result<Server, std::io::Error> {
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
     let config = ServerConfig::from_env().expect("Not all env vars are set");
 
@@ -64,7 +64,7 @@ pub async fn run() -> Result<Server, std::io::Error> {
             ))
     })
     .workers(4)
-    .bind(("0.0.0.0", 8080))?
+    .bind(address)?
     .run();
     Ok(server)
 }
