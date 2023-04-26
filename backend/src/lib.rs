@@ -18,8 +18,8 @@ use actix_web::{middleware, App, Error, HttpRequest, HttpResponse, HttpServer};
 use actix_web_actors::ws;
 use api::game::challenge;
 use api::health;
-use websockets::echo::Echo;
 use std::net::TcpListener;
+use websockets::echo::Echo;
 
 /// WebSocket handshake and start `Echo` actor.
 async fn echo_ws(req: HttpRequest, stream: web::Payload) -> Result<HttpResponse, Error> {

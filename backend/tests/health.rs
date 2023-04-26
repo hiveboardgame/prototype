@@ -7,7 +7,7 @@ async fn spawn_app() -> String {
         .await
         .expect("Failed to bind address");
     let _ = tokio::spawn(server);
-    format!("http://127.0.0.1:{port}") 
+    format!("http://127.0.0.1:{port}")
 }
 
 #[actix_rt::test]
@@ -16,7 +16,9 @@ async fn health_works() {
     let client = reqwest::Client::new();
     let response = client
         .get(&format!("{address}/api/health_check"))
-        .send().await.expect("Failed to execute health_check");
+        .send()
+        .await
+        .expect("Failed to execute health_check");
     assert!(response.status().is_success());
     assert_eq!(Some(0), response.content_length());
 }
