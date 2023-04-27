@@ -111,9 +111,12 @@ async fn handle_game_control(
             field: format!("{game_control}"),
             reason: "Not allowed".to_string(),
         })?
-    }    
-    if !request_color_matches(game_id, auth_user, game_control, pool).await?{
-        Err(ServerError::UserInputError { field: "game_control".to_string(), reason: "game control color and user color don't match".to_string() })?
+    }
+    if !request_color_matches(game_id, auth_user, game_control, pool).await? {
+        Err(ServerError::UserInputError {
+            field: "game_control".to_string(),
+            reason: "game control color and user color don't match".to_string(),
+        })?
     }
     match game_control {
         GameControl::Abort(_) => handle_abort(game_id, pool).await,
@@ -159,7 +162,7 @@ async fn handle_resign(
     let game = Game::get(game_id, pool).await?;
     let winner_color = Color::from(get_color(&game, auth_user, pool)?.opposite());
     let game = Game::get(game_id, pool).await?;
-   let history = History::new_from_str(game.history.clone())?;
+    let history = History::new_from_str(game.history.clone())?;
 
     let mut state = State::new_from_history(&history)?;
     state.game_status = GameStatus::Finished(GameResult::Winner(winner_color));
@@ -180,10 +183,7 @@ async fn request_color_matches(
     Ok(color == game_control.color())
 }
 
-async fn handle_abort(
-    game_id: i32,
-    pool: &DbPool,
-) -> Result<GameStateResponse, ServerError> {
+async fn handle_abort(game_id: i32, pool: &DbPool) -> Result<GameStateResponse, ServerError> {
     let game = Game::get(game_id, pool).await?;
     let history = History::new_from_str(game.history.clone())?;
     let state = State::new_from_history(&history)?;
