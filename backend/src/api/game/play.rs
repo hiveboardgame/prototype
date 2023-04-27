@@ -4,6 +4,7 @@ use crate::{
     api::game::game_state_response::GameStateResponse, db::util::DbPool, model::game::Game,
     server_error::ServerError,
 };
+use actix_web::HttpResponse;
 use actix_web::{
     post,
     web::{self, Json, Path},
@@ -23,7 +24,11 @@ pub enum PlayRequest {
     GameControl(GameControl),
 }
 
-fn get_uid(game: &Game, auth_user: AuthenticatedUser, pool: &DbPool) -> Result<String, ServerError>{
+fn get_uid(
+    game: &Game,
+    auth_user: AuthenticatedUser,
+    pool: &DbPool,
+) -> Result<String, ServerError> {
     if auth_user.authorize(&game.white_uid).is_ok() {
         return Ok(game.white_uid.clone());
     }
@@ -33,7 +38,11 @@ fn get_uid(game: &Game, auth_user: AuthenticatedUser, pool: &DbPool) -> Result<S
     Err(AuthenticationError::Forbidden)?
 }
 
-fn get_color(game: &Game, auth_user: AuthenticatedUser, pool: &DbPool) -> Result<Color, ServerError>{
+fn get_color(
+    game: &Game,
+    auth_user: AuthenticatedUser,
+    pool: &DbPool,
+) -> Result<Color, ServerError> {
     if auth_user.authorize(&game.white_uid).is_ok() {
         return Ok(Color::White);
     }
@@ -97,10 +106,36 @@ async fn handle_game_control(
     auth_user: AuthenticatedUser,
     pool: &DbPool,
 ) -> Result<GameStateResponse, ServerError> {
+    if !allowed_game_control(game_id, pool, game_control.clone()).await? {
+        Err(ServerError::UserInputError {
+            field: format!("{game_control}"),
+            reason: "Not allowed".to_string(),
+        })?
+    }    
+    if !request_color_matches(game_id, auth_user, game_control, pool).await?{
+        Err(ServerError::UserInputError { field: "game_control".to_string(), reason: "game control color and user color don't match".to_string() })?
+    }
     match game_control {
-        GameControl::Resign(color) => handle_resign(game_id, auth_user, pool).await,
-        GameControl::DrawOffer(color) => handle_draw_offer(game_id, auth_user, pool).await,
+        GameControl::Abort(_) => handle_abort(game_id, pool).await,
+        GameControl::Resign(_) => handle_resign(game_id, auth_user, pool).await,
+        GameControl::DrawOffer(_) => handle_draw_offer(game_id, auth_user, pool).await,
         _ => unimplemented!(),
+    }
+}
+
+// InProgress - all but abort
+// NotStarted - Abort
+// Change NotStarted to second move
+// Finished no game controls
+async fn allowed_game_control(
+    game_id: i32,
+    pool: &DbPool,
+    game_control: GameControl,
+) -> Result<bool, ServerError> {
+    let game = Game::get(game_id, pool).await?;
+    match game_control {
+        GameControl::Abort(_) => Ok(game.game_status == "NotStarted"),
+        _ => Ok(game.game_status == "InProgress"),
     }
 }
 
@@ -112,7 +147,7 @@ async fn handle_draw_offer(
     let game = Game::get(game_id, pool).await?;
     let color = get_color(&game, auth_user, pool)?;
     let history = History::new_from_str(game.history.clone())?;
-    let mut state = State::new_from_history(&history)?;
+    let state = State::new_from_history(&history)?;
     GameStateResponse::new_from(&game, &state, pool).await
 }
 
@@ -123,11 +158,35 @@ async fn handle_resign(
 ) -> Result<GameStateResponse, ServerError> {
     let game = Game::get(game_id, pool).await?;
     let winner_color = Color::from(get_color(&game, auth_user, pool)?.opposite());
-    let history = History::new_from_str(game.history.clone())?;
+    let game = Game::get(game_id, pool).await?;
+   let history = History::new_from_str(game.history.clone())?;
+
     let mut state = State::new_from_history(&history)?;
     state.game_status = GameStatus::Finished(GameResult::Winner(winner_color));
     if state.game_status.to_string() != game.game_status {
         game.set_status(state.game_status.clone(), pool).await?;
     }
+    GameStateResponse::new_from(&game, &state, pool).await
+}
+
+async fn request_color_matches(
+    game_id: i32,
+    auth_user: AuthenticatedUser,
+    game_control: GameControl,
+    pool: &DbPool,
+) -> Result<bool, ServerError> {
+    let game = Game::get(game_id, pool).await?;
+    let color = get_color(&game, auth_user, pool)?;
+    Ok(color == game_control.color())
+}
+
+async fn handle_abort(
+    game_id: i32,
+    pool: &DbPool,
+) -> Result<GameStateResponse, ServerError> {
+    let game = Game::get(game_id, pool).await?;
+    let history = History::new_from_str(game.history.clone())?;
+    let state = State::new_from_history(&history)?;
+    game.delete(pool).await?;
     GameStateResponse::new_from(&game, &state, pool).await
 }
