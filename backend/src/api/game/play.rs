@@ -1,4 +1,4 @@
-use crate::extractors::auth::AuthenticatedUser;
+use crate::extractors::auth::{AuthenticatedUser, AuthenticationError};
 
 use crate::{
     api::game::game_state_response::GameStateResponse, db::util::DbPool, model::game::Game,
@@ -21,6 +21,26 @@ use std::str::FromStr;
 pub enum PlayRequest {
     Turn((String, String)),
     GameControl(GameControl),
+}
+
+fn get_uid(game: &Game, auth_user: AuthenticatedUser, pool: &DbPool) -> Result<String, ServerError>{
+    if auth_user.authorize(&game.white_uid).is_ok() {
+        return Ok(game.white_uid.clone());
+    }
+    if auth_user.authorize(&game.black_uid).is_ok() {
+        return Ok(game.black_uid.clone());
+    }
+    Err(AuthenticationError::Forbidden)?
+}
+
+fn get_color(game: &Game, auth_user: AuthenticatedUser, pool: &DbPool) -> Result<Color, ServerError>{
+    if auth_user.authorize(&game.white_uid).is_ok() {
+        return Ok(Color::White);
+    }
+    if auth_user.authorize(&game.black_uid).is_ok() {
+        return Ok(Color::Black);
+    }
+    Err(AuthenticationError::Forbidden)?
 }
 
 async fn play_turn(
@@ -78,9 +98,22 @@ async fn handle_game_control(
     pool: &DbPool,
 ) -> Result<GameStateResponse, ServerError> {
     match game_control {
-        GameControl::Resign => handle_resign(game_id, auth_user, pool).await,
+        GameControl::Resign(color) => handle_resign(game_id, auth_user, pool).await,
+        GameControl::DrawOffer(color) => handle_draw_offer(game_id, auth_user, pool).await,
         _ => unimplemented!(),
     }
+}
+
+async fn handle_draw_offer(
+    game_id: i32,
+    auth_user: AuthenticatedUser,
+    pool: &DbPool,
+) -> Result<GameStateResponse, ServerError> {
+    let game = Game::get(game_id, pool).await?;
+    let color = get_color(&game, auth_user, pool)?;
+    let history = History::new_from_str(game.history.clone())?;
+    let mut state = State::new_from_history(&history)?;
+    GameStateResponse::new_from(&game, &state, pool).await
 }
 
 async fn handle_resign(
@@ -89,19 +122,10 @@ async fn handle_resign(
     pool: &DbPool,
 ) -> Result<GameStateResponse, ServerError> {
     let game = Game::get(game_id, pool).await?;
-    let mut winner_color: Option<Color> = None;
-    if auth_user.authorize(&game.white_uid).is_ok() {
-        winner_color = Some(Color::Black);
-    }
-    if auth_user.authorize(&game.black_uid).is_ok() {
-        winner_color = Some(Color::White);
-    }
-    if winner_color.is_none() {
-        auth_user.authorize(&game.black_uid)?
-    }
+    let winner_color = Color::from(get_color(&game, auth_user, pool)?.opposite());
     let history = History::new_from_str(game.history.clone())?;
     let mut state = State::new_from_history(&history)?;
-    state.game_status = GameStatus::Finished(GameResult::Winner(winner_color.unwrap()));
+    state.game_status = GameStatus::Finished(GameResult::Winner(winner_color));
     if state.game_status.to_string() != game.game_status {
         game.set_status(state.game_status.clone(), pool).await?;
     }

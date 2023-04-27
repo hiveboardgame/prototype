@@ -31,14 +31,35 @@ impl FromStr for GameStatus {
         match s {
             "NotStarted" => Ok(GameStatus::NotStarted),
             "InProgress" => Ok(GameStatus::InProgress),
-            "Finished(Winner(black))" => Ok(GameStatus::Finished(GameResult::Winner(Color::Black))),
-            "Finished(Winner(white))" => Ok(GameStatus::Finished(GameResult::Winner(Color::White))),
+            "Finished(Winner(b))" => Ok(GameStatus::Finished(GameResult::Winner(Color::Black))),
+            "Finished(Winner(w))" => Ok(GameStatus::Finished(GameResult::Winner(Color::White))),
             "Finished(Draw)" => Ok(GameStatus::Finished(GameResult::Draw)),
             "Finished(Unknown)" => Ok(GameStatus::Finished(GameResult::Unknown)),
             any => Err(GameError::ParsingError {
                 found: any.to_string(),
                 typ: "GameStatus string".to_string(),
             }),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn tests_game_status() {
+        for gc in [
+            GameStatus::NotStarted,
+            GameStatus::InProgress,
+            GameStatus::Finished(GameResult::Winner(Color::White)),
+            GameStatus::Finished(GameResult::Winner(Color::Black)),
+            GameStatus::Finished(GameResult::Draw),
+            GameStatus::Finished(GameResult::Unknown),
+        ]
+        .iter()
+        {
+            assert_eq!(Ok(gc.clone()), GameStatus::from_str(&format!("{gc}")));
         }
     }
 }
