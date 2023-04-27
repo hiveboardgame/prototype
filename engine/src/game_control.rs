@@ -2,7 +2,6 @@ use crate::color::Color;
 use crate::game_error::GameError;
 use serde::{Deserialize, Serialize};
 use std::fmt;
-use std::slice::Iter;
 use std::str::FromStr;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -16,7 +15,20 @@ pub enum GameControl {
     TakebackReject(Color),
     TakebackRequest(Color),
 }
-
+impl GameControl {
+    pub fn color(&self) -> Color {
+        match self {
+            GameControl::Abort(color) => color,
+            GameControl::DrawAccept(color) => color,
+            GameControl::DrawOffer(color) => color,
+            GameControl::DrawReject(color) => color,
+            GameControl::Resign(color) => color,
+            GameControl::TakebackAccept(color) => color,
+            GameControl::TakebackReject(color) => color,
+            GameControl::TakebackRequest(color) => color,
+        }.clone()
+    }
+}
 impl fmt::Display for GameControl {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let game_control = match self {
