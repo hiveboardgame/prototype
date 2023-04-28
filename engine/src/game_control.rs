@@ -27,7 +27,8 @@ impl GameControl {
             GameControl::TakebackAccept(color) => color,
             GameControl::TakebackReject(color) => color,
             GameControl::TakebackRequest(color) => color,
-        }.clone()
+        }
+        .clone()
     }
 }
 

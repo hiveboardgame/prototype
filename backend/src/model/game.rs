@@ -5,6 +5,7 @@ use crate::model::games_users::GameUser;
 use diesel::{prelude::*, result::Error, Identifiable, Insertable, QueryDsl, Queryable};
 use diesel_async::RunQueryDsl;
 use hive_lib::game_control::GameControl;
+use hive_lib::game_result::GameResult;
 use hive_lib::game_status::GameStatus;
 use serde::{Deserialize, Serialize};
 
@@ -50,14 +51,22 @@ impl Game {
         Ok(game)
     }
 
-    pub async fn make_move(&self, mut board_move: String, pool: &DbPool) -> Result<Game, Error> {
+    pub async fn make_move(
+        &self,
+        mut board_move: String,
+        new_game_status: String,
+        pool: &DbPool,
+    ) -> Result<Game, Error> {
         let conn = &mut get_conn(pool).await?;
         if board_move.chars().last().unwrap_or(' ') != ';' {
             board_move = format!("{board_move};");
         }
-
         diesel::update(games::table.find(self.id))
-            .set((history.eq(history.concat(board_move)), turn.eq(turn + 1)))
+            .set((
+                history.eq(history.concat(board_move)),
+                turn.eq(turn + 1),
+                game_status.eq(new_game_status),
+            ))
             .get_result(conn)
             .await
     }
@@ -71,6 +80,40 @@ impl Game {
         let game_control_string = format!("{}. {game_control};", self.turn);
         diesel::update(games::table.find(self.id))
             .set(game_control_history.eq(game_control_history.concat(game_control_string)))
+            .get_result(conn)
+            .await
+    }
+
+    pub async fn accept_takeback(
+        &self,
+        new_history: String,
+        new_game_status: String,
+        pool: &DbPool,
+    ) -> Result<Game, Error> {
+        let conn = &mut get_conn(pool).await?;
+
+        diesel::update(games::table.find(self.id))
+            .set((
+                history.eq(new_history),
+                turn.eq(turn - 1),
+                game_status.eq(new_game_status),
+            ))
+            .get_result(conn)
+            .await
+    }
+
+    pub async fn accept_draw(
+        &self,
+        game_control: GameControl,
+        pool: &DbPool,
+    ) -> Result<Game, Error> {
+        let conn = &mut get_conn(pool).await?;
+        let game_control_string = format!("{}. {game_control};", self.turn);
+        diesel::update(games::table.find(self.id))
+            .set((
+                game_control_history.eq(game_control_history.concat(game_control_string)),
+                game_status.eq(GameStatus::Finished(GameResult::Draw).to_string()),
+            ))
             .get_result(conn)
             .await
     }

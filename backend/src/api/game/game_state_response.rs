@@ -5,7 +5,7 @@ use crate::{
 };
 use hive_lib::{
     bug::Bug, game_status::GameStatus, game_type::GameType, piece::Piece, position::Position,
-    state::State,
+    state::State, history::History,
 };
 use serde::Serialize;
 use serde_with::serde_as;
@@ -30,6 +30,12 @@ pub struct GameStateResponse {
 }
 
 impl GameStateResponse {
+    pub async fn new_from_db(game: &Game, pool: &DbPool) -> Result<Self, ServerError> {
+        let history = History::new_from_str(game.history.clone())?;
+        let state = State::new_from_history(&history)?;
+        GameStateResponse::new_from(game, &state, pool).await
+    }
+
     pub async fn new_from(game: &Game, state: &State, pool: &DbPool) -> Result<Self, ServerError> {
         Ok(Self {
             game_id: game.id,
