@@ -184,6 +184,7 @@ pub async fn accept_game_challenge(
         game_status: "NotStarted".to_string(),
         game_type: challenge.game_type.clone(),
         history: String::new(),
+        game_control_history: String::new(),
         tournament_queen_rule: challenge.tournament_queen_rule,
         turn: 0,
         white_uid,

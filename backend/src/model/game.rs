@@ -4,6 +4,7 @@ use crate::db::util::{get_conn, DbPool};
 use crate::model::games_users::GameUser;
 use diesel::{prelude::*, result::Error, Identifiable, Insertable, QueryDsl, Queryable};
 use diesel_async::RunQueryDsl;
+use hive_lib::game_control::GameControl;
 use hive_lib::game_status::GameStatus;
 use serde::{Deserialize, Serialize};
 
@@ -15,6 +16,7 @@ pub struct NewGame {
     pub game_status: String,
     pub game_type: String,
     pub history: String,
+    pub game_control_history: String,
     pub ranked: bool,
     pub tournament_queen_rule: bool,
     pub turn: i32,
@@ -30,6 +32,7 @@ pub struct Game {
     pub game_status: String,
     pub game_type: String,
     pub history: String, //"piece pos;piece pos;piece pos;"
+    pub game_control_history: String,
     pub ranked: bool,
     pub tournament_queen_rule: bool,
     pub turn: i32,
@@ -52,8 +55,22 @@ impl Game {
         if board_move.chars().last().unwrap_or(' ') != ';' {
             board_move = format!("{board_move};");
         }
+
         diesel::update(games::table.find(self.id))
-            .set(history.eq(history.concat(board_move)))
+            .set((history.eq(history.concat(board_move)), turn.eq(turn + 1)))
+            .get_result(conn)
+            .await
+    }
+
+    pub async fn write_game_control(
+        &self,
+        game_control: GameControl,
+        pool: &DbPool,
+    ) -> Result<Game, Error> {
+        let conn = &mut get_conn(pool).await?;
+        let game_control_string = format!("{}. {game_control};", self.turn);
+        diesel::update(games::table.find(self.id))
+            .set(game_control_history.eq(game_control_history.concat(game_control_string)))
             .get_result(conn)
             .await
     }

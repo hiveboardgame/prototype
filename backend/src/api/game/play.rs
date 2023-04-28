@@ -23,11 +23,7 @@ pub enum PlayRequest {
     GameControl(GameControl),
 }
 
-fn get_uid(
-    game: &Game,
-    auth_user: AuthenticatedUser,
-    pool: &DbPool,
-) -> Result<String, ServerError> {
+fn get_uid(game: &Game, auth_user: AuthenticatedUser) -> Result<String, ServerError> {
     if auth_user.authorize(&game.white_uid).is_ok() {
         return Ok(game.white_uid.clone());
     }
@@ -37,11 +33,7 @@ fn get_uid(
     Err(AuthenticationError::Forbidden)?
 }
 
-fn get_color(
-    game: &Game,
-    auth_user: AuthenticatedUser,
-    pool: &DbPool,
-) -> Result<Color, ServerError> {
+fn get_color(game: &Game, auth_user: AuthenticatedUser) -> Result<Color, ServerError> {
     if auth_user.authorize(&game.white_uid).is_ok() {
         return Ok(Color::White);
     }
@@ -58,7 +50,7 @@ async fn play_turn(
     auth_user: AuthenticatedUser,
     pool: &DbPool,
 ) -> Result<GameStateResponse, ServerError> {
-    let game = Game::get(game_id, pool).await?;
+    let mut game = Game::get(game_id, pool).await?;
     if game.turn % 2 == 0 {
         auth_user.authorize(&game.white_uid)?;
     } else {
@@ -147,7 +139,7 @@ async fn handle_draw_offer(
     pool: &DbPool,
 ) -> Result<GameStateResponse, ServerError> {
     let game = Game::get(game_id, pool).await?;
-    let color = get_color(&game, auth_user, pool)?;
+    let color = get_color(&game, auth_user)?;
     let history = History::new_from_str(game.history.clone())?;
     let state = State::new_from_history(&history)?;
     GameStateResponse::new_from(&game, &state, pool).await
@@ -159,7 +151,7 @@ async fn handle_resign(
     pool: &DbPool,
 ) -> Result<GameStateResponse, ServerError> {
     let game = Game::get(game_id, pool).await?;
-    let winner_color = Color::from(get_color(&game, auth_user, pool)?.opposite());
+    let winner_color = Color::from(get_color(&game, auth_user)?.opposite());
     let game = Game::get(game_id, pool).await?;
     let history = History::new_from_str(game.history.clone())?;
 
@@ -178,7 +170,7 @@ async fn request_color_matches(
     pool: &DbPool,
 ) -> Result<bool, ServerError> {
     let game = Game::get(game_id, pool).await?;
-    let color = get_color(&game, auth_user, pool)?;
+    let color = get_color(&game, auth_user)?;
     Ok(color == game_control.color())
 }
 

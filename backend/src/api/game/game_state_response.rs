@@ -9,7 +9,7 @@ use hive_lib::{
 };
 use serde::Serialize;
 use serde_with::serde_as;
-use std::collections::HashMap;
+use std::{collections::HashMap, str::FromStr};
 
 #[serde_as]
 #[serde_with::skip_serializing_none]
@@ -34,7 +34,7 @@ impl GameStateResponse {
         Ok(Self {
             game_id: game.id,
             game_status: state.game_status.clone(),
-            game_type: state.game_type,
+            game_type: GameType::from_str(&game.game_type)?,
             tournament_queen_rule: state.tournament,
             turn: state.turn,
             white_player: User::find_by_uid(pool, &game.white_uid).await?,
