@@ -4,7 +4,6 @@ use crate::{
     api::game::game_state_response::GameStateResponse, db::util::DbPool, model::game::Game,
     server_error::ServerError,
 };
-use actix_web::HttpResponse;
 use actix_web::{
     post,
     web::{self, Json, Path},
@@ -88,7 +87,7 @@ pub async fn game_play(
     pool: web::Data<DbPool>,
 ) -> Result<Json<GameStateResponse>, ServerError> {
     let game_id = path.into_inner();
-    // TODO make sure the game isn't finished
+    // TODO: make sure the game isn't finished
     let resp = match play_request.clone() {
         PlayRequest::Turn((piece, pos)) => {
             play_turn(game_id, piece, pos, auth_user, pool.as_ref()).await
@@ -112,7 +111,7 @@ async fn handle_game_control(
             reason: "Not allowed".to_string(),
         })?
     }
-    if !request_color_matches(game_id, auth_user, game_control, pool).await? {
+    if !request_color_matches(game_id, auth_user.clone(), game_control.clone(), pool).await? {
         Err(ServerError::UserInputError {
             field: "game_control".to_string(),
             reason: "game control color and user color don't match".to_string(),
@@ -175,7 +174,7 @@ async fn handle_resign(
 async fn request_color_matches(
     game_id: i32,
     auth_user: AuthenticatedUser,
-    game_control: GameControl,
+    game_control: hive_lib::game_control::GameControl,
     pool: &DbPool,
 ) -> Result<bool, ServerError> {
     let game = Game::get(game_id, pool).await?;
@@ -188,5 +187,6 @@ async fn handle_abort(game_id: i32, pool: &DbPool) -> Result<GameStateResponse, 
     let history = History::new_from_str(game.history.clone())?;
     let state = State::new_from_history(&history)?;
     game.delete(pool).await?;
+    // WARN: this a bit hacky, we are returning a game that we just deleted...
     GameStateResponse::new_from(&game, &state, pool).await
 }

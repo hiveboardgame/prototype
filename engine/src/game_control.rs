@@ -15,6 +15,7 @@ pub enum GameControl {
     TakebackReject(Color),
     TakebackRequest(Color),
 }
+
 impl GameControl {
     pub fn color(&self) -> Color {
         match self {
@@ -29,6 +30,7 @@ impl GameControl {
         }.clone()
     }
 }
+
 impl fmt::Display for GameControl {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let game_control = match self {

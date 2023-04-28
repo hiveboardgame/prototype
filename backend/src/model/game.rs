@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Insertable, Debug)]
 #[diesel(table_name = games)]
-// TODO use our types
+// TODO: use our types
 pub struct NewGame {
     pub black_uid: String, // uid of user
     pub game_status: String,

@@ -27,6 +27,7 @@ pub enum AuthenticationError {
     InternalError(String),
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct AuthenticatedUser {
     pub uid: String,
 }
