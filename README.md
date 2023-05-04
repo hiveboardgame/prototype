@@ -10,6 +10,7 @@ Hive prototype, lihive meets rust backend
         * Google
         * Anonymous
 * a Postgres database
+* [Diesel CLI](https://diesel.rs/guides/getting-started#installing-diesel-cli)
 
 ## Running locally
 
@@ -40,21 +41,26 @@ FIREBASE_JWT_ISSUER=       # this should be "https://securetoken.google.com/<pro
 STATIC_FILES_PATH=./dist   # we'll set this up in a moment
 ```
 
-4. Run the Diesel migrations, if you haven't already:
+5. Create the static files directory
+```
+mkdir backend/dist
+```
+
+6. Run the Diesel migrations, if you haven't already:
 
 ```
 $ cd backend
 $ diesel migration run
 ```
 
-5. Run the backend server:
+7. Run the backend server:
 
 ```
 $ cd backend
 $ cargo run
 ```
 
-6. Go to `http://localhost:3000` (the nextjs dev server's url)
+8. Go to `http://localhost:3000` (the nextjs dev server's url)
 
 ## Previous works
 [lihive frontend](https://github.com/atdyer/lihive) by [atdyer](https://github.com/atdyer/lihive)
