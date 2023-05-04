@@ -141,7 +141,8 @@ export function eachDropDirection(
   return eachDirection((direction) => {
     const neighbor = relativeHexCoordinate(coordinate, direction);
     const neighborStack = getStack(board, neighbor) || [];
-    return stack.length - neighborStack.length >= 2
+    return stack.length - neighborStack.length >= 2 &&
+      !isGated(board, coordinate, direction)
       ? iteratee(neighbor, neighborStack, direction)
       : true;
   });
