@@ -34,7 +34,8 @@ pub struct GameChallenge {
     pub public: bool,
     pub tournament_queen_rule: bool,
     pub color_choice: String,
-    pub created_at: DateTime<Utc>, // TODO: periodically cleanup expired challanges
+    // TODO: periodically cleanup expired challanges
+    pub created_at: DateTime<Utc>, 
 }
 
 impl GameChallenge {

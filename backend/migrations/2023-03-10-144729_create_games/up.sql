@@ -4,6 +4,8 @@ CREATE TABLE games (
   game_status TEXT NOT NULL,
   game_type TEXT NOT NULL,
   history TEXT NOT NULL,
+  game_control_history TEXT NOT NULL,
+  ranked BOOLEAN NOT NULL DEFAULT TRUE,
   tournament_queen_rule BOOLEAN NOT NULL DEFAULT TRUE,
   turn INTEGER NOT NULL DEFAULT 0,
   white_uid TEXT NOT NULL

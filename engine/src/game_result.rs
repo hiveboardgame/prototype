@@ -29,13 +29,32 @@ impl FromStr for GameResult {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "Unknown" => Ok(GameResult::Unknown),
-            "Winner(black)" => Ok(GameResult::Winner(Color::Black)),
-            "Winner(white)" => Ok(GameResult::Winner(Color::White)),
+            "Winner(b)" => Ok(GameResult::Winner(Color::Black)),
+            "Winner(w)" => Ok(GameResult::Winner(Color::White)),
             "Draw" => Ok(GameResult::Draw),
             any => Err(GameError::ParsingError {
                 found: any.to_string(),
                 typ: "GameResult string".to_string(),
             }),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn tests_game_status() {
+        for gc in [
+            GameResult::Winner(Color::White),
+            GameResult::Winner(Color::Black),
+            GameResult::Draw,
+            GameResult::Unknown,
+        ]
+        .iter()
+        {
+            assert_eq!(Ok(gc.clone()), GameResult::from_str(&format!("{gc}")));
         }
     }
 }

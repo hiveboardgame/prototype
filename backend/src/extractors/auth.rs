@@ -27,6 +27,7 @@ pub enum AuthenticationError {
     InternalError(String),
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct AuthenticatedUser {
     pub uid: String,
 }
@@ -76,6 +77,10 @@ async fn validate_and_fetch_uid(
     token: &str,
     config: &ServerConfig,
 ) -> Result<String, AuthenticationError> {
+    // this is a compile time directive and therefore will only show up in the test binary
+    if cfg!(test) {
+        return Ok(token.to_string());
+    }
     let jwks: JWKS = fetch_jwks().await.map_err(|err| {
         AuthenticationError::InternalError(format!("failed to fetch JWKS: {}", err))
     })?;
