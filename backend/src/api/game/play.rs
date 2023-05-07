@@ -1,5 +1,4 @@
 use crate::extractors::auth::{AuthenticatedUser, AuthenticationError};
-
 use crate::{
     api::game::game_state_response::GameStateResponse, db::util::DbPool, model::game::Game,
     server_error::ServerError,
