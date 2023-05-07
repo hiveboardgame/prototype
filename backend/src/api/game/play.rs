@@ -23,14 +23,31 @@ pub enum PlayRequest {
     GameControl(GameControl),
 }
 
-fn get_color(game: &Game, auth_user: &AuthenticatedUser) -> Result<Color, ServerError> {
-    if auth_user.authorize(&game.white_uid).is_ok() {
-        return Ok(Color::White);
+#[post("/game/{id:\\d+}/play")]
+pub async fn game_play(
+    path: Path<i32>,
+    play_request: Json<PlayRequest>,
+    auth_user: AuthenticatedUser,
+    pool: web::Data<DbPool>,
+) -> Result<Json<GameStateResponse>, ServerError> {
+    let game_id = path.into_inner();
+    let game = Game::get(game_id, &pool).await?;
+    if let GameStatus::Finished(_) = GameStatus::from_str(&game.game_status)? {
+        Err(ServerError::UserInputError {
+            field: format!("Can play: {play_request:?}"),
+            reason: "Game is finished".to_string(),
+        })?
     }
-    if auth_user.authorize(&game.black_uid).is_ok() {
-        return Ok(Color::Black);
-    }
-    Err(AuthenticationError::Forbidden)?
+    let resp = match play_request.clone() {
+        PlayRequest::Turn((piece, pos)) => {
+            play_turn(&game, piece, pos, auth_user, pool.as_ref()).await
+        }
+        PlayRequest::GameControl(game_control) => {
+            println!("GC req");
+            handle_game_control(&game, game_control, auth_user, pool.as_ref()).await
+        }
+    }?;
+    Ok(web::Json(resp))
 }
 
 async fn play_turn(
@@ -54,33 +71,8 @@ async fn play_turn(
     let board_move = format!("{piece} {pos}");
     game.make_move(board_move, state.game_status.to_string(), pool)
         .await?;
+    // TODO: handle game end, update rating
     GameStateResponse::new_from(&game, &state, pool).await
-}
-
-#[post("/game/{id:\\d+}/play")]
-pub async fn game_play(
-    path: Path<i32>,
-    play_request: Json<PlayRequest>,
-    auth_user: AuthenticatedUser,
-    pool: web::Data<DbPool>,
-) -> Result<Json<GameStateResponse>, ServerError> {
-    let game_id = path.into_inner();
-    let game = Game::get(game_id, &pool).await?;
-    if let GameStatus::Finished(_) = GameStatus::from_str(&game.game_status)? {
-        Err(ServerError::UserInputError {
-            field: format!("Can play: {play_request:?}"),
-            reason: "Game is finished".to_string(),
-        })?
-    }
-    let resp = match play_request.clone() {
-        PlayRequest::Turn((piece, pos)) => {
-            play_turn(&game, piece, pos, auth_user, pool.as_ref()).await
-        }
-        PlayRequest::GameControl(game_control) => {
-            handle_game_control(&game, game_control, auth_user, pool.as_ref()).await
-        }
-    }?;
-    Ok(web::Json(resp))
 }
 
 async fn handle_game_control(
@@ -120,6 +112,16 @@ async fn handle_game_control(
     }
 }
 
+fn get_color(game: &Game, auth_user: &AuthenticatedUser) -> Result<Color, ServerError> {
+    if auth_user.authorize(&game.white_uid).is_ok() {
+        return Ok(Color::White);
+    }
+    if auth_user.authorize(&game.black_uid).is_ok() {
+        return Ok(Color::Black);
+    }
+    Err(AuthenticationError::Forbidden)?
+}
+
 fn allowed_game_control(game: &Game, game_control: GameControl) -> Result<bool, ServerError> {
     match game_control {
         GameControl::Abort(_) => Ok(game.game_status == "NotStarted"),
@@ -134,19 +136,17 @@ fn fresh_game_control(game: &Game, game_control: GameControl) -> Result<bool, Se
     Ok(true)
 }
 
-fn last_game_control_is(game: &Game, game_control: GameControl) -> Result<bool, ServerError> {
-    if let Some(last) = game.game_control_history.split_terminator(";").last() {
-        return Ok(GameControl::from_str(last)? == game_control);
-    }
-    Ok(false)
-}
-
 fn last_game_control(game: &Game) -> Result<Option<GameControl>, ServerError> {
     if let Some(last) = game.game_control_history.split_terminator(";").last() {
-        return Ok(Some(GameControl::from_str(last)?));
+        println!("Last game control is: {}", last);
+        if let Some(gc) = last.split(" ").last() {
+            println!("game control part is is: {}", gc);
+            return Ok(Some(GameControl::from_str(gc)?));
+        }
     }
     Ok(None)
 }
+
 fn ensure_turn_greater_zero(game: &Game, game_control: &GameControl) -> Result<(), ServerError> {
     if game.turn == 0 {
         Err(ServerError::UserInputError {
@@ -159,20 +159,22 @@ fn ensure_turn_greater_zero(game: &Game, game_control: &GameControl) -> Result<(
 
 fn ensure_game_control(game: &Game, current_game_control: GameControl) -> Result<(), ServerError> {
     let opposite_color = Color::from(current_game_control.color().opposite());
-    let last_game_control = match current_game_control {
+    let should_be_gc = match current_game_control {
         GameControl::TakebackAccept(_) => GameControl::TakebackRequest(opposite_color),
         GameControl::TakebackReject(_) => GameControl::TakebackRequest(opposite_color),
         GameControl::DrawReject(_) => GameControl::DrawOffer(opposite_color),
         GameControl::DrawAccept(_) => GameControl::DrawOffer(opposite_color),
         _ => unreachable!(),
     };
-    if !last_game_control_is(&game, last_game_control)? {
-        Err(ServerError::UserInputError {
-            field: format!("{current_game_control}"),
-            reason: "Not allowed".to_string(),
-        })?
+    if let Some(last_gc) = last_game_control(&game)? {
+        if last_gc == should_be_gc {
+            return Ok(());
+        }
     }
-    Ok(())
+    Err(ServerError::UserInputError {
+        field: format!("{current_game_control}"),
+        reason: "Not allowed".to_string(),
+    })?
 }
 
 async fn handle_draw_offer(
@@ -249,7 +251,8 @@ async fn handle_takeback_accept(
     new_history.push_str(";");
     let history = History::new_from_str(new_history.clone())?;
     let state = State::new_from_history(&history)?;
-    game.accept_takeback(new_history, state.game_status.to_string(), pool).await?;
+    game.accept_takeback(new_history, state.game_status.to_string(), game_control, pool)
+        .await?;
     GameStateResponse::new_from(&game, &state, pool).await
 }
 
