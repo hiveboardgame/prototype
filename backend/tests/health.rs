@@ -1,6 +1,6 @@
 use std::net::TcpListener;
 
-async fn spawn_app() -> String {
+pub async fn spawn_app() -> String {
     let listener = TcpListener::bind("127.0.0.1:0").expect("Failed to bind to random port");
     let port = listener.local_addr().unwrap().port();
     let server = backend::run(listener)

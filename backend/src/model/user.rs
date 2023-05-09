@@ -77,8 +77,12 @@ impl User {
     }
 
     pub async fn insert(&self, pool: &DbPool) -> Result<(), Error> {
+        println!("in insert");
         let conn = &mut get_conn(pool).await?;
-        self.insert_into(users_table).execute(conn).await?;
+        println!("got conn");
+        let res = self.insert_into(users_table).execute(conn).await;
+        println!("res is: {:?}", res);
+        res?;
         Ok(())
     }
 

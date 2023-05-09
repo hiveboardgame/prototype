@@ -76,3 +76,34 @@ pub async fn get_user_games(
     let games = user.get_games(&pool).await?;
     Ok(HttpResponse::Ok().json(games))
 }
+
+#[cfg(test)]
+mod tests {
+    use actix_web::{
+        test::{self, TestRequest},
+        App,
+    };
+    use serial_test::serial;
+    use serde_json::json;
+    use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
+    pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("/migrations");
+
+    #[actix_rt::test]
+    #[serial]
+    async fn test_user() {
+        let mut app = test::init_service(crate::new_test_app().await).await;
+
+        let request_body = json!({
+        "username": "black",
+        });
+
+        let resp = TestRequest::post()
+            .uri("/users")
+            .set_json(&request_body)
+            .insert_header(("x-authentication", "black"))
+            .send_request(&mut app)
+            .await;
+
+        assert!(resp.status().is_success());
+    }
+}
