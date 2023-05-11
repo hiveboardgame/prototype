@@ -34,7 +34,10 @@ pub struct AuthenticatedUser {
 
 impl AuthenticatedUser {
     pub fn authorize(&self, expected_uid: &str) -> Result<(), AuthenticationError> {
-        println!("in authorize: self.uid: {}, expected_uid: {}", self.uid, expected_uid);
+        println!(
+            "in authorize: self.uid: {}, expected_uid: {}",
+            self.uid, expected_uid
+        );
         if self.uid == expected_uid {
             Ok(())
         } else {

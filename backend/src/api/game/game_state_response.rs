@@ -59,14 +59,14 @@ impl GameStateResponse {
 
     fn gc_history(gcs: &str) -> Vec<(i32, GameControl)> {
         let mut ret = Vec::new();
-        for gc_str in gcs.split_terminator(";") {
+        for gc_str in gcs.split_terminator(';') {
             let turn: i32;
             let gc: GameControl;
             println!("{gc_str}");
             // TODO: This code is janky
-            if let Some(turn_str) = gc_str.split(" ").nth(0) {
-                turn = turn_str.strip_suffix(".").unwrap().parse().unwrap();
-                if let Some(gc_token) = gc_str.split(" ").nth(1) {
+            if let Some(turn_str) = gc_str.split(' ').next() {
+                turn = turn_str.strip_suffix('.').unwrap().parse().unwrap();
+                if let Some(gc_token) = gc_str.split(' ').nth(1) {
                     gc = gc_token.parse().unwrap();
                     ret.push((turn, gc));
                 }

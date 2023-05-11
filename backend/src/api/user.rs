@@ -79,28 +79,19 @@ pub async fn get_user_games(
 
 #[cfg(test)]
 mod tests {
-    use actix_web::{
-        test::{self, TestRequest},
-        App,
-    };
-    use diesel::result::DatabaseErrorInformation;
-    use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
+    use actix_web::test::{self, TestRequest};
+
     use serde_json::json;
     use serial_test::serial;
-    use crate::config::ServerConfig;
-    use crate::db::util::get_conn;
-    use crate::get_pool;
-    use crate::DbPool;
-    use diesel::pg::PgConnection;
-    use diesel::Connection;
-    use crate::test::MyAsyncContext;
+
+    use crate::test::DBTest;
     use test_context::test_context;
 
-    #[test_context(MyAsyncContext)]
+    #[test_context(DBTest)]
     #[actix_rt::test]
     #[serial]
-    async fn test_user(ctx: &mut MyAsyncContext) {
-        let mut app = test::init_service(crate::new_test_app().await).await;
+    async fn test_user(_ctx: &mut DBTest) {
+        let app = test::init_service(crate::new_test_app().await).await;
         let request_body = json!({
             "username": "black",
         });
@@ -108,7 +99,7 @@ mod tests {
             .uri("/api/user")
             .set_json(&request_body)
             .insert_header(("x-authentication", "black"))
-            .send_request(&mut app)
+            .send_request(&app)
             .await;
         assert!(resp.status().is_success());
     }

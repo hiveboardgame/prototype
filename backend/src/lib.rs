@@ -59,14 +59,13 @@ pub async fn new_test_app() -> App<
         Error = Error,
     >,
 > {
-    env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
     let server_config = ServerConfig::from_test_env().expect("Not all env vars are set");
     let pool: DbPool = get_pool(&server_config.database_url)
         .await
         .expect("failed to open connection to database");
     App::new()
         .configure(config)
-        .app_data(web::Data::new(pool.clone()))
+        .app_data(web::Data::new(pool))
         .app_data(web::Data::new(server_config.clone()))
         .service(static_files::static_file_service(
             server_config.static_files_path.clone(),
@@ -100,3 +99,20 @@ pub async fn run(listener: TcpListener) -> Result<Server, std::io::Error> {
 
 #[cfg(test)]
 mod test;
+
+#[cfg(test)]
+mod tests {
+    use actix_web::test::{self, TestRequest};
+
+    #[actix_rt::test]
+    async fn health_check(){
+        let app = test::init_service(crate::new_test_app().await).await;
+
+        let resp = TestRequest::get()
+            .uri("/api/health_check")
+            .send_request(&app)
+            .await;
+
+        assert!(resp.status().is_success());
+    }
+}

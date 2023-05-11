@@ -89,17 +89,17 @@ impl Game {
 
     pub fn has_unanswered_game_control(&self) -> bool {
         if let Some(gc) = self.last_game_control() {
-            return match gc {
-                GameControl::TakebackRequest(_) | GameControl::DrawOffer(_) => true,
-                _ => false,
-            };
+            return matches!(
+                gc,
+                GameControl::TakebackRequest(_) | GameControl::DrawOffer(_)
+            );
         }
         false
     }
 
     pub fn last_game_control(&self) -> Option<GameControl> {
-        if let Some(last) = self.game_control_history.split_terminator(";").last() {
-            if let Some(gc) = last.split(" ").last() {
+        if let Some(last) = self.game_control_history.split_terminator(';').last() {
+            if let Some(gc) = last.split(' ').last() {
                 return Some(
                     GameControl::from_str(gc)
                         .expect("Could not get GameControl from game_control_history"),

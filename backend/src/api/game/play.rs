@@ -71,7 +71,7 @@ async fn play_turn(
     game.make_move(board_move, state.game_status.to_string(), pool)
         .await?;
     // TODO: handle game end, update rating
-    GameStateResponse::new_from(&game, &state, pool).await
+    GameStateResponse::new_from(game, &state, pool).await
 }
 
 async fn handle_game_control(
@@ -80,8 +80,8 @@ async fn handle_game_control(
     auth_user: AuthenticatedUser,
     pool: &DbPool,
 ) -> Result<GameStateResponse, ServerError> {
-    let auth_color = get_color(&game, &auth_user)?;
-    if !allowed_game_control(&game, game_control.clone())? {
+    let auth_color = get_color(game, &auth_user)?;
+    if !allowed_game_control(game, game_control.clone())? {
         Err(ServerError::UserInputError {
             field: format!("{game_control}"),
             reason: "Not allowed".to_string(),
@@ -93,7 +93,7 @@ async fn handle_game_control(
             reason: "game control color and user color don't match".to_string(),
         })?
     }
-    if !fresh_game_control(&game, game_control.clone())? {
+    if !fresh_game_control(game, game_control.clone())? {
         Err(ServerError::UserInputError {
             field: "game_control".to_string(),
             reason: "game control already seen".to_string(),
@@ -136,9 +136,9 @@ fn fresh_game_control(game: &Game, game_control: GameControl) -> Result<bool, Se
 }
 
 fn last_game_control(game: &Game) -> Result<Option<GameControl>, ServerError> {
-    if let Some(last) = game.game_control_history.split_terminator(";").last() {
+    if let Some(last) = game.game_control_history.split_terminator(';').last() {
         println!("Last game control is: {}", last);
-        if let Some(gc) = last.split(" ").last() {
+        if let Some(gc) = last.split(' ').last() {
             println!("game control part is is: {}", gc);
             return Ok(Some(GameControl::from_str(gc)?));
         }
@@ -165,7 +165,7 @@ fn ensure_game_control(game: &Game, current_game_control: GameControl) -> Result
         GameControl::DrawAccept(_) => GameControl::DrawOffer(opposite_color),
         _ => unreachable!(),
     };
-    if let Some(last_gc) = last_game_control(&game)? {
+    if let Some(last_gc) = last_game_control(game)? {
         if last_gc == should_be_gc {
             return Ok(());
         }
@@ -182,7 +182,7 @@ async fn handle_draw_offer(
     pool: &DbPool,
 ) -> Result<GameStateResponse, ServerError> {
     game.write_game_control(game_control, pool).await?;
-    GameStateResponse::new_from_db(&game, pool).await
+    GameStateResponse::new_from_db(game, pool).await
 }
 
 async fn handle_draw_reject(
@@ -190,9 +190,9 @@ async fn handle_draw_reject(
     game_control: GameControl,
     pool: &DbPool,
 ) -> Result<GameStateResponse, ServerError> {
-    ensure_game_control(&game, game_control.clone())?;
+    ensure_game_control(game, game_control.clone())?;
     game.write_game_control(game_control, pool).await?;
-    GameStateResponse::new_from_db(&game, pool).await
+    GameStateResponse::new_from_db(game, pool).await
 }
 
 async fn handle_draw_accept(
@@ -200,9 +200,9 @@ async fn handle_draw_accept(
     game_control: GameControl,
     pool: &DbPool,
 ) -> Result<GameStateResponse, ServerError> {
-    ensure_game_control(&game, game_control.clone())?;
+    ensure_game_control(game, game_control.clone())?;
     game.accept_draw(game_control, pool).await?;
-    GameStateResponse::new_from_db(&game, pool).await
+    GameStateResponse::new_from_db(game, pool).await
 }
 
 async fn handle_resign(
@@ -210,10 +210,10 @@ async fn handle_resign(
     auth_user: AuthenticatedUser,
     pool: &DbPool,
 ) -> Result<GameStateResponse, ServerError> {
-    let winner_color = Color::from(get_color(&game, &auth_user)?.opposite());
+    let winner_color = Color::from(get_color(game, &auth_user)?.opposite());
     game.set_status(GameStatus::Finished(GameResult::Winner(winner_color)), pool)
         .await?;
-    GameStateResponse::new_from_db(&game, pool).await
+    GameStateResponse::new_from_db(game, pool).await
 }
 
 fn request_color_matches(color: Color, game_control: hive_lib::game_control::GameControl) -> bool {
@@ -225,7 +225,7 @@ async fn handle_abort(game: &Game, pool: &DbPool) -> Result<GameStateResponse, S
     let state = State::new_from_history(&history)?;
     game.delete(pool).await?;
     // WARN: this a bit hacky, we are returning a game that we just deleted...
-    GameStateResponse::new_from(&game, &state, pool).await
+    GameStateResponse::new_from(game, &state, pool).await
 }
 
 async fn handle_takeback_request(
@@ -235,7 +235,7 @@ async fn handle_takeback_request(
 ) -> Result<GameStateResponse, ServerError> {
     ensure_turn_greater_zero(game, &game_control)?;
     game.write_game_control(game_control, pool).await?;
-    GameStateResponse::new_from_db(&game, pool).await
+    GameStateResponse::new_from_db(game, pool).await
 }
 
 async fn handle_takeback_accept(
@@ -243,16 +243,21 @@ async fn handle_takeback_accept(
     game_control: GameControl,
     pool: &DbPool,
 ) -> Result<GameStateResponse, ServerError> {
-    ensure_game_control(&game, game_control.clone())?;
-    let mut moves = game.history.split_terminator(";").collect::<Vec<_>>();
+    ensure_game_control(game, game_control.clone())?;
+    let mut moves = game.history.split_terminator(';').collect::<Vec<_>>();
     moves.pop();
     let mut new_history = moves.join(";");
-    new_history.push_str(";");
+    new_history.push(';');
     let history = History::new_from_str(new_history.clone())?;
     let state = State::new_from_history(&history)?;
-    game.accept_takeback(new_history, state.game_status.to_string(), game_control, pool)
-        .await?;
-    GameStateResponse::new_from(&game, &state, pool).await
+    game.accept_takeback(
+        new_history,
+        state.game_status.to_string(),
+        game_control,
+        pool,
+    )
+    .await?;
+    GameStateResponse::new_from(game, &state, pool).await
 }
 
 async fn handle_takeback_reject(
@@ -260,10 +265,10 @@ async fn handle_takeback_reject(
     game_control: GameControl,
     pool: &DbPool,
 ) -> Result<GameStateResponse, ServerError> {
-    ensure_game_control(&game, game_control.clone())?;
+    ensure_game_control(game, game_control.clone())?;
     game.write_game_control(game_control, pool).await?;
 
     let history = History::new_from_str(game.history.clone())?;
     let state = State::new_from_history(&history)?;
-    GameStateResponse::new_from(&game, &state, pool).await
+    GameStateResponse::new_from(game, &state, pool).await
 }
