@@ -69,12 +69,12 @@ impl State {
         piece: &str,
         position: &str,
     ) -> Result<(), GameError> {
-        // println!("{piece} {position}");
         match piece {
             "pass" => {
                 if self.board.moves(self.turn_color).is_empty() {
                     self.pass();
                 } else {
+                    println!("Moves are: {:?}", self.board.moves(self.turn_color));
                     return Err(GameError::InvalidMove {
                         piece: "NA".to_string(),
                         from: "NA".to_string(),
@@ -157,6 +157,7 @@ impl State {
             .board
             .is_valid_move(self.turn_color, piece, current_position, target_position)
         {
+            println!("Board state is: {}", self.board);
             err.update_reason("This move isn't valid.");
             return Err(err);
         }

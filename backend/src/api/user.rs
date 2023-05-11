@@ -83,18 +83,27 @@ mod tests {
         test::{self, TestRequest},
         App,
     };
-    use serial_test::serial;
-    use serde_json::json;
     use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
-    pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("/migrations");
+    use serde_json::json;
+    use serial_test::serial;
+    pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations");
+    use crate::config::ServerConfig;
+    use crate::get_pool;
+    use crate::DbPool;
 
     #[actix_rt::test]
     #[serial]
     async fn test_user() {
         let mut app = test::init_service(crate::new_test_app().await).await;
+        let server_config = ServerConfig::from_test_env().expect("Not all env vars are set");
+        let pool: DbPool = get_pool(&server_config.database_url)
+            .await
+            .expect("failed to open connection to database");
+        let conn = &mut get_conn(pool).await.unwrap();
+        EmbeddedMigrations::run(&conn).unwrap();
 
         let request_body = json!({
-        "username": "black",
+            "username": "black",
         });
 
         let resp = TestRequest::post()
