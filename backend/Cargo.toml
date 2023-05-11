@@ -43,7 +43,9 @@ thiserror = "1.0.*"
 chrono = { version = "0.4.23", features = ["serde"] }
 names = { version = "0.14.0", default-features = false }
 rand = "0.8.5"
+async-trait = "0.1.42"
 lazy_static = "1.4.0"
+test-context = "0.1.4"
 
 [dev-dependencies]
 actix-rt = "2.8.0"

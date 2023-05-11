@@ -83,36 +83,33 @@ mod tests {
         test::{self, TestRequest},
         App,
     };
+    use diesel::result::DatabaseErrorInformation;
     use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
     use serde_json::json;
     use serial_test::serial;
-    pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations");
     use crate::config::ServerConfig;
+    use crate::db::util::get_conn;
     use crate::get_pool;
     use crate::DbPool;
+    use diesel::pg::PgConnection;
+    use diesel::Connection;
+    use crate::test::MyAsyncContext;
+    use test_context::test_context;
 
+    #[test_context(MyAsyncContext)]
     #[actix_rt::test]
     #[serial]
-    async fn test_user() {
+    async fn test_user(ctx: &mut MyAsyncContext) {
         let mut app = test::init_service(crate::new_test_app().await).await;
-        let server_config = ServerConfig::from_test_env().expect("Not all env vars are set");
-        let pool: DbPool = get_pool(&server_config.database_url)
-            .await
-            .expect("failed to open connection to database");
-        let conn = &mut get_conn(pool).await.unwrap();
-        EmbeddedMigrations::run(&conn).unwrap();
-
         let request_body = json!({
             "username": "black",
         });
-
         let resp = TestRequest::post()
-            .uri("/users")
+            .uri("/api/user")
             .set_json(&request_body)
             .insert_header(("x-authentication", "black"))
             .send_request(&mut app)
             .await;
-
         assert!(resp.status().is_success());
     }
 }
