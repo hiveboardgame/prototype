@@ -218,9 +218,10 @@ impl Bug {
     }
 
     fn descend(position: Position, board: &Board) -> impl Iterator<Item = Position> + '_ {
-        board
-            .positions_available_around(position)
-            .filter(move |pos| !board.gated(board.level(position), position, *pos))
+        position.positions_around().filter(move |pos| {
+            board.level(*pos) < board.level(position)
+                && !board.gated(board.level(position), position, *pos)
+        })
     }
 
     fn ant_moves(position: Position, board: &Board) -> Vec<Position> {
@@ -230,6 +231,7 @@ impl Bug {
         let board = MidMoveBoard {
             position_in_flight: position,
             board,
+            piece_in_flight: board.top_piece(position).unwrap(),
         };
         let mut found_pos = Vec::with_capacity(24);
         let mut unexplored = Vec::with_capacity(24);
@@ -376,6 +378,7 @@ impl Bug {
         let board = MidMoveBoard {
             board,
             position_in_flight: position,
+            piece_in_flight: board.top_piece(position).unwrap(),
         };
         let mut res = Vec::new();
         for pos1 in Bug::crawl_negative_space(position, &board) {

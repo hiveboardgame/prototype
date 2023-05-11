@@ -69,12 +69,12 @@ impl State {
         piece: &str,
         position: &str,
     ) -> Result<(), GameError> {
-        // println!("{piece} {position}");
         match piece {
             "pass" => {
                 if self.board.moves(self.turn_color).is_empty() {
                     self.pass();
                 } else {
+                    println!("Moves are: {:?}", self.board.moves(self.turn_color));
                     return Err(GameError::InvalidMove {
                         piece: "NA".to_string(),
                         from: "NA".to_string(),
@@ -117,6 +117,7 @@ impl State {
     }
 
     fn next_turn(&mut self) {
+        self.game_status = GameStatus::InProgress;
         match self.board.game_result() {
             GameResult::Winner(color) => {
                 self.game_status = GameStatus::Finished(GameResult::Winner(color));
@@ -156,6 +157,7 @@ impl State {
             .board
             .is_valid_move(self.turn_color, piece, current_position, target_position)
         {
+            println!("Board state is: {}", self.board);
             err.update_reason("This move isn't valid.");
             return Err(err);
         }
@@ -198,6 +200,7 @@ impl State {
     }
 
     pub fn play_turn(&mut self, piece: Piece, target_position: Position) -> Result<(), GameError> {
+        // TODO check for GameStatus::Finished
         if self.board.piece_already_played(piece) {
             self.turn_move(piece, target_position)?
         } else {
