@@ -37,6 +37,7 @@ pub struct Board {
 pub struct MidMoveBoard<'this> {
     pub board: &'this Board,
     pub position_in_flight: Position,
+    pub piece_in_flight: Piece,
 }
 
 impl<'this> MidMoveBoard<'this> {
@@ -313,10 +314,12 @@ impl Board {
                     }
                     for (start_pos, target_positions) in Bug::available_moves(*pos, self) {
                         if let Some(piece) = self.top_piece(start_pos) {
-                            moves
-                                .entry((piece, start_pos))
-                                .or_default()
-                                .append(&mut target_positions.clone());
+                            if !target_positions.is_empty() {
+                                moves
+                                    .entry((piece, start_pos))
+                                    .or_default()
+                                    .append(&mut target_positions.clone());
+                            }
                         }
                     }
                 }
