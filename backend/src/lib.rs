@@ -105,7 +105,7 @@ mod tests {
     use actix_web::test::{self, TestRequest};
 
     #[actix_rt::test]
-    async fn health_check(){
+    async fn health_check() {
         let app = test::init_service(crate::new_test_app().await).await;
 
         let resp = TestRequest::get()

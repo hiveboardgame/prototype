@@ -18,7 +18,7 @@ pub enum GameControl {
 
 impl GameControl {
     pub fn color(&self) -> Color {
-        match self {
+        *match self {
             GameControl::Abort(color) => color,
             GameControl::DrawAccept(color) => color,
             GameControl::DrawOffer(color) => color,
@@ -28,7 +28,6 @@ impl GameControl {
             GameControl::TakebackReject(color) => color,
             GameControl::TakebackRequest(color) => color,
         }
-        .clone()
     }
 }
 

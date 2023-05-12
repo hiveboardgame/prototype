@@ -1,9 +1,9 @@
 use crate::game_error::GameError;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use std::fmt;
 use std::str::FromStr;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Copy, Default)]
+#[derive(Debug, Clone, Serialize, PartialEq, Eq, Copy, Default, serde_with::DeserializeFromStr)]
 pub enum GameType {
     #[default]
     Base,
@@ -38,13 +38,13 @@ impl FromStr for GameType {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "Base" => Ok(GameType::Base),
-            "Base+M" => Ok(GameType::M),
-            "Base+L" => Ok(GameType::L),
-            "Base+P" => Ok(GameType::P),
-            "Base+ML" => Ok(GameType::ML),
-            "Base+MP" => Ok(GameType::MP),
-            "Base+LP" => Ok(GameType::LP),
-            "Base+MLP" => Ok(GameType::MLP),
+            "Base+M" | "M" => Ok(GameType::M),
+            "Base+L" | "L" => Ok(GameType::L),
+            "Base+P" | "P" => Ok(GameType::P),
+            "Base+ML" | "ML" => Ok(GameType::ML),
+            "Base+MP" | "MP" => Ok(GameType::MP),
+            "Base+LP" | "LP" => Ok(GameType::LP),
+            "Base+MLP" | "MLP" => Ok(GameType::MLP),
             any => Err(GameError::ParsingError {
                 found: any.to_string(),
                 typ: "game type string".to_string(),

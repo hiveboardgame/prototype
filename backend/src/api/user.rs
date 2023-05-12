@@ -79,13 +79,14 @@ pub async fn get_user_games(
 
 #[cfg(test)]
 mod tests {
+    use crate::test::DBTest;
     use actix_web::test::{self, TestRequest};
-
     use serde_json::json;
     use serial_test::serial;
-
-    use crate::test::DBTest;
     use test_context::test_context;
+
+    // If you need to inspect the response to debug something use this:
+    // let body = test::read_body(resp).await;
 
     #[test_context(DBTest)]
     #[actix_rt::test]
@@ -101,6 +102,72 @@ mod tests {
             .insert_header(("x-authentication", "black"))
             .send_request(&app)
             .await;
-        assert!(resp.status().is_success());
+        assert!(resp.status().is_success(), "creating user failed");
+    }
+
+    #[test_context(DBTest)]
+    #[actix_rt::test]
+    #[serial]
+    async fn test_guest_user(_ctx: &mut DBTest) {
+        let app = test::init_service(crate::new_test_app().await).await;
+        let request_body = json!({
+            "username": "guest",
+        });
+        let resp = TestRequest::post()
+            .uri("/api/guest-user")
+            .set_json(&request_body)
+            .insert_header(("x-authentication", "guest"))
+            .send_request(&app)
+            .await;
+        assert!(resp.status().is_success(), "creating guest-user failed");
+    }
+
+    #[test_context(DBTest)]
+    #[actix_rt::test]
+    #[serial]
+    async fn test_user_challenges(_ctx: &mut DBTest) {
+        let app = test::init_service(crate::new_test_app().await).await;
+        let request_body = json!({
+            "username": "black",
+        });
+        let resp = TestRequest::post()
+            .uri("/api/user")
+            .set_json(&request_body)
+            .insert_header(("x-authentication", "black"))
+            .send_request(&app)
+            .await;
+        assert!(resp.status().is_success(), "user creation failed");
+
+        let resp = TestRequest::get()
+            .uri("/api/user/black/challenges")
+            .set_json(&request_body)
+            .insert_header(("x-authentication", "black"))
+            .send_request(&app)
+            .await;
+        assert!(resp.status().is_success(), "getting challenges failed");
+    }
+
+    #[test_context(DBTest)]
+    #[actix_rt::test]
+    #[serial]
+    async fn test_user_games(_ctx: &mut DBTest) {
+        let app = test::init_service(crate::new_test_app().await).await;
+
+        let request_body = json!({
+            "username": "black",
+        });
+        let resp = TestRequest::post()
+            .uri("/api/user")
+            .set_json(&request_body)
+            .insert_header(("x-authentication", "black"))
+            .send_request(&app)
+            .await;
+        assert!(resp.status().is_success(), "user creation failed");
+
+        let resp = TestRequest::get()
+            .uri("/api/user/black/games")
+            .send_request(&app)
+            .await;
+        assert!(resp.status().is_success(), "getting games failed");
     }
 }

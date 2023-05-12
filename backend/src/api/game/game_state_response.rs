@@ -7,27 +7,27 @@ use hive_lib::{
     bug::Bug, game_control::GameControl, game_status::GameStatus, game_type::GameType,
     history::History, piece::Piece, position::Position, state::State,
 };
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use std::{collections::HashMap, str::FromStr};
 
 #[serde_as]
 #[serde_with::skip_serializing_none]
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct GameStateResponse {
-    game_id: i32,
-    turn: usize,
-    game_status: GameStatus,
-    game_type: GameType,
-    tournament_queen_rule: bool,
-    white_player: User,
-    black_player: User,
+    pub game_id: i32,
+    pub turn: usize,
+    pub game_status: GameStatus,
+    pub game_type: GameType,
+    pub tournament_queen_rule: bool,
+    pub white_player: User,
+    pub black_player: User,
     #[serde_as(as = "Vec<(_, _)>")]
-    moves: HashMap<String, Vec<Position>>,
-    spawns: Vec<Position>,
-    reserve: HashMap<Bug, i8>,
-    history: Vec<(String, String)>,
-    game_control_history: Vec<(i32, GameControl)>,
+    pub moves: HashMap<String, Vec<Position>>,
+    pub spawns: Vec<Position>,
+    pub reserve: HashMap<Bug, i8>,
+    pub history: Vec<(String, String)>,
+    pub game_control_history: Vec<(i32, GameControl)>,
 }
 
 impl GameStateResponse {
@@ -51,7 +51,9 @@ impl GameStateResponse {
                 .board
                 .spawnable_positions(state.turn_color)
                 .collect::<Vec<_>>(),
-            reserve: state.board.reserve(state.turn_color, state.game_type),
+            reserve: state
+                .board
+                .reserve(state.turn_color, game.game_type.parse().unwrap()),
             history: state.history.moves.clone(),
             game_control_history: Self::gc_history(&game.game_control_history),
         })

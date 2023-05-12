@@ -218,9 +218,10 @@ impl Bug {
     }
 
     fn descend(position: Position, board: &Board) -> impl Iterator<Item = Position> + '_ {
-        position
-            .positions_around()
-            .filter(move |pos| board.level(*pos) < board.level(position) && !board.gated(board.level(position), position, *pos))
+        position.positions_around().filter(move |pos| {
+            board.level(*pos) < board.level(position)
+                && !board.gated(board.level(position), position, *pos)
+        })
     }
 
     fn ant_moves(position: Position, board: &Board) -> Vec<Position> {
@@ -564,7 +565,8 @@ mod tests {
             Position::new(0, 0).to(crate::direction::Direction::SE),
             Piece::new_from(Bug::Mosquito, Color::Black, 0),
         );
-        let positions = Bug::descend(Position::new(0, 0), &board); assert_eq!(positions.count(), 3);
+        let positions = Bug::descend(Position::new(0, 0), &board);
+        assert_eq!(positions.count(), 3);
         let mut positions = Bug::descend(Position::new(0, 0), &board);
         assert!(positions.any(|pos| pos == Position::new(0, 0).to(crate::direction::Direction::SW)));
         let mut positions = Bug::descend(Position::new(0, 0), &board);

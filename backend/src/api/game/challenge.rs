@@ -1,7 +1,11 @@
 use std::fmt::Display;
 use std::str::FromStr;
 
-use actix_web::{delete, get, post, web, HttpResponse};
+use actix_web::{
+    delete, get, post,
+    web::{self, Json},
+    HttpResponse,
+};
 use chrono::{DateTime, Utc};
 use hive_lib::game_error::GameError;
 use hive_lib::game_type::GameType;
@@ -9,11 +13,17 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use uuid::Uuid;
 
-use crate::model::challenge::GameChallenge;
-use crate::model::game::{Game, NewGame};
-use crate::model::user::User;
-use crate::server_error::ServerError;
-use crate::{db::util::DbPool, extractors::auth::AuthenticatedUser};
+use crate::{
+    db::util::DbPool,
+    extractors::auth::AuthenticatedUser,
+    game::game_state_response::GameStateResponse,
+    model::{
+        challenge::GameChallenge,
+        game::{Game, NewGame},
+        user::User,
+    },
+    server_error::ServerError,
+};
 
 #[derive(Error, Debug)]
 pub enum ChallengeError {
@@ -75,7 +85,7 @@ pub struct NewGameChallengeRequest {
     pub game_type: GameType,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct GameChallengeResponse {
     pub id: Uuid,
@@ -163,7 +173,7 @@ pub async fn accept_game_challenge(
     id: web::Path<Uuid>,
     auth_user: AuthenticatedUser,
     pool: web::Data<DbPool>,
-) -> Result<HttpResponse, ServerError> {
+) -> Result<Json<GameStateResponse>, ServerError> {
     let challenge = GameChallenge::get(&id, &pool).await?;
     if challenge.challenger_uid == auth_user.uid {
         return Err(ChallengeError::OwnChallenge.into());
@@ -192,7 +202,8 @@ pub async fn accept_game_challenge(
     };
     let game = Game::create(&new_game, &pool).await?;
     challenge.delete(&pool).await?;
-    Ok(HttpResponse::Ok().json(game))
+    let resp = GameStateResponse::new_from_db(&game, &pool).await?;
+    Ok(web::Json(resp))
 }
 
 #[delete("/game/challenge/{id}")]
@@ -205,4 +216,83 @@ pub async fn delete_game_challenge(
     auth_user.authorize(&challenge.challenger_uid)?;
     challenge.delete(&pool).await?;
     Ok(HttpResponse::NoContent().finish())
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::challenge::GameChallengeResponse;
+    use crate::{api::game::game_state_response::GameStateResponse, test::DBTest};
+    use actix_web::test::{self, TestRequest};
+    use serde_json::json;
+    use serial_test::serial;
+    use test_context::test_context;
+
+    #[test_context(DBTest)]
+    #[actix_rt::test]
+    #[serial]
+    async fn test_challenge(_ctx: &mut DBTest) {
+        let app = test::init_service(crate::new_test_app().await).await;
+        // make black user
+        let request_body = json!({
+            "username": "black",
+        });
+        let resp = TestRequest::post()
+            .uri("/api/user")
+            .set_json(&request_body)
+            .insert_header(("x-authentication", "black"))
+            .send_request(&app)
+            .await;
+        assert!(resp.status().is_success(), "creating user failed");
+
+        // make white user
+        let request_body = json!({
+            "username": "white",
+        });
+        let resp = TestRequest::post()
+            .uri("/api/user")
+            .set_json(&request_body)
+            .insert_header(("x-authentication", "white"))
+            .send_request(&app)
+            .await;
+        assert!(resp.status().is_success(), "creating user failed");
+
+        // black user creates challenge
+        let request_body = json!({
+            "public": true,
+            "ranked": false,
+            "tournamentQueenRule": true,
+            "gameType": "MLP",
+            "colorChoice": "Black"
+        });
+        let req = TestRequest::post()
+            .uri("/api/game/challenge")
+            .set_json(&request_body)
+            .insert_header(("x-authentication", "black"))
+            .to_request();
+        let game_challenge_response: GameChallengeResponse =
+            test::call_and_read_body_json(&app, req).await;
+
+        // white user accepts challenge
+        let req = TestRequest::post()
+            .uri(&format!(
+                "/api/game/challenge/{}/accept",
+                game_challenge_response.id
+            ))
+            .insert_header(("x-authentication", "white"))
+            .to_request();
+        let game: GameStateResponse = test::call_and_read_body_json(&app, req).await;
+        assert_eq!(game.game_id, 1);
+
+        let request_body = json!({
+            "Turn": ["wL", "."]
+        });
+        let req = TestRequest::post()
+            .uri("/api/game/1/play")
+            .set_json(&request_body)
+            .insert_header(("x-authentication", "white"))
+            .to_request();
+        let game: GameStateResponse = test::call_and_read_body_json(&app, req).await;
+        assert_eq!(game.turn, 1);
+        assert_eq!(game.history, vec![("wL".to_string(), ".".to_string())]);
+    }
 }

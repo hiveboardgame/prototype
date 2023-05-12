@@ -34,10 +34,6 @@ pub struct AuthenticatedUser {
 
 impl AuthenticatedUser {
     pub fn authorize(&self, expected_uid: &str) -> Result<(), AuthenticationError> {
-        println!(
-            "in authorize: self.uid: {}, expected_uid: {}",
-            self.uid, expected_uid
-        );
         if self.uid == expected_uid {
             Ok(())
         } else {
@@ -54,7 +50,6 @@ impl FromRequest for AuthenticatedUser {
         req: &actix_web::HttpRequest,
         _payload: &mut actix_web::dev::Payload,
     ) -> Self::Future {
-        println!("in from_request: req is: {req:?}");
         let req_clone = req.clone(); // req is cheap to clone, and we must to avoid lifetime issues
         Box::pin(async move {
             let config = req_clone
@@ -82,7 +77,6 @@ async fn validate_and_fetch_uid(
     token: &str,
     config: &ServerConfig,
 ) -> Result<String, AuthenticationError> {
-    println!("in validate_and_fetch_uid: token: {token:?}");
     // this is a compile time directive and therefore will only show up in the test binary
     if cfg!(test) {
         return Ok(token.to_string());

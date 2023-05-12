@@ -8,6 +8,8 @@ use test_context::AsyncTestContext;
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations");
 
+// env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
+
 pub struct DBTest {
     pub conn: PgConnection,
 }
