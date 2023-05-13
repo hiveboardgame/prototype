@@ -206,8 +206,8 @@ impl State {
         } else {
             self.turn_spawn(piece, target_position)?
         }
-        debug_assert!(self.check_board());
         self.update_history(piece, target_position);
+        debug_assert!(self.board.check());
         self.next_turn();
         Ok(())
     }
@@ -215,19 +215,24 @@ impl State {
     pub fn check_board(&self) -> bool {
         // This function can be used to perform checks on the engine and for debugging engine
         // issues on every turn
-        true
+        //true
         // for this remove the return true and then implement your check in the loop
-        // for r in 0..32 {
-        //     for q in 0..32 {
-        //         let pos = Position::new(q,r);
-        //         let hex = self.board.board.get(pos);
-        //         if false {
-        //             println!("pos: {pos}");
-        //             println!("hex: {hex:?}");
-        //             println!("{}", self.board);
-        //         }
-        //     }
-        // }
-        // true
+        for r in 0..32 {
+            for q in 0..32 {
+                let position = Position::new(q, r);
+                let hex = self.board.board.get(position);
+                let neighbor_count = self.board.neighbor_count.get(position).clone();
+                let counted = self.board.positions_taken_around(position).count();
+                if counted != neighbor_count as usize {
+                    println!("Calculated: {counted} hashed: {neighbor_count}");
+                    println!("turn: {}", self.turn);
+                    println!("pos: {position}");
+                    println!("hex: {hex:?}");
+                    println!("{}", self.board);
+                    return false;
+                }
+            }
+        }
+        true
     }
 }

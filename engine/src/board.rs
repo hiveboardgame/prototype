@@ -1,6 +1,6 @@
 use crate::{
     bug::Bug, bug_stack::BugStack, color::Color, game_error::GameError, game_result::GameResult,
-    game_type::GameType, hex::Hex, piece::Piece, position::Position, torus_array::TorusArray,
+    game_type::GameType, piece::Piece, position::Position, torus_array::TorusArray,
 };
 use itertools::Itertools;
 use std::collections::HashMap;
@@ -25,56 +25,50 @@ impl fmt::Display for DfsInfo {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct Board {
-    pub board: TorusArray<Hex>,
-    pub last_moved: Option<(Piece, Position)>,
-    pub positions: [Option<Position>; 48],
-    // Vec<HashSet<Position>>
-    pub pinned: [bool; 48],
-}
-
 pub struct MidMoveBoard<'this> {
     pub board: &'this Board,
     pub position_in_flight: Position,
+    pub neighbor_count: TorusArray<u8>,
     pub piece_in_flight: Piece,
 }
 
 impl<'this> MidMoveBoard<'this> {
+    pub fn new(board: &'this Board, piece: Piece, position: Position) -> Self {
+        let mut neighbor_count = board.neighbor_count.clone();
+        debug_assert_eq!(board.level(position), 1);
+
+        for pos in position.positions_around() {
+            *neighbor_count.get_mut(pos) -= 1;
+        }
+
+        Self {
+            board,
+            piece_in_flight: piece,
+            position_in_flight: position,
+            neighbor_count,
+        }
+    }
+
     pub fn is_negative_space(&self, position: Position) -> bool {
-        if !self.get(position).bug_stack.is_empty() {
-            return false;
-        }
-        if position == self.position_in_flight {
-            return true;
-        }
-        if position.is_neighbor(self.position_in_flight) {
-            for pos_around in position.positions_around() {
-                if !self.get(pos_around).bug_stack.is_empty() {
-                    return true;
-                }
-            }
-            return false;
-        }
-        self.board.is_negative_space(position)
+        *self.neighbor_count.get(position) > 0 && self.get(position).size == 0
     }
 
     pub fn gated(&self, level: usize, from: Position, to: Position) -> bool {
         let (pos1, pos2) = from.common_adjacent_positions(to);
         let p1 = self.get(pos1);
         let p2 = self.get(pos2);
-        if p1.bug_stack.is_empty() || p2.bug_stack.is_empty() {
+        if p1.is_empty() || p2.is_empty() {
             return false;
         }
-        p1.bug_stack.len() >= level && p2.bug_stack.len() >= level
+        p1.len() >= level && p2.len() >= level
     }
 
-    pub fn get(&self, position: Position) -> Hex {
-        let mut hex = *self.board.board.get(position);
+    pub fn get(&self, position: Position) -> BugStack {
+        let mut bug_stack = self.board.board.get(position).clone();
         if position == self.position_in_flight {
-            hex.bug_stack.pop_piece();
+            bug_stack.pop_piece();
         }
-        hex
+        bug_stack
     }
 }
 
@@ -84,10 +78,20 @@ impl Default for Board {
     }
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct Board {
+    pub board: TorusArray<BugStack>,
+    pub neighbor_count: TorusArray<u8>,
+    pub last_moved: Option<(Piece, Position)>,
+    pub positions: [Option<Position>; 48],
+    pinned: [bool; 48],
+}
+
 impl Board {
     pub fn new() -> Self {
         Self {
-            board: TorusArray::new(Hex::new()),
+            board: TorusArray::new(BugStack::new()),
+            neighbor_count: TorusArray::new(0),
             last_moved: None,
             positions: [None; 48],
             pinned: [false; 48],
@@ -140,42 +144,58 @@ impl Board {
                 reason: "Trying to move a covered piece".to_string(),
             });
         }
-        let hex = self.board.get_mut(current);
-        let piece = hex.bug_stack.pop_piece();
-        if hex.bug_stack.size == 0 {
-            self.mark_hex_unused(current);
-        }
+
+        let removed_piece = self.remove(current);
+        debug_assert_eq!(removed_piece, piece);
         self.insert(target, piece);
         Ok(())
     }
 
-    pub fn mark_hex_used(&mut self, position: Position) {
-        self.negative_space_add(position);
-    }
-
-    pub fn mark_hex_unused(&mut self, position: Position) {
-        self.negative_space_remove(position);
-    }
-
-    pub fn negative_space_remove(&mut self, position: Position) {
-        if !self.board.get(position).bug_stack.is_empty() {
-            return;
+    pub fn remove(&mut self, position: Position) -> Piece {
+        let bug_stack = self.board.get_mut(position);
+        let piece = bug_stack.pop_piece();
+        if bug_stack.is_empty() {
+            self.neighbor_count_remove(position);
         }
-        self.board.get_mut(position).set_is_negative_space(true);
-        for pos in position.positions_around() {
-            if !self.occupied(pos) && self.get_neighbor(pos).is_none() {
-                self.board.get_mut(pos).set_is_negative_space(false);
+        piece
+    }
+
+    pub fn check(&self) -> bool {
+        // This function can be used to perform checks on the engine and for debugging engine
+        // issues on every turn
+        //true
+        // for this remove the return true and then implement your check in the loop
+        for r in 0..32 {
+            for q in 0..32 {
+                let position = Position::new(q, r);
+                let hex = self.board.get(position);
+                let neighbor_count = self.neighbor_count.get(position).clone();
+                let counted = self.positions_taken_around(position).count();
+                if counted != neighbor_count as usize {
+                    println!("Calculated: {counted} hashed: {neighbor_count}");
+                    println!("pos: {position}");
+                    println!("hex: {hex:?}");
+                    println!("{}", self);
+                    return false;
+                }
             }
         }
+        true
     }
 
-    // This tracks negative space when a piece gets added to the position
-    pub fn negative_space_add(&mut self, position: Position) {
-        self.board.get_mut(position).set_is_negative_space(false);
+    pub fn slow_test_negative_space(&self, position: Position) -> bool {
+        !self.occupied(position) && self.has_neighbor(position)
+    }
+
+    pub fn neighbor_count_remove(&mut self, position: Position) {
         for pos in position.positions_around() {
-            if !self.occupied(pos) {
-                self.board.get_mut(pos).set_is_negative_space(true);
-            }
+            *self.neighbor_count.get_mut(pos) -= 1;
+        }
+    }
+
+    pub fn neighbor_count_add(&mut self, position: Position) {
+        for pos in position.positions_around() {
+            *self.neighbor_count.get_mut(pos) += 1;
         }
     }
 
@@ -185,7 +205,7 @@ impl Board {
     }
 
     pub fn level(&self, position: Position) -> usize {
-        self.board.get(position).bug_stack.size as usize
+        self.board.get(position).size as usize
     }
 
     pub fn piece_to_offset(&self, piece: Piece) -> usize {
@@ -203,15 +223,15 @@ impl Board {
         let position = self
             .position_of_piece(piece)
             .expect("Piece not found on board");
-        self.pinned[self.piece_to_offset(piece)] && self.board.get(position).bug_stack.size == 1
+        self.pinned[self.piece_to_offset(piece)] && self.board.get(position).size == 1
     }
 
     pub fn bottom_piece(&self, position: Position) -> Option<Piece> {
-        self.board.get(position).bug_stack.bottom_piece()
+        self.board.get(position).bottom_piece()
     }
 
     pub fn top_piece(&self, position: Position) -> Option<Piece> {
-        self.board.get(position).bug_stack.top_piece()
+        self.board.get(position).top_piece()
     }
 
     pub fn is_bottom_piece(&self, piece: Piece, position: Position) -> bool {
@@ -237,10 +257,10 @@ impl Board {
         let (pos1, pos2) = from.common_adjacent_positions(to);
         let p1 = self.board.get(pos1);
         let p2 = self.board.get(pos2);
-        if p1.bug_stack.is_empty() || p2.bug_stack.is_empty() {
+        if p1.is_empty() || p2.is_empty() {
             return false;
         }
-        p1.bug_stack.len() >= level && p2.bug_stack.len() >= level
+        p1.len() >= level && p2.len() >= level
     }
 
     pub fn get_neighbor(&self, position: Position) -> Option<(Piece, Position)> {
@@ -250,6 +270,15 @@ impl Board {
             }
         }
         None
+    }
+
+    fn has_neighbor(&self, position: Position) -> bool {
+        for pos in position.positions_around() {
+            if self.occupied(pos) {
+                return true;
+            }
+        }
+        false
     }
 
     pub fn positions_taken_around(
@@ -262,7 +291,7 @@ impl Board {
     }
 
     pub fn occupied(&self, position: Position) -> bool {
-        self.board.get(position).bug_stack.size > 0
+        self.board.get(position).size > 0
     }
 
     pub fn positions_available_around(
@@ -277,7 +306,7 @@ impl Board {
     pub fn neighbors(&self, position: Position) -> impl Iterator<Item = BugStack> + '_ {
         position.positions_around().filter_map(move |pos| {
             if self.occupied(pos) {
-                Some(self.board.get(pos).bug_stack)
+                Some(self.board.get(pos).clone())
             } else {
                 None
             }
@@ -420,7 +449,7 @@ impl Board {
     pub fn top_layer_neighbors(&self, position: Position) -> impl Iterator<Item = Piece> + '_ {
         position
             .positions_around()
-            .filter_map(|pos| self.board.get(pos).bug_stack.top_piece())
+            .filter_map(|pos| self.board.get(pos).top_piece())
     }
 
     pub fn spawns_left(&self, color: Color, game_type: GameType) -> bool {
@@ -473,14 +502,16 @@ impl Board {
     }
 
     pub fn is_negative_space(&self, position: Position) -> bool {
-        self.board.get(position).is_negative_space
+        !self.occupied(position) && *self.neighbor_count.get(position) > 0
     }
 
     pub fn insert(&mut self, position: Position, piece: Piece) {
         self.last_moved = Some((piece, position));
-        self.board.get_mut(position).bug_stack.push_piece(piece);
+        self.board.get_mut(position).push_piece(piece);
         self.set_position_of_piece(piece, position);
-        self.mark_hex_used(position);
+        if self.board.get(position).size == 1 {
+            self.neighbor_count_add(position)
+        }
         self.update_pinned();
     }
 
@@ -499,7 +530,7 @@ impl fmt::Display for Board {
                 write!(s, "  ")?;
             }
             for q in 0..BOARD_SIZE {
-                let bug_stack = self.board.get(Position::new(q - r / 2, r + 15)).bug_stack;
+                let bug_stack = self.board.get(Position::new(q - r / 2, r + 15));
                 if let Some(last) = bug_stack.top_piece() {
                     if last.to_string().len() < 3 {
                         write!(s, "{last}  ")?;
@@ -557,6 +588,7 @@ mod tests {
             Position::new(0, 0),
             Piece::new_from(Bug::Queen, Color::Black, 0),
         );
+        board.check();
         let mut bug_stack = BugStack::new();
         let piece = Piece::new_from(Bug::Ant, Color::Black, 1);
         bug_stack.push_piece(piece);
@@ -565,7 +597,7 @@ mod tests {
             bug_stack.top_piece().expect("This is in test neighbors"),
         );
         let neighbors = board.neighbors(Position::new(0, 0)).collect::<Vec<_>>();
-        assert_eq!(neighbors, vec![bug_stack]);
+        assert_eq!(neighbors, vec![bug_stack.clone()]);
 
         bug_stack.push_piece(Piece::new_from(Bug::Beetle, Color::Black, 1));
         board.insert(
@@ -573,14 +605,14 @@ mod tests {
             bug_stack.top_piece().expect("This is in test neighbors"),
         );
         let neighbors = board.neighbors(Position::new(0, 0)).collect::<Vec<_>>();
-        assert_eq!(neighbors, vec![bug_stack]);
+        assert_eq!(neighbors, vec![bug_stack.clone()]);
 
         board.insert(
             Position::new(0, 2),
             Piece::new_from(Bug::Ladybug, Color::Black, 0),
         );
         let neighbors = board.neighbors(Position::new(0, 0)).collect::<Vec<_>>();
-        assert_eq!(neighbors, vec![bug_stack]);
+        assert_eq!(neighbors, vec![bug_stack.clone()]);
     }
 
     #[test]

@@ -11,14 +11,15 @@ where
 
 impl<T> TorusArray<T>
 where
-    T: Clone + std::marker::Copy,
+    T: Clone,
 {
     pub fn new(default: T) -> Self {
         Self {
-            data: [default; (BOARD_SIZE * BOARD_SIZE) as usize],
+            data: [(); (BOARD_SIZE * BOARD_SIZE) as usize].map(|_| default.clone()),
             default,
         }
     }
+
 
     pub fn get(&self, position: Position) -> &T {
         self.data.get((position.r * BOARD_SIZE + position.q) as usize).expect(
