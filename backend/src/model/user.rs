@@ -55,8 +55,8 @@ fn validate_username(username: &str) -> Result<(), ServerError> {
 #[derive(Queryable, Identifiable, Insertable, Serialize, Deserialize, Debug, Clone)]
 #[diesel(primary_key(uid))]
 pub struct User {
-    uid: String,
-    username: String,
+    pub uid: String,
+    pub username: String,
     pub is_guest: bool,
 }
 

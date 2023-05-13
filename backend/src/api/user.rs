@@ -79,7 +79,7 @@ pub async fn get_user_games(
 
 #[cfg(test)]
 mod tests {
-    use crate::test::DBTest;
+    use crate::{make_user, make_guest_user, test::DBTest};
     use actix_web::test::{self, TestRequest};
     use serde_json::json;
     use serial_test::serial;
@@ -93,16 +93,9 @@ mod tests {
     #[serial]
     async fn test_user(_ctx: &mut DBTest) {
         let app = test::init_service(crate::new_test_app().await).await;
-        let request_body = json!({
-            "username": "black",
-        });
-        let resp = TestRequest::post()
-            .uri("/api/user")
-            .set_json(&request_body)
-            .insert_header(("x-authentication", "black"))
-            .send_request(&app)
-            .await;
-        assert!(resp.status().is_success(), "creating user failed");
+        let user = make_user!("black", &app);
+        assert_eq!(user.uid, "black");
+        assert_eq!(user.username, "black");
     }
 
     #[test_context(DBTest)]
@@ -110,16 +103,7 @@ mod tests {
     #[serial]
     async fn test_guest_user(_ctx: &mut DBTest) {
         let app = test::init_service(crate::new_test_app().await).await;
-        let request_body = json!({
-            "username": "guest",
-        });
-        let resp = TestRequest::post()
-            .uri("/api/guest-user")
-            .set_json(&request_body)
-            .insert_header(("x-authentication", "guest"))
-            .send_request(&app)
-            .await;
-        assert!(resp.status().is_success(), "creating guest-user failed");
+        make_guest_user!("guest", &app);
     }
 
     #[test_context(DBTest)]
@@ -127,20 +111,10 @@ mod tests {
     #[serial]
     async fn test_user_challenges(_ctx: &mut DBTest) {
         let app = test::init_service(crate::new_test_app().await).await;
-        let request_body = json!({
-            "username": "black",
-        });
-        let resp = TestRequest::post()
-            .uri("/api/user")
-            .set_json(&request_body)
-            .insert_header(("x-authentication", "black"))
-            .send_request(&app)
-            .await;
-        assert!(resp.status().is_success(), "user creation failed");
+        let user = make_user!("black", &app);
 
         let resp = TestRequest::get()
             .uri("/api/user/black/challenges")
-            .set_json(&request_body)
             .insert_header(("x-authentication", "black"))
             .send_request(&app)
             .await;
@@ -152,17 +126,7 @@ mod tests {
     #[serial]
     async fn test_user_games(_ctx: &mut DBTest) {
         let app = test::init_service(crate::new_test_app().await).await;
-
-        let request_body = json!({
-            "username": "black",
-        });
-        let resp = TestRequest::post()
-            .uri("/api/user")
-            .set_json(&request_body)
-            .insert_header(("x-authentication", "black"))
-            .send_request(&app)
-            .await;
-        assert!(resp.status().is_success(), "user creation failed");
+        let user = make_user!("black", &app);
 
         let resp = TestRequest::get()
             .uri("/api/user/black/games")

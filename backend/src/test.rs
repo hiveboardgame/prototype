@@ -29,3 +29,35 @@ impl AsyncTestContext for DBTest {
         self.conn.revert_all_migrations(MIGRATIONS).unwrap();
     }
 }
+
+#[macro_export]
+macro_rules! make_user {
+    ( $username:expr, $app:expr ) => {
+        {
+            let request_body = json!({
+                "username": $username,
+            });
+            let req = TestRequest::post()
+                .uri("/api/user")
+                .set_json(&request_body)
+                .insert_header(("x-authentication", $username))
+                .to_request();
+            let user: crate::model::user::User = test::call_and_read_body_json($app, req).await;
+            user
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! make_guest_user {
+    ( $username:expr, $app:expr ) => {{
+        let request_body = json!({ "username": $username });
+        let resp = TestRequest::post()
+            .uri("/api/guest-user")
+            .set_json(&request_body)
+            .insert_header(("x-authentication", $username))
+            .send_request($app)
+            .await;
+        assert!(resp.status().is_success(), "creating guest-user failed");
+    }};
+}
