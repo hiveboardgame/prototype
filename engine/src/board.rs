@@ -169,7 +169,7 @@ impl Board {
             for q in 0..32 {
                 let position = Position::new(q, r);
                 let hex = self.board.get(position);
-                let neighbor_count = self.neighbor_count.get(position).clone();
+                let neighbor_count = *self.neighbor_count.get(position);
                 let counted = self.positions_taken_around(position).count();
                 if counted != neighbor_count as usize {
                     println!("Calculated: {counted} hashed: {neighbor_count}");

@@ -20,7 +20,6 @@ where
         }
     }
 
-
     pub fn get(&self, position: Position) -> &T {
         self.data.get((position.r * BOARD_SIZE + position.q) as usize).expect(
             "TorusArray found an empty position, this should not happen because it's initialized",

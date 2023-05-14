@@ -79,7 +79,7 @@ pub async fn get_user_games(
 
 #[cfg(test)]
 mod tests {
-    use crate::{make_user, make_guest_user, test::DBTest};
+    use crate::{make_guest_user, make_user, test::DBTest};
     use actix_web::test::{self, TestRequest};
     use serde_json::json;
     use serial_test::serial;
@@ -111,7 +111,7 @@ mod tests {
     #[serial]
     async fn test_user_challenges(_ctx: &mut DBTest) {
         let app = test::init_service(crate::new_test_app().await).await;
-        let user = make_user!("black", &app);
+        let _user = make_user!("black", &app);
 
         let resp = TestRequest::get()
             .uri("/api/user/black/challenges")
@@ -126,7 +126,7 @@ mod tests {
     #[serial]
     async fn test_user_games(_ctx: &mut DBTest) {
         let app = test::init_service(crate::new_test_app().await).await;
-        let user = make_user!("black", &app);
+        let _user = make_user!("black", &app);
 
         let resp = TestRequest::get()
             .uri("/api/user/black/games")

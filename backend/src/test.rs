@@ -42,7 +42,7 @@ macro_rules! make_user {
                 .set_json(&request_body)
                 .insert_header(("x-authentication", $username))
                 .to_request();
-            let user: crate::model::user::User = test::call_and_read_body_json($app, req).await;
+            let user: $crate::model::user::User = test::call_and_read_body_json($app, req).await;
             user
         }
     };
