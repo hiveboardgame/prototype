@@ -1,6 +1,6 @@
 use crate::game_result::GameResult;
 
-#[derive(thiserror::Error, Debug, Clone)]
+#[derive(thiserror::Error, Debug, Clone, PartialEq)]
 pub enum GameError {
     #[error("Not a valid game move: {reason} turn: {turn}, piece: {piece}, current_position: {from}, target_position: {to}.")]
     InvalidMove {

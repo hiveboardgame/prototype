@@ -40,7 +40,10 @@ impl History {
 
     pub fn new_from_str(moves: String) -> Result<Self, GameError> {
         let mut history = History::new();
-        for mov in moves.split(';') {
+        if moves.is_empty() {
+            return Ok(history);
+        }
+        for mov in moves.split_terminator(';') {
             let split = mov.split_whitespace().collect::<Vec<&str>>();
             let piece = split.first().ok_or(GameError::ParsingError {
                 found: "NA".to_string(),

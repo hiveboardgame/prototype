@@ -34,23 +34,24 @@ pub struct GameChallenge {
     pub public: bool,
     pub tournament_queen_rule: bool,
     pub color_choice: String,
-    pub created_at: DateTime<Utc>, // TODO: periodically cleanup expired challanges
+    // TODO: periodically cleanup expired challanges
+    pub created_at: DateTime<Utc>,
 }
 
 impl GameChallenge {
     pub async fn create(
         challenger: &AuthenticatedUser,
-        game: &NewGameChallengeRequest,
+        challenge_request: &NewGameChallengeRequest,
         pool: &DbPool,
     ) -> Result<GameChallenge, Error> {
         let conn = &mut get_conn(pool).await?;
         let new_challenge = NewGameChallenge {
             challenger_uid: challenger.uid.to_string(),
-            color_choice: game.color_choice.to_string(),
-            game_type: game.game_type.to_string(),
-            ranked: game.ranked,
-            public: game.public,
-            tournament_queen_rule: game.tournament_queen_rule,
+            color_choice: challenge_request.color_choice.to_string(),
+            game_type: challenge_request.game_type.to_string(),
+            ranked: challenge_request.ranked,
+            public: challenge_request.public,
+            tournament_queen_rule: challenge_request.tournament_queen_rule,
             created_at: Utc::now(),
         };
         new_challenge

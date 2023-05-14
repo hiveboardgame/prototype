@@ -1,9 +1,13 @@
+use crate::db::schema::games;
 use crate::db::schema::users;
 use crate::db::schema::users::dsl::users as users_table;
 use crate::db::util::{get_conn, DbPool};
+use crate::model::game::Game;
+use crate::model::games_users::GameUser;
 use crate::server_error::ServerError;
 use diesel::{
     query_dsl::BelongingToDsl, result::Error, Identifiable, Insertable, QueryDsl, Queryable,
+    SelectableHelper,
 };
 use diesel_async::RunQueryDsl;
 use serde::{Deserialize, Serialize};
@@ -51,8 +55,8 @@ fn validate_username(username: &str) -> Result<(), ServerError> {
 #[derive(Queryable, Identifiable, Insertable, Serialize, Deserialize, Debug, Clone)]
 #[diesel(primary_key(uid))]
 pub struct User {
-    uid: String,
-    username: String,
+    pub uid: String,
+    pub username: String,
     pub is_guest: bool,
 }
 
@@ -81,5 +85,15 @@ impl User {
     pub async fn get_challenges(&self, pool: &DbPool) -> Result<Vec<GameChallenge>, Error> {
         let conn = &mut get_conn(pool).await?;
         GameChallenge::belonging_to(self).get_results(conn).await
+    }
+
+    pub async fn get_games(&self, pool: &DbPool) -> Result<Vec<Game>, Error> {
+        let conn = &mut get_conn(pool).await?;
+        println!("here");
+        GameUser::belonging_to(self)
+            .inner_join(games::table)
+            .select(Game::as_select())
+            .get_results(conn)
+            .await
     }
 }

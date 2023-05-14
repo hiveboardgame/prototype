@@ -228,11 +228,7 @@ impl Bug {
         //                               found  explored
         let mut state = TorusArray::new((false, false));
         state.set(position, (true, true));
-        let board = MidMoveBoard {
-            position_in_flight: position,
-            board,
-            piece_in_flight: board.top_piece(position).unwrap(),
-        };
+        let board = MidMoveBoard::new(board, board.top_piece(position).unwrap(), position);
         let mut found_pos = Vec::with_capacity(24);
         let mut unexplored = Vec::with_capacity(24);
         unexplored.push(position);
@@ -375,11 +371,7 @@ impl Bug {
     }
 
     fn spider_moves(position: Position, board: &Board) -> Vec<Position> {
-        let board = MidMoveBoard {
-            board,
-            position_in_flight: position,
-            piece_in_flight: board.top_piece(position).unwrap(),
-        };
+        let board = MidMoveBoard::new(board, board.top_piece(position).unwrap(), position);
         let mut res = Vec::new();
         for pos1 in Bug::crawl_negative_space(position, &board) {
             for pos2 in Bug::crawl_negative_space(pos1, &board).filter(move |pos| *pos != position)
@@ -659,8 +651,7 @@ mod tests {
             );
             let positions = Bug::crawl(Position::new(0, 1), &board).collect::<Vec<Position>>();
             assert_eq!(positions.len(), 2);
-            board.board.get_mut(pos).bug_stack.pop_piece();
-            board.mark_hex_unused(pos);
+            board.remove(pos);
         }
 
         // two adjacent neighbors means two positions
@@ -895,12 +886,7 @@ mod tests {
                 Piece::new_from(Bug::Grasshopper, Color::from((i % 2) as u8), i / 2 + 1),
             );
         }
-        board
-            .board
-            .get_mut(Position::new(1, 0))
-            .bug_stack
-            .pop_piece();
-        board.mark_hex_unused(Position::new(1, 0));
+        board.remove(Position::new(1, 0));
         assert_eq!(Bug::ladybug_moves(Position::new(0, 0), &board).len(), 12);
 
         let mut board = Board::new();
@@ -918,12 +904,7 @@ mod tests {
             Position::new(-2, 0),
             Piece::new_from(Bug::Ant, Color::Black, 1),
         );
-        board
-            .board
-            .get_mut(Position::new(1, 0))
-            .bug_stack
-            .pop_piece();
-        board.mark_hex_unused(Position::new(1, 0));
+        board.remove(Position::new(1, 0));
         assert_eq!(Bug::ladybug_moves(Position::new(0, 0), &board).len(), 14);
     }
 
@@ -968,12 +949,7 @@ mod tests {
                 Piece::new_from(Bug::Grasshopper, Color::from((i % 2) as u8), i / 2 + 1),
             );
         }
-        board
-            .board
-            .get_mut(Position::new(1, 0))
-            .bug_stack
-            .pop_piece();
-        board.mark_hex_unused(Position::new(1, 0));
+        board.remove(Position::new(1, 0));
         assert_eq!(Bug::beetle_moves(Position::new(0, 0), &board).len(), 5);
     }
 

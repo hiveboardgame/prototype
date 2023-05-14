@@ -2,7 +2,7 @@ use crate::color::Color;
 use crate::piece::Piece;
 use std::fmt;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BugStack {
     pub pieces: [Piece; 7],
     pub size: u8,

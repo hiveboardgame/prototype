@@ -72,8 +72,66 @@ pub async fn get_user_games(
     uid: web::Path<String>,
     pool: web::Data<DbPool>,
 ) -> Result<HttpResponse, ServerError> {
-    let _user = User::find_by_uid(pool.get_ref(), uid.as_ref()).await?;
-    // TODO @leex actually return the user's games once that's implemented
-    // Ok(HttpResponse::Ok().json(user.get_games().await?))
-    Ok(HttpResponse::Ok().json(Vec::<u8>::new()))
+    let user = User::find_by_uid(pool.get_ref(), uid.as_ref()).await?;
+    let games = user.get_games(&pool).await?;
+    Ok(HttpResponse::Ok().json(games))
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{make_guest_user, make_user, test::DBTest};
+    use actix_web::test::{self, TestRequest};
+    use serde_json::json;
+    use serial_test::serial;
+    use test_context::test_context;
+
+    // If you need to inspect the response to debug something use this:
+    // let body = test::read_body(resp).await;
+
+    #[test_context(DBTest)]
+    #[actix_rt::test]
+    #[serial]
+    async fn test_user(_ctx: &mut DBTest) {
+        let app = test::init_service(crate::new_test_app().await).await;
+        let user = make_user!("black", &app);
+        assert_eq!(user.uid, "black");
+        assert_eq!(user.username, "black");
+    }
+
+    #[test_context(DBTest)]
+    #[actix_rt::test]
+    #[serial]
+    async fn test_guest_user(_ctx: &mut DBTest) {
+        let app = test::init_service(crate::new_test_app().await).await;
+        make_guest_user!("guest", &app);
+    }
+
+    #[test_context(DBTest)]
+    #[actix_rt::test]
+    #[serial]
+    async fn test_user_challenges(_ctx: &mut DBTest) {
+        let app = test::init_service(crate::new_test_app().await).await;
+        let _user = make_user!("black", &app);
+
+        let resp = TestRequest::get()
+            .uri("/api/user/black/challenges")
+            .insert_header(("x-authentication", "black"))
+            .send_request(&app)
+            .await;
+        assert!(resp.status().is_success(), "getting challenges failed");
+    }
+
+    #[test_context(DBTest)]
+    #[actix_rt::test]
+    #[serial]
+    async fn test_user_games(_ctx: &mut DBTest) {
+        let app = test::init_service(crate::new_test_app().await).await;
+        let _user = make_user!("black", &app);
+
+        let resp = TestRequest::get()
+            .uri("/api/user/black/games")
+            .send_request(&app)
+            .await;
+        assert!(resp.status().is_success(), "getting games failed");
+    }
 }

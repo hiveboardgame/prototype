@@ -1,4 +1,4 @@
 pub mod challenge;
-pub mod game_request;
-pub mod game_response;
+pub mod game;
+pub mod games_users;
 pub mod user;
