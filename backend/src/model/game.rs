@@ -143,6 +143,25 @@ impl Game {
             .await
     }
 
+    pub async fn resign(
+        &self,
+        game_control: GameControl,
+        new_game_status: GameStatus,
+        winner: Color,
+        pool: &DbPool,
+    ) -> Result<Game, Error> {
+        let conn = &mut get_conn(pool).await?;
+        let game_control_string = format!("{}. {game_control};", self.turn);
+
+        diesel::update(games::table.find(self.id))
+            .set((
+                game_status.eq(new_game_status.to_string()),
+                game_control_history.eq(game_control_history.concat(game_control_string)),
+            ))
+            .get_result(conn)
+            .await
+    }
+
     pub async fn accept_draw(
         &self,
         game_control: GameControl,

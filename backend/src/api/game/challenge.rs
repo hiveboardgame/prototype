@@ -221,6 +221,7 @@ pub async fn delete_game_challenge(
 #[cfg(test)]
 mod tests {
     use crate::challenge::GameChallengeResponse;
+    use crate::{make_user, make_challenge, accept_challenge, play_turn, game_control, get_game};
     use crate::{api::game::game_state_response::GameStateResponse, test::DBTest};
     use actix_web::test::{self, TestRequest};
     use serde_json::json;
@@ -232,67 +233,26 @@ mod tests {
     #[serial]
     async fn test_challenge(_ctx: &mut DBTest) {
         let app = test::init_service(crate::new_test_app().await).await;
-        // make black user
-        let request_body = json!({
-            "username": "black",
-        });
-        let resp = TestRequest::post()
-            .uri("/api/user")
-            .set_json(&request_body)
-            .insert_header(("x-authentication", "black"))
-            .send_request(&app)
-            .await;
-        assert!(resp.status().is_success(), "creating user failed");
-
-        // make white user
-        let request_body = json!({
-            "username": "white",
-        });
-        let resp = TestRequest::post()
-            .uri("/api/user")
-            .set_json(&request_body)
-            .insert_header(("x-authentication", "white"))
-            .send_request(&app)
-            .await;
-        assert!(resp.status().is_success(), "creating user failed");
-
-        // black user creates challenge
-        let request_body = json!({
-            "public": true,
-            "ranked": false,
-            "tournamentQueenRule": true,
-            "gameType": "MLP",
-            "colorChoice": "Black"
-        });
-        let req = TestRequest::post()
-            .uri("/api/game/challenge")
-            .set_json(&request_body)
-            .insert_header(("x-authentication", "black"))
-            .to_request();
-        let game_challenge_response: GameChallengeResponse =
-            test::call_and_read_body_json(&app, req).await;
-
-        // white user accepts challenge
-        let req = TestRequest::post()
-            .uri(&format!(
-                "/api/game/challenge/{}/accept",
-                game_challenge_response.id
-            ))
-            .insert_header(("x-authentication", "white"))
-            .to_request();
-        let game: GameStateResponse = test::call_and_read_body_json(&app, req).await;
-        assert_eq!(game.game_id, 1);
-
-        let request_body = json!({
-            "Turn": ["wL", "."]
-        });
-        let req = TestRequest::post()
-            .uri("/api/game/1/play")
-            .set_json(&request_body)
-            .insert_header(("x-authentication", "white"))
-            .to_request();
-        let game: GameStateResponse = test::call_and_read_body_json(&app, req).await;
+        let black = make_user!("black", &app);
+        let white = make_user!("white", &app);
+        let challenge_response = make_challenge!(white.uid.clone(), "White", &app);
+        let game = accept_challenge!(challenge_response.id, black.uid.clone(), &app);
+        let game = play_turn!(game.game_id, white.uid.clone(), ["wL", "."], &app);
         assert_eq!(game.turn, 1);
         assert_eq!(game.history, vec![("wL".to_string(), ".".to_string())]);
+        let game = game_control!(game.game_id, white.uid.clone(), "Resign", "White", &app);
+        assert_eq!(game.game_status, hive_lib::game_status::GameStatus::Finished(hive_lib::game_result::GameResult::Winner(hive_lib::color::Color::Black)));
+
+        // Can't resign a finished game
+        let request_body = json!({
+            "GameControl": {"Resign": "Black" }
+        });
+        let resp = TestRequest::post()
+            .uri(&format!("/api/game/{}/play", game.game_id))
+            .set_json(&request_body)
+            .insert_header(("x-authentication", "black"))
+            .send_request(&app)
+            .await;
+        assert!(resp.status().is_client_error());
     }
 }

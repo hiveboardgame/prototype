@@ -42,7 +42,6 @@ pub async fn game_play(
             play_turn(&game, piece, pos, auth_user, pool.as_ref()).await
         }
         PlayRequest::GameControl(game_control) => {
-            println!("GC req");
             handle_game_control(&game, game_control, auth_user, pool.as_ref()).await
         }
     }?;
@@ -101,7 +100,7 @@ async fn handle_game_control(
     }
     match game_control {
         GameControl::Abort(_) => handle_abort(game, pool).await,
-        GameControl::Resign(_) => handle_resign(game, auth_user, pool).await,
+        GameControl::Resign(_) => handle_resign(game, game_control, auth_user, pool).await,
         GameControl::DrawOffer(_) => handle_draw_offer(game, game_control, pool).await,
         GameControl::DrawAccept(_) => handle_draw_accept(game, game_control, pool).await,
         GameControl::DrawReject(_) => handle_draw_reject(game, game_control, pool).await,
@@ -129,6 +128,7 @@ fn allowed_game_control(game: &Game, game_control: GameControl) -> Result<bool, 
 }
 
 fn fresh_game_control(game: &Game, game_control: GameControl) -> Result<bool, ServerError> {
+    // TODO: better handling of freshness
     if let Some(last) = last_game_control(game)? {
         return Ok(last != game_control);
     }
@@ -137,9 +137,7 @@ fn fresh_game_control(game: &Game, game_control: GameControl) -> Result<bool, Se
 
 fn last_game_control(game: &Game) -> Result<Option<GameControl>, ServerError> {
     if let Some(last) = game.game_control_history.split_terminator(';').last() {
-        println!("Last game control is: {}", last);
         if let Some(gc) = last.split(' ').last() {
-            println!("game control part is is: {}", gc);
             return Ok(Some(GameControl::from_str(gc)?));
         }
     }
@@ -181,8 +179,8 @@ async fn handle_draw_offer(
     game_control: GameControl,
     pool: &DbPool,
 ) -> Result<GameStateResponse, ServerError> {
-    game.write_game_control(game_control, pool).await?;
-    GameStateResponse::new_from_db(game, pool).await
+    let game = game.write_game_control(game_control, pool).await?;
+    GameStateResponse::new_from_db(&game, pool).await
 }
 
 async fn handle_draw_reject(
@@ -191,8 +189,8 @@ async fn handle_draw_reject(
     pool: &DbPool,
 ) -> Result<GameStateResponse, ServerError> {
     ensure_game_control(game, game_control.clone())?;
-    game.write_game_control(game_control, pool).await?;
-    GameStateResponse::new_from_db(game, pool).await
+    let game = game.write_game_control(game_control, pool).await?;
+    GameStateResponse::new_from_db(&game, pool).await
 }
 
 async fn handle_draw_accept(
@@ -201,19 +199,26 @@ async fn handle_draw_accept(
     pool: &DbPool,
 ) -> Result<GameStateResponse, ServerError> {
     ensure_game_control(game, game_control.clone())?;
-    game.accept_draw(game_control, pool).await?;
-    GameStateResponse::new_from_db(game, pool).await
+    let game = game.accept_draw(game_control, pool).await?;
+    GameStateResponse::new_from_db(&game, pool).await
 }
 
 async fn handle_resign(
     game: &Game,
+    game_control: GameControl,
     auth_user: AuthenticatedUser,
     pool: &DbPool,
 ) -> Result<GameStateResponse, ServerError> {
     let winner_color = Color::from(get_color(game, &auth_user)?.opposite());
-    game.set_status(GameStatus::Finished(GameResult::Winner(winner_color)), pool)
+    let resigned_game = game
+        .resign(
+            game_control,
+            GameStatus::Finished(GameResult::Winner(winner_color)),
+            winner_color,
+            pool,
+        )
         .await?;
-    GameStateResponse::new_from_db(game, pool).await
+    GameStateResponse::new_from_db(&resigned_game, pool).await
 }
 
 fn request_color_matches(color: Color, game_control: hive_lib::game_control::GameControl) -> bool {
@@ -234,8 +239,8 @@ async fn handle_takeback_request(
     pool: &DbPool,
 ) -> Result<GameStateResponse, ServerError> {
     ensure_turn_greater_zero(game, &game_control)?;
-    game.write_game_control(game_control, pool).await?;
-    GameStateResponse::new_from_db(game, pool).await
+    let game = game.write_game_control(game_control, pool).await?;
+    GameStateResponse::new_from_db(&game, pool).await
 }
 
 async fn handle_takeback_accept(
@@ -250,14 +255,15 @@ async fn handle_takeback_accept(
     new_history.push(';');
     let history = History::new_from_str(new_history.clone())?;
     let state = State::new_from_history(&history)?;
-    game.accept_takeback(
-        new_history,
-        state.game_status.to_string(),
-        game_control,
-        pool,
-    )
-    .await?;
-    GameStateResponse::new_from(game, &state, pool).await
+    let game = game
+        .accept_takeback(
+            new_history,
+            state.game_status.to_string(),
+            game_control,
+            pool,
+        )
+        .await?;
+    GameStateResponse::new_from(&game, &state, pool).await
 }
 
 async fn handle_takeback_reject(
@@ -266,9 +272,109 @@ async fn handle_takeback_reject(
     pool: &DbPool,
 ) -> Result<GameStateResponse, ServerError> {
     ensure_game_control(game, game_control.clone())?;
-    game.write_game_control(game_control, pool).await?;
+    let game = game.write_game_control(game_control, pool).await?;
 
     let history = History::new_from_str(game.history.clone())?;
     let state = State::new_from_history(&history)?;
-    GameStateResponse::new_from(game, &state, pool).await
+    GameStateResponse::new_from(&game, &state, pool).await
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::challenge::GameChallengeResponse;
+    use crate::{accept_challenge, game_control, get_game, make_challenge, make_user, play_turn};
+    use crate::{api::game::game_state_response::GameStateResponse, test::DBTest};
+    use hive_lib::game_control::GameControl;
+    use hive_lib::color::Color;
+    use actix_web::test::{self, TestRequest};
+    use hive_lib::game_result::GameResult;
+    use hive_lib::game_status::GameStatus;
+    use serde_json::json;
+    use serial_test::serial;
+    use test_context::test_context;
+
+    #[test_context(DBTest)]
+    #[actix_rt::test]
+    #[serial]
+    async fn test_resign_game(_ctx: &mut DBTest) {
+        let app = test::init_service(crate::new_test_app().await).await;
+        let black = make_user!("black", &app);
+        let white = make_user!("white", &app);
+        let challenge_response = make_challenge!(white.uid.clone(), "White", &app);
+        let game = accept_challenge!(challenge_response.id, black.uid.clone(), &app);
+        let game = play_turn!(game.game_id, white.uid.clone(), ["wL", "."], &app);
+        assert_eq!(game.turn, 1);
+        assert_eq!(game.history, vec![("wL".to_string(), ".".to_string())]);
+        let game = game_control!(game.game_id, white.uid.clone(), "Resign", "White", &app);
+        assert_eq!(
+            game.game_status,
+            hive_lib::game_status::GameStatus::Finished(hive_lib::game_result::GameResult::Winner(
+                hive_lib::color::Color::Black
+            ))
+        );
+
+        // Can't resign a finished game
+        let request_body = json!({
+            "GameControl": {"Resign": "Black" }
+        });
+        let resp = TestRequest::post()
+            .uri(&format!("/api/game/{}/play", game.game_id))
+            .set_json(&request_body)
+            .insert_header(("x-authentication", "black"))
+            .send_request(&app)
+            .await;
+        assert!(resp.status().is_client_error());
+    }
+
+    #[test_context(DBTest)]
+    #[actix_rt::test]
+    #[serial]
+    async fn test_draw_game(_ctx: &mut DBTest) {
+        let app = test::init_service(crate::new_test_app().await).await;
+        let black = make_user!("black", &app);
+        let white = make_user!("white", &app);
+        let challenge_response = make_challenge!(white.uid.clone(), "White", &app);
+        let game = accept_challenge!(challenge_response.id, black.uid.clone(), &app);
+        let game = play_turn!(game.game_id, white.uid.clone(), ["wL", "."], &app);
+        assert_eq!(game.turn, 1);
+        assert_eq!(game.history, vec![("wL".to_string(), ".".to_string())]);
+        let game = game_control!(game.game_id, white.uid.clone(), "DrawOffer", "White", &app);
+        assert_eq!(
+            game.game_control_history.last().unwrap(),
+            &(1_i32, GameControl::DrawOffer(Color::White))
+        );
+        let game = game_control!(game.game_id, black.uid.clone(), "DrawReject", "Black", &app);
+        assert_eq!(
+            game.game_control_history.last().unwrap(),
+            &(1_i32, GameControl::DrawReject(Color::Black))
+        );
+        let game = play_turn!(game.game_id, black.uid.clone(), ["bL", "wL-"], &app);
+        assert_eq!(game.turn, 2);
+        let game = game_control!(game.game_id, white.uid.clone(), "DrawOffer", "White", &app);
+        assert_eq!(
+            game.game_control_history.last().unwrap(),
+            &(2_i32, GameControl::DrawOffer(Color::White))
+        );
+        let game = game_control!(game.game_id, black.uid.clone(), "DrawAccept", "Black", &app);
+        assert_eq!(
+            game.game_control_history.last().unwrap(),
+            &(2_i32, GameControl::DrawAccept(Color::Black))
+        );
+        assert_eq!(
+            game.game_status,
+            GameStatus::Finished(GameResult::Draw)
+        );
+
+        // Can't play on a finished game
+        let request_body = json!({
+            "Turn": ["wQ", "-wL"],
+        });
+        let resp = TestRequest::post()
+            .uri(&format!("/api/game/{}/play", game.game_id))
+            .set_json(&request_body)
+            .insert_header(("x-authentication", "white"))
+            .send_request(&app)
+            .await;
+        assert!(resp.status().is_client_error());
+    }
 }
