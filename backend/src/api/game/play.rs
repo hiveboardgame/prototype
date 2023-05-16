@@ -314,6 +314,8 @@ mod tests {
         let game = play_turn!(game.game_id, white.uid.clone(), ["wL", "."], &app);
         assert_eq!(game.turn, 1);
         assert_eq!(game.history, vec![("wL".to_string(), ".".to_string())]);
+        let game = play_turn!(game.game_id, black.uid.clone(), ["bL", "wL-"], &app);
+        assert_eq!(game.turn, 2);
         let game = game_control!(game.game_id, white.uid.clone(), "Resign", "White", &app);
         assert_eq!(
             game.game_status,
@@ -347,18 +349,18 @@ mod tests {
         let game = play_turn!(game.game_id, white.uid.clone(), ["wL", "."], &app);
         assert_eq!(game.turn, 1);
         assert_eq!(game.history, vec![("wL".to_string(), ".".to_string())]);
+        let game = play_turn!(game.game_id, black.uid.clone(), ["bL", "wL-"], &app);
+        assert_eq!(game.turn, 2);
         let game = game_control!(game.game_id, white.uid.clone(), "DrawOffer", "White", &app);
         assert_eq!(
             game.game_control_history.last().unwrap(),
-            &(1_i32, GameControl::DrawOffer(Color::White))
+            &(2_i32, GameControl::DrawOffer(Color::White))
         );
         let game = game_control!(game.game_id, black.uid.clone(), "DrawReject", "Black", &app);
         assert_eq!(
             game.game_control_history.last().unwrap(),
-            &(1_i32, GameControl::DrawReject(Color::Black))
+            &(2_i32, GameControl::DrawReject(Color::Black))
         );
-        let game = play_turn!(game.game_id, black.uid.clone(), ["bL", "wL-"], &app);
-        assert_eq!(game.turn, 2);
         let game = game_control!(game.game_id, white.uid.clone(), "DrawOffer", "White", &app);
         assert_eq!(
             game.game_control_history.last().unwrap(),

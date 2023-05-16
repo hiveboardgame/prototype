@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use crate::db::schema::games::dsl::*;
 
-use crate::db::schema::{games};
+use crate::db::schema::games;
 use crate::db::util::{get_conn, DbPool};
 use crate::model::games_users::GameUser;
 use diesel::{prelude::*, result::Error, Identifiable, Insertable, QueryDsl, Queryable};

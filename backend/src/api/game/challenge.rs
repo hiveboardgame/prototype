@@ -224,6 +224,7 @@ mod tests {
     use crate::{accept_challenge, game_control, get_game, make_challenge, make_user, play_turn};
     use crate::{api::game::game_state_response::GameStateResponse, test::DBTest};
     use actix_web::test::{self, TestRequest};
+    use hive_lib::game_status::GameStatus;
     use serde_json::json;
     use serial_test::serial;
     use test_context::test_context;
@@ -237,27 +238,6 @@ mod tests {
         let white = make_user!("white", &app);
         let challenge_response = make_challenge!(white.uid.clone(), "White", &app);
         let game = accept_challenge!(challenge_response.id, black.uid.clone(), &app);
-        let game = play_turn!(game.game_id, white.uid.clone(), ["wL", "."], &app);
-        assert_eq!(game.turn, 1);
-        assert_eq!(game.history, vec![("wL".to_string(), ".".to_string())]);
-        let game = game_control!(game.game_id, white.uid.clone(), "Resign", "White", &app);
-        assert_eq!(
-            game.game_status,
-            hive_lib::game_status::GameStatus::Finished(hive_lib::game_result::GameResult::Winner(
-                hive_lib::color::Color::Black
-            ))
-        );
-
-        // Can't resign a finished game
-        let request_body = json!({
-            "GameControl": {"Resign": "Black" }
-        });
-        let resp = TestRequest::post()
-            .uri(&format!("/api/game/{}/play", game.game_id))
-            .set_json(&request_body)
-            .insert_header(("x-authentication", "black"))
-            .send_request(&app)
-            .await;
-        assert!(resp.status().is_client_error());
+        assert_eq!(game.game_status, GameStatus::NotStarted);
     }
 }
