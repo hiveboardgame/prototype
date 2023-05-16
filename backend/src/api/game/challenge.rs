@@ -221,7 +221,7 @@ pub async fn delete_game_challenge(
 #[cfg(test)]
 mod tests {
     use crate::challenge::GameChallengeResponse;
-    use crate::{make_user, make_challenge, accept_challenge, play_turn, game_control, get_game};
+    use crate::{accept_challenge, game_control, get_game, make_challenge, make_user, play_turn};
     use crate::{api::game::game_state_response::GameStateResponse, test::DBTest};
     use actix_web::test::{self, TestRequest};
     use serde_json::json;
@@ -241,7 +241,12 @@ mod tests {
         assert_eq!(game.turn, 1);
         assert_eq!(game.history, vec![("wL".to_string(), ".".to_string())]);
         let game = game_control!(game.game_id, white.uid.clone(), "Resign", "White", &app);
-        assert_eq!(game.game_status, hive_lib::game_status::GameStatus::Finished(hive_lib::game_result::GameResult::Winner(hive_lib::color::Color::Black)));
+        assert_eq!(
+            game.game_status,
+            hive_lib::game_status::GameStatus::Finished(hive_lib::game_result::GameResult::Winner(
+                hive_lib::color::Color::Black
+            ))
+        );
 
         // Can't resign a finished game
         let request_body = json!({

@@ -1,8 +1,8 @@
 use std::str::FromStr;
 
 use crate::db::schema::games::dsl::*;
-use crate::db::schema::games_users::game_id;
-use crate::db::schema::{games, games_users};
+
+use crate::db::schema::{games};
 use crate::db::util::{get_conn, DbPool};
 use crate::model::games_users::GameUser;
 use diesel::{prelude::*, result::Error, Identifiable, Insertable, QueryDsl, Queryable};
@@ -150,7 +150,7 @@ impl Game {
         &self,
         game_control: GameControl,
         new_game_status: GameStatus,
-        winner: Color,
+        _winner: Color,
         pool: &DbPool,
     ) -> Result<Game, Error> {
         let conn = &mut get_conn(pool).await?;

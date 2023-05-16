@@ -67,7 +67,8 @@ async fn play_turn(
     let position = Position::from_string(&pos, &state.board)?;
     state.play_turn(piece, position)?;
     let board_move = format!("{piece} {pos}");
-    let game = game.make_move(board_move, state.game_status.to_string(), pool)
+    let game = game
+        .make_move(board_move, state.game_status.to_string(), pool)
         .await?;
     // TODO: handle game end, update rating
     GameStateResponse::new_from(&game, &state, pool).await
@@ -99,7 +100,7 @@ async fn handle_game_control(
         })?
     }
     match game_control {
-        GameControl::Abort(_) => handle_abort(game,game_control, pool).await,
+        GameControl::Abort(_) => handle_abort(game, game_control, pool).await,
         GameControl::Resign(_) => handle_resign(game, game_control, auth_user, pool).await,
         GameControl::DrawOffer(_) => handle_draw_offer(game, game_control, pool).await,
         GameControl::DrawAccept(_) => handle_draw_accept(game, game_control, pool).await,
@@ -225,12 +226,18 @@ fn request_color_matches(color: Color, game_control: hive_lib::game_control::Gam
     color == game_control.color()
 }
 
-async fn handle_abort(game: &Game, game_control: GameControl, pool: &DbPool) -> Result<GameStateResponse, ServerError> {
+async fn handle_abort(
+    game: &Game,
+    game_control: GameControl,
+    pool: &DbPool,
+) -> Result<GameStateResponse, ServerError> {
     let history = History::new_from_str(game.history.clone())?;
     let state = State::new_from_history(&history)?;
     let mut returned_game = (*game).clone();
     game.delete(pool).await?;
-    returned_game.game_control_history.push_str(&format!("{}. {game_control};", state.turn));
+    returned_game
+        .game_control_history
+        .push_str(&format!("{}. {game_control};", state.turn));
     // WARN: this a bit hacky, we are returning a game that we just deleted...
     GameStateResponse::new_from(&returned_game, &state, pool).await
 }
@@ -393,6 +400,9 @@ mod tests {
         );
         assert_eq!(game.history, vec![("wL".to_string(), ".".to_string())]);
         let game = game_control!(game.game_id, black.uid.clone(), "Abort", "Black", &app);
-        assert_eq!(game.game_control_history.last().unwrap(), &(game.turn as i32 ,GameControl::Abort(Color::Black)));
+        assert_eq!(
+            game.game_control_history.last().unwrap(),
+            &(game.turn as i32, GameControl::Abort(Color::Black))
+        );
     }
 }
