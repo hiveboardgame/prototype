@@ -291,7 +291,7 @@ async fn handle_takeback_reject(
 #[cfg(test)]
 mod tests {
     use crate::challenge::GameChallengeResponse;
-    use crate::{accept_challenge, game_control, get_game, make_challenge, make_user, play_turn};
+    use crate::{accept_challenge, game_control, make_challenge, make_user, play_turn};
     use crate::{api::game::game_state_response::GameStateResponse, test::DBTest};
     use actix_web::test::{self, TestRequest};
     use hive_lib::color::Color;

@@ -3,7 +3,6 @@ use crate::config::ServerConfig;
 use diesel::pg::PgConnection;
 use diesel::Connection;
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
-
 use test_context::AsyncTestContext;
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations");
@@ -132,7 +131,6 @@ macro_rules! game_control {
 #[macro_export]
 macro_rules! get_game {
     ( $game_id:expr, $app:expr ) => {{
-        // white user accepts challenge
         let req = TestRequest::get()
             .uri(&format!("/api/game/{}", $game_id))
             .to_request();

@@ -221,7 +221,7 @@ pub async fn delete_game_challenge(
 #[cfg(test)]
 mod tests {
     use crate::challenge::GameChallengeResponse;
-    use crate::{accept_challenge, game_control, get_game, make_challenge, make_user, play_turn};
+    use crate::{accept_challenge, make_challenge, make_user};
     use crate::{api::game::game_state_response::GameStateResponse, test::DBTest};
     use actix_web::test::{self, TestRequest};
     use hive_lib::game_status::GameStatus;
@@ -239,5 +239,27 @@ mod tests {
         let challenge_response = make_challenge!(white.uid.clone(), "White", &app);
         let game = accept_challenge!(challenge_response.id, black.uid.clone(), &app);
         assert_eq!(game.game_status, GameStatus::NotStarted);
+    }
+
+    #[test_context(DBTest)]
+    #[actix_rt::test]
+    #[serial]
+    async fn test_lobby(_ctx: &mut DBTest) {
+        let app = test::init_service(crate::new_test_app().await).await;
+        let black = make_user!("black", &app);
+        let white = make_user!("white", &app);
+        make_challenge!(white.uid.clone(), "White", &app);
+        make_challenge!(black.uid.clone(), "Black", &app);
+        let resp = TestRequest::get()
+            .uri("/api/game/lobby")
+            .send_request(&app)
+            .await;
+        assert!(
+            resp.status().is_success(),
+            "getting lobby challenges failed"
+        );
+        let body = test::read_body(resp).await;
+        //TODO Fix my very hacky workaround
+        assert_eq!(body.len(), 497);
     }
 }
