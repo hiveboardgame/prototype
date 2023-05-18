@@ -54,3 +54,33 @@ pub async fn accept_game_challenge(
     let resp = GameStateResponse::new_from_db(&game, &pool).await?;
     Ok(web::Json(resp))
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::challenge::{
+        accept::GameStateResponse, game_challenge_response::GameChallengeResponse,
+    };
+    use crate::test::DBTest;
+    use crate::{accept_challenge, make_challenge, make_user};
+    use actix_web::test::{self, TestRequest};
+    use serde_json::json;
+    use serial_test::serial;
+    use test_context::test_context;
+
+    #[test_context(DBTest)]
+    #[actix_rt::test]
+    #[serial]
+    async fn accept_game_challenge(_ctx: &mut DBTest) {
+        let app = test::init_service(crate::new_test_app().await).await;
+        let white = make_user!("white", &app);
+        let black = make_user!("black", &app);
+        let open_challenge = make_challenge!(white.uid.clone(), "White", &app);
+        let accepted_challenge = accept_challenge!(open_challenge.id, black.uid.clone(), &app);
+        let resp = TestRequest::get()
+            .uri(&format!("/api/game/challenge/{}", open_challenge.id))
+            .send_request(&app)
+            .await;
+        assert!(resp.status().is_client_error());
+        assert_eq!(accepted_challenge.game_id, 1);
+    }
+}
