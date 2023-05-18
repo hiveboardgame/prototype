@@ -1,0 +1,66 @@
+use std::fmt::Display;
+use std::str::FromStr;
+
+use actix_web::{
+    delete, get, post,
+    web::{self, Json},
+    HttpResponse,
+};
+use chrono::{DateTime, Utc};
+use hive_lib::game_error::GameError;
+use hive_lib::game_type::GameType;
+use serde::{Deserialize, Serialize};
+use thiserror::Error;
+use uuid::Uuid;
+
+use crate::{
+    db::util::DbPool,
+    extractors::auth::AuthenticatedUser,
+    game::game_state_response::GameStateResponse,
+    game::challenge::game_challenge_response::ChallengeError,
+    model::{
+        challenge::GameChallenge,
+        game::{Game, NewGame},
+        user::User,
+    },
+    server_error::ServerError,
+};
+use crate::api::game::challenge::game_challenge_response::GameChallengeResponse;
+
+#[post("/game/challenge/{id}/accept")]
+pub async fn accept_game_challenge(
+    id: web::Path<Uuid>,
+    auth_user: AuthenticatedUser,
+    pool: web::Data<DbPool>,
+) -> Result<Json<GameStateResponse>, ServerError> {
+    let challenge = GameChallenge::get(&id, &pool).await?;
+    if challenge.challenger_uid == auth_user.uid {
+        return Err(ChallengeError::OwnChallenge.into());
+    }
+    let (white_uid, black_uid) = match challenge.color_choice.to_lowercase().as_str() {
+        "black" => (auth_user.uid, challenge.challenger_uid.clone()),
+        "white" => (challenge.challenger_uid.clone(), auth_user.uid),
+        _ => {
+            if rand::random() {
+                (challenge.challenger_uid.clone(), auth_user.uid)
+            } else {
+                (auth_user.uid, challenge.challenger_uid.clone())
+            }
+        }
+    };
+    let new_game = NewGame {
+        black_uid,
+        game_status: "NotStarted".to_string(),
+        game_type: challenge.game_type.clone(),
+        history: String::new(),
+        game_control_history: String::new(),
+        tournament_queen_rule: challenge.tournament_queen_rule,
+        turn: 0,
+        white_uid,
+        ranked: challenge.ranked,
+    };
+    let game = Game::create(&new_game, &pool).await?;
+    challenge.delete(&pool).await?;
+    let resp = GameStateResponse::new_from_db(&game, &pool).await?;
+    Ok(web::Json(resp))
+}

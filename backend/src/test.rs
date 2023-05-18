@@ -29,6 +29,9 @@ impl AsyncTestContext for DBTest {
     }
 }
 
+// INFO: If you need to inspect the response to debug something use this:
+// let body = test::read_body(resp).await;
+
 #[macro_export]
 macro_rules! make_user {
     ( $username:expr, $app:expr ) => {

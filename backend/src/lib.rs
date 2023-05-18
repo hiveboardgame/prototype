@@ -35,18 +35,18 @@ pub fn config(cfg: &mut web::ServiceConfig) {
         .service(
             web::scope("/api")
                 .service(health::health_check)
-                .service(challenge::get_lobby_challenges)
-                .service(challenge::create_game_challenge)
-                .service(challenge::get_game_challenge)
-                .service(challenge::accept_game_challenge)
-                .service(challenge::delete_game_challenge)
+                .service(game::lobby::get_lobby_challenges)
+                .service(challenge::create::create_game_challenge)
+                .service(challenge::show::get_game_challenge)
+                .service(challenge::accept::accept_game_challenge)
+                .service(challenge::delete::delete_game_challenge)
                 .service(game::play::game_play)
                 .service(game::show::get_game)
-                .service(user::get_user)
-                .service(user::get_user_challenges)
-                .service(user::get_user_games)
-                .service(user::create_user)
-                .service(user::create_guest_user),
+                .service(user::show::get_user)
+                .service(user::challenges::get_user_challenges)
+                .service(user::games::get_user_games)
+                .service(user::create::create_user)
+                .service(user::create_guest::create_guest_user),
         );
 }
 

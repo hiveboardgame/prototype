@@ -290,7 +290,7 @@ async fn handle_takeback_reject(
 
 #[cfg(test)]
 mod tests {
-    use crate::challenge::GameChallengeResponse;
+    use crate::challenge::game_challenge_response::GameChallengeResponse;
     use crate::{accept_challenge, game_control, make_challenge, make_user, play_turn};
     use crate::{api::game::game_state_response::GameStateResponse, test::DBTest};
     use actix_web::test::{self, TestRequest};
@@ -305,7 +305,7 @@ mod tests {
     #[test_context(DBTest)]
     #[actix_rt::test]
     #[serial]
-    async fn test_resign_game(_ctx: &mut DBTest) {
+    async fn resign_game(_ctx: &mut DBTest) {
         let app = test::init_service(crate::new_test_app().await).await;
         let black = make_user!("black", &app);
         let white = make_user!("white", &app);
@@ -340,7 +340,7 @@ mod tests {
     #[test_context(DBTest)]
     #[actix_rt::test]
     #[serial]
-    async fn test_draw_game(_ctx: &mut DBTest) {
+    async fn draw_game(_ctx: &mut DBTest) {
         let app = test::init_service(crate::new_test_app().await).await;
         let black = make_user!("black", &app);
         let white = make_user!("white", &app);
@@ -389,7 +389,7 @@ mod tests {
     #[test_context(DBTest)]
     #[actix_rt::test]
     #[serial]
-    async fn test_abort(_ctx: &mut DBTest) {
+    async fn abort(_ctx: &mut DBTest) {
         let app = test::init_service(crate::new_test_app().await).await;
         let black = make_user!("black", &app);
         let white = make_user!("white", &app);
@@ -410,7 +410,7 @@ mod tests {
     #[test_context(DBTest)]
     #[actix_rt::test]
     #[serial]
-    async fn test_takeback_move(_ctx: &mut DBTest) {
+    async fn takeback_move(_ctx: &mut DBTest) {
         let app = test::init_service(crate::new_test_app().await).await;
         let black = make_user!("black", &app);
         let white = make_user!("white", &app);
@@ -477,7 +477,7 @@ mod tests {
     #[test_context(DBTest)]
     #[actix_rt::test]
     #[serial]
-    async fn test_play_game(_ctx: &mut DBTest) {
+    async fn play_game(_ctx: &mut DBTest) {
         let app = test::init_service(crate::new_test_app().await).await;
         let black = make_user!("black", &app);
         let white = make_user!("white", &app);
