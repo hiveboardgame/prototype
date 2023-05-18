@@ -37,6 +37,7 @@ $ npm run --workspace js/frontend dev
 `backend/.env`
 ```
 DATABASE_URL=              # whatever the connection string for your Postgres database is
+TEST_DATABASE_URL=         # whatever the connection string for your Postgres test databse is, needed for cargo test to work 
 FIREBASE_JWT_ISSUER=       # this should be "https://securetoken.google.com/<projectId>", where projectId is your firebase project ID as above
 STATIC_FILES_PATH=./dist   # we'll set this up in a moment
 ```
