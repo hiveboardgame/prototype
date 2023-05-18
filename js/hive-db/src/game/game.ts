@@ -11,6 +11,20 @@ import { newGameMeta, newGameMetaWithFieldValues } from './meta';
 import { newGameState } from './state';
 import { getJSON } from '../api';
 
+// TODO: move this to the right place
+export interface BackendGame {
+  black_uid: string;
+  white_uid: string;
+  game_control_history: string;
+  game_status: string;
+  game_type: string;
+  history: string;
+  id: string;
+  ranked: boolean;
+  tournament_queen_rule: boolean;
+  turn: number;
+}
+
 export interface Game {
   gid: string;
   meta: GameMeta;
@@ -42,6 +56,132 @@ export function newGame(
   };
 }
 
+function getOptionsFromBackendGame(backendGame: BackendGame): GameOptions {
+  let pillbug = false;
+  let ladybug = false;
+  let mosquito = false;
+  switch (backendGame.game_type) {
+    case 'Base+M':
+      mosquito = true;
+      break;
+    case 'Base+L':
+      ladybug = true;
+      break;
+    case 'Base+P':
+      pillbug = true;
+      break;
+    case 'Base+ML':
+      mosquito = true;
+      ladybug = true;
+      break;
+    case 'Base+MP':
+      mosquito = true;
+      pillbug = true;
+      break;
+    case 'Base+LP':
+      ladybug = true;
+      pillbug = true;
+      break;
+    case 'Base+MLP':
+      mosquito = true;
+      ladybug = true;
+      pillbug = true;
+      break;
+  }
+
+  return {
+    tournament: backendGame.tournament_queen_rule,
+    pillbug,
+    ladybug,
+    mosquito
+  };
+}
+
+function getPlayersFromBackendGame(backendGame: BackendGame): GamePlayers {
+  return {
+    uids: [backendGame.black_uid, backendGame.white_uid],
+    // TODO: Neel: fix this
+    black: {
+      uid: backendGame.black_uid,
+      username: "black player's username",
+      is_guest: false
+    },
+    white: {
+      uid: backendGame.white_uid,
+      username: "white player's username",
+      is_guest: false
+    }
+  };
+}
+
+function getMetaFromBackendGame(backendGame: BackendGame): GameMeta {
+  let isStarted = false;
+  let isEnded = false;
+  let result = '';
+  switch (backendGame.game_status) {
+    case 'NotStarted':
+      // TODO: Neel: make consistent with backend
+      isStarted = true;
+      break;
+    case 'InProgress':
+      isStarted = true;
+      break;
+    case 'Finished(Winner(b))':
+      result = backendGame.black_uid;
+    case 'Finished(Winner(w))':
+      result = backendGame.white_uid;
+    case 'Finished(Draw)':
+      result = 'draw';
+    case 'Finished(Unknown)':
+      // TODO: Neel: what is this? should it (or something else) map to tie?
+      isEnded = true;
+      break;
+    default:
+      throw new Error(`unknown game status: ${backendGame.game_status}`);
+  }
+
+  // TODO: Neel: fix this
+  return {
+    public: true,
+    creator: backendGame.black_uid,
+    isStarted,
+    isEnded,
+    result,
+    createdDate: '',
+    acceptedDate: '',
+    playedDate: '',
+    endedDate: ''
+  };
+}
+
+function getStateFromBackendGame(backendGame: BackendGame): GameState {
+  return newGameState(backendGame.history);
+}
+
+/**
+ * Create a new game object from the backend's representation of a game.
+ *
+ * @param creatorUid The UID of the player creating the game.
+ * @param players A GamePlayers object.
+ * @param options A GameOptions object.
+ * @param isPublic A boolean indicating game visibility.
+ */
+export function newGameFromBackendGame(backendGame: BackendGame): Game {
+  console.log(backendGame);
+  const options = getOptionsFromBackendGame(backendGame);
+  const players = getPlayersFromBackendGame(backendGame);
+  const meta = getMetaFromBackendGame(backendGame);
+  const state = getStateFromBackendGame(backendGame);
+
+  return {
+    gid: backendGame.id,
+    options,
+    players,
+    meta,
+    state: newGameState()
+  };
+}
+
 /**
  * Create a new game object using FieldValues in place of timestamp strings.
  * This allows for FieldValue objects to be used while maintaining type safety.
@@ -68,13 +208,12 @@ export function newGameWithFieldValues(
 }
 
 export function getUserGames(user: UserData): Promise<Game[]> {
-  return getJSON<Game[]>(`/api/user/${user.uid}/games`)
-    .then(maybeGames => {
-      if (!maybeGames) {
-        throw new Error(`no games found for that user`)
-      }
-      return maybeGames;
-    });
+  return getJSON<Game[]>(`/api/user/${user.uid}/games`).then((maybeGames) => {
+    if (!maybeGames) {
+      throw new Error(`no games found for that user`);
+    }
+    return maybeGames;
+  });
 }
 
 /**

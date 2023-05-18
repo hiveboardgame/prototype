@@ -55,10 +55,17 @@ const GameView = ({ uid, game }: { uid: string | null; game: Game }) => {
 
 const Game = () => {
   const router = useRouter();
-  const { user } = usePlayer();
+  const { user, activeGames } = usePlayer();
   const { gameid } = router.query;
   const [game, setGame] = useState<Game | undefined>();
   const title = useTitle();
+
+  useEffect(() => {
+    // TODO: should this be a strict type check while enforcing that gameid is a string?
+    setGame(activeGames.find((g) => g.gid == gameid));
+  }, [activeGames, gameid]);
+
+  console.log(game);
 
   return (
     <>

@@ -5,7 +5,7 @@ export interface GameProps {
   // the uid of the player viewing the game
   uid: string | null;
   // the JWT authentication token
-  authToken: string | null,
+  authToken: string | null;
   // a string indicating the last time the user requested the board to be centered
   boardCentered: string;
   // the game data
@@ -13,7 +13,7 @@ export interface GameProps {
   // a flag to indicate that the game data has been updated but updates have not been viewed
   newMovesToView: boolean;
   // a list of valid next moves
-  validNextMoves: Move[],
+  validNextMoves: Move[];
   // the proposed move that the player is currently viewing
   proposedMove: Move | null;
   // the coordinate of the proposed move
