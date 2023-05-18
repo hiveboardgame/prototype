@@ -1,11 +1,6 @@
 use std::fmt::Display;
 use std::str::FromStr;
 
-use actix_web::{
-    delete, get, post,
-    web::{self, Json},
-    HttpResponse,
-};
 use chrono::{DateTime, Utc};
 use hive_lib::game_error::GameError;
 use hive_lib::game_type::GameType;
@@ -15,13 +10,7 @@ use uuid::Uuid;
 
 use crate::{
     db::util::DbPool,
-    extractors::auth::AuthenticatedUser,
-    game::game_state_response::GameStateResponse,
-    model::{
-        challenge::GameChallenge,
-        game::{Game, NewGame},
-        user::User,
-    },
+    model::{challenge::GameChallenge, user::User},
     server_error::ServerError,
 };
 

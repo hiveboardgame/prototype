@@ -1,30 +1,15 @@
-use std::fmt::Display;
-use std::str::FromStr;
-
 use actix_web::{
-    delete, get, post,
-    web::{self, Json},
+    delete,
+    web::{self},
     HttpResponse,
 };
-use chrono::{DateTime, Utc};
-use hive_lib::game_error::GameError;
-use hive_lib::game_type::GameType;
-use serde::{Deserialize, Serialize};
-use thiserror::Error;
+
 use uuid::Uuid;
 
 use crate::{
-    db::util::DbPool,
-    extractors::auth::AuthenticatedUser,
-    game::game_state_response::GameStateResponse,
-    model::{
-        challenge::GameChallenge,
-        game::{Game, NewGame},
-        user::User,
-    },
+    db::util::DbPool, extractors::auth::AuthenticatedUser, model::challenge::GameChallenge,
     server_error::ServerError,
 };
-use crate::api::game::challenge::game_challenge_response::GameChallengeResponse;
 
 #[delete("/game/challenge/{id}")]
 pub async fn delete_game_challenge(

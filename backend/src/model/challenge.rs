@@ -1,5 +1,5 @@
 use crate::challenge::game_challenge_response::NewGameChallengeRequest;
-use crate::api::game::challenge::game_challenge_response::GameChallengeResponse;
+
 use crate::db::schema::{game_challenges, users};
 use crate::db::util::{get_conn, DbPool};
 use crate::extractors::auth::AuthenticatedUser;

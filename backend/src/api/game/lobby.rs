@@ -1,15 +1,11 @@
 use actix_web::{
-    get, http, post,
+    get,
     web::{self, Json},
-    HttpResponse,
 };
-use names::{Generator, Name};
-use serde::Deserialize;
 
 use crate::api::game::challenge::game_challenge_response::GameChallengeResponse;
 use crate::db::util::DbPool;
-use crate::extractors::auth::AuthenticatedUser;
-use crate::model::user::User;
+
 use crate::model::challenge::GameChallenge;
 use crate::server_error::ServerError;
 
@@ -29,10 +25,10 @@ pub async fn get_lobby_challenges(
 #[cfg(test)]
 mod tests {
     use crate::challenge::game_challenge_response::GameChallengeResponse;
-    use crate::{accept_challenge, make_challenge, make_user};
-    use crate::{api::game::game_state_response::GameStateResponse, test::DBTest};
+    use crate::test::DBTest;
+    use crate::{make_challenge, make_user};
     use actix_web::test::{self, TestRequest};
-    use hive_lib::game_status::GameStatus;
+
     use serde_json::json;
     use serial_test::serial;
     use test_context::test_context;

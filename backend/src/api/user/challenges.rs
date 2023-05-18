@@ -1,10 +1,8 @@
 use actix_web::{
-    get, http, post,
-    web::{self, Json},
+    get,
+    web::{self},
     HttpResponse,
 };
-use names::{Generator, Name};
-use serde::Deserialize;
 
 use crate::challenge::game_challenge_response::GameChallengeResponse;
 use crate::db::util::DbPool;
@@ -32,11 +30,10 @@ pub async fn get_user_challenges(
 
 #[cfg(test)]
 mod tests {
-    use crate::api::game::game_state_response::GameStateResponse;
-    use crate::challenge::game_challenge_response::GameChallengeResponse;
-    use crate::{accept_challenge, make_challenge, make_guest_user, make_user, test::DBTest};
 
-    use actix_web::http::StatusCode;
+    use crate::challenge::game_challenge_response::GameChallengeResponse;
+    use crate::{make_challenge, make_user, test::DBTest};
+
     use actix_web::test::{self, TestRequest};
     use serde_json::json;
     use serial_test::serial;
@@ -64,5 +61,4 @@ mod tests {
         let challenges: Vec<GameChallengeResponse> = test::call_and_read_body_json(&app, req).await;
         assert_eq!(challenges.len(), 1);
     }
-
 }
