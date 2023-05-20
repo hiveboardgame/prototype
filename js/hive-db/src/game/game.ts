@@ -178,7 +178,7 @@ export function newGameFromBackendGame(backendGame: BackendGame): Game {
     options,
     players,
     meta,
-    state: newGameState()
+    state
   };
 }
 

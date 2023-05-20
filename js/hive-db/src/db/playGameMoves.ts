@@ -26,5 +26,5 @@ export function playGameMove(
 ): Promise<GameMoveResponse> {
   const uri = `/api/game/${game.gid}/play`;
   // TODO: Neel: need to play around with this more and figure out any conversion
-  return postJSON(uri, { Turn: ['.', '${move.notation}'] }, authToken);
+  return postJSON(uri, { Turn: [move.notation, '.'] }, authToken);
 }

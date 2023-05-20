@@ -126,7 +126,9 @@ export function _buildTurnNotation(
  * @return An array of *Turn* objects.
  */
 export function _parseGameNotation(notation: string): Turn[] {
-  return notation.split(/\s(?=\d+\.)/g).map(_parseTurnNotation);
+  return notation
+    .split(';')
+    .map((turnNotation) => _parseTurnNotation(turnNotation));
 }
 
 /**
@@ -135,11 +137,20 @@ export function _parseGameNotation(notation: string): Turn[] {
  * @param notation A turn notation string.
  * @return A *Turn* object.
  */
+// export function _parseTurnNotation(notation: string, index: number): Turn {
+//   const moves = notation.split(' ');
+//   return {
+//     notation,
+//     index: index + 1,
+//     white: _parseMoveNotation(moves[0]),
+//     black: _parseMoveNotation(moves[1])
+//   };
+// }
 export function _parseTurnNotation(notation: string): Turn {
   const sepLocation = notation.indexOf('.');
   const indexString = notation.slice(0, sepLocation);
   const placementsString = notation.slice(sepLocation + 1);
-  const placements = placementsString.split(',');
+  const placements = placementsString.split(' ');
   return {
     notation,
     index: parseInt(indexString),
@@ -159,7 +170,10 @@ export function _parseMoveNotation(notation?: string): Move | undefined {
 
   // Split notation into moving tile and reference tile portions
   notation = notation.trim();
-  const [tileId, refNotation] = notation.split(/\s/g);
+  let [tileId, refNotation] = notation.split(/\s/g);
+  console.log(notation);
+  console.log(tileId);
+  console.log(refNotation);
 
   // Check for and return a passing move
   if (tileId === 'x')
@@ -171,10 +185,18 @@ export function _parseMoveNotation(notation?: string): Move | undefined {
     };
 
   // Parse the reference notation to get the reference tile and direction
-  const { refId, dir, end } =
+  let { refId, dir, end } =
     refNotation !== undefined
       ? _parseReferenceNotation(refNotation) // only when there is one
       : { refId: tileId, dir: 0, end: false }; // first move notation
+
+  // // TODO: is this the right way to do this?
+  // // handle first move notation
+  // if (tileId === '.') {
+  //   refId = tileId;
+  //   dir = 0;
+  //   end = false;
+  // }
 
   // Return a playing move
   return {

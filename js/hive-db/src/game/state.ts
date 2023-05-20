@@ -18,6 +18,7 @@ export interface GameState {
 export const newGameState = (notation?: string): GameState => {
   if (!notation) notation = '';
   const moves = getGameMoves(notation);
+  console.log(moves);
   return {
     notation: notation,
     turn: moves.length % 2 === 0 ? 'w' : 'b',
