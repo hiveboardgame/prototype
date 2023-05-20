@@ -10,11 +10,15 @@ use hive_lib::{
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use std::{collections::HashMap, str::FromStr};
+use utoipa::ToSchema;
 
+/// GameStateResponse
 #[serde_as]
 #[serde_with::skip_serializing_none]
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct GameStateResponse {
+    /// Unique id for the game item.
+    #[schema(example = 1)]
     pub game_id: i32,
     pub turn: usize,
     pub game_status: GameStatus,

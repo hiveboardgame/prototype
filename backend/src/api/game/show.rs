@@ -10,6 +10,21 @@ use actix_web::{
 use hive_lib::{game_type::GameType, history::History, state::State};
 use std::str::FromStr;
 
+/// Get game by id
+///
+/// Get game from database by game id
+#[utoipa::path(
+    get,
+    context_path = "/api",
+    path = "/game/{id}",
+    responses(
+        (status = 200, description = "Game found succesfully", body = GameStateResponse),
+        (status = NOT_FOUND, description = "Game was not found")
+    ),
+    params(
+        ("id" = i32, Path, description = "Game database id to get Game for"),
+    )
+)]
 #[get("/game/{id}")]
 pub async fn get_game(
     path: Path<i32>,
