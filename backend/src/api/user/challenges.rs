@@ -1,14 +1,9 @@
-use actix_web::{
-    get,
-    web::{self},
-    HttpResponse,
-};
-
 use crate::challenge::game_challenge_response::GameChallengeResponse;
 use crate::db::util::DbPool;
 use crate::extractors::auth::AuthenticatedUser;
 use crate::model::user::User;
 use crate::server_error::ServerError;
+use actix_web::{get, web, HttpResponse};
 
 #[get("/user/{uid}/challenges")]
 pub async fn get_user_challenges(
@@ -30,10 +25,8 @@ pub async fn get_user_challenges(
 
 #[cfg(test)]
 mod tests {
-
     use crate::challenge::game_challenge_response::GameChallengeResponse;
     use crate::{make_challenge, make_user, test::DBTest};
-
     use actix_web::test::{self, TestRequest};
     use serde_json::json;
     use serial_test::serial;

@@ -1,18 +1,16 @@
-use std::fmt::Display;
-use std::str::FromStr;
-
-use chrono::{DateTime, Utc};
-use hive_lib::game_error::GameError;
-use hive_lib::game_type::GameType;
-use serde::{Deserialize, Serialize};
-use thiserror::Error;
-use uuid::Uuid;
-
 use crate::{
     db::util::DbPool,
     model::{challenge::GameChallenge, user::User},
     server_error::ServerError,
 };
+use chrono::{DateTime, Utc};
+use hive_lib::game_error::GameError;
+use hive_lib::game_type::GameType;
+use serde::{Deserialize, Serialize};
+use std::fmt::Display;
+use std::str::FromStr;
+use thiserror::Error;
+use uuid::Uuid;
 
 #[derive(Error, Debug)]
 pub enum ChallengeError {

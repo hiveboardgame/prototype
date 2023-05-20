@@ -1,13 +1,12 @@
-use actix_web::{
-    post,
-    web::{self, Json},
-};
-
 use crate::api::game::challenge::game_challenge_response::GameChallengeResponse;
 use crate::challenge::game_challenge_response::NewGameChallengeRequest;
 use crate::{
     db::util::DbPool, extractors::auth::AuthenticatedUser, model::challenge::GameChallenge,
     server_error::ServerError,
+};
+use actix_web::{
+    post,
+    web::{self, Json},
 };
 
 #[post("/game/challenge")]

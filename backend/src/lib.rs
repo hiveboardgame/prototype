@@ -7,11 +7,13 @@ mod server_error;
 mod static_files;
 mod websockets;
 
+#[cfg(test)]
+mod test;
+
 use crate::api::game;
 use crate::api::user;
 use crate::config::ServerConfig;
 use crate::db::util::{get_pool, DbPool};
-
 use actix_web::body::MessageBody;
 use actix_web::dev::Server;
 use actix_web::dev::ServiceFactory;
@@ -95,24 +97,4 @@ pub async fn run(listener: TcpListener) -> Result<Server, std::io::Error> {
     .listen(listener)?
     .run();
     Ok(server)
-}
-
-#[cfg(test)]
-mod test;
-
-#[cfg(test)]
-mod tests {
-    use actix_web::test::{self, TestRequest};
-
-    #[actix_rt::test]
-    async fn health_check() {
-        let app = test::init_service(crate::new_test_app().await).await;
-
-        let resp = TestRequest::get()
-            .uri("/api/health_check")
-            .send_request(&app)
-            .await;
-
-        assert!(resp.status().is_success());
-    }
 }

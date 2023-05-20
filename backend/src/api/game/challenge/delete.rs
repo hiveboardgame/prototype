@@ -1,15 +1,13 @@
+use crate::{
+    db::util::DbPool, extractors::auth::AuthenticatedUser, model::challenge::GameChallenge,
+    server_error::ServerError,
+};
 use actix_web::{
     delete,
     web::{self},
     HttpResponse,
 };
-
 use uuid::Uuid;
-
-use crate::{
-    db::util::DbPool, extractors::auth::AuthenticatedUser, model::challenge::GameChallenge,
-    server_error::ServerError,
-};
 
 #[delete("/game/challenge/{id}")]
 pub async fn delete_game_challenge(

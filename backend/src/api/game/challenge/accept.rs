@@ -1,10 +1,3 @@
-use actix_web::{
-    post,
-    web::{self, Json},
-};
-
-use uuid::Uuid;
-
 use crate::{
     db::util::DbPool,
     extractors::auth::AuthenticatedUser,
@@ -16,6 +9,11 @@ use crate::{
     },
     server_error::ServerError,
 };
+use actix_web::{
+    post,
+    web::{self, Json},
+};
+use uuid::Uuid;
 
 #[post("/game/challenge/{id}/accept")]
 pub async fn accept_game_challenge(

@@ -1,12 +1,10 @@
+use crate::api::game::challenge::game_challenge_response::GameChallengeResponse;
+use crate::{db::util::DbPool, model::challenge::GameChallenge, server_error::ServerError};
 use actix_web::{
     get,
     web::{self, Json},
 };
-
 use uuid::Uuid;
-
-use crate::api::game::challenge::game_challenge_response::GameChallengeResponse;
-use crate::{db::util::DbPool, model::challenge::GameChallenge, server_error::ServerError};
 
 #[get("/game/challenge/{id}")]
 pub async fn get_game_challenge(

@@ -16,7 +16,6 @@ pub async fn get_user(
 mod tests {
     use crate::model::user::User;
     use crate::{make_user, test::DBTest};
-
     use actix_web::test::{self, TestRequest};
     use serde_json::json;
     use serial_test::serial;

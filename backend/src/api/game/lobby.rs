@@ -1,13 +1,11 @@
+use crate::api::game::challenge::game_challenge_response::GameChallengeResponse;
+use crate::db::util::DbPool;
+use crate::model::challenge::GameChallenge;
+use crate::server_error::ServerError;
 use actix_web::{
     get,
     web::{self, Json},
 };
-
-use crate::api::game::challenge::game_challenge_response::GameChallengeResponse;
-use crate::db::util::DbPool;
-
-use crate::model::challenge::GameChallenge;
-use crate::server_error::ServerError;
 
 #[get("/game/lobby")]
 pub async fn get_lobby_challenges(
@@ -28,7 +26,6 @@ mod tests {
     use crate::test::DBTest;
     use crate::{make_challenge, make_user};
     use actix_web::test::{self, TestRequest};
-
     use serde_json::json;
     use serial_test::serial;
     use test_context::test_context;

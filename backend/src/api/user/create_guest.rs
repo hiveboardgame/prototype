@@ -1,13 +1,12 @@
+use crate::db::util::DbPool;
+use crate::extractors::auth::AuthenticatedUser;
+use crate::model::user::User;
+use crate::server_error::ServerError;
 use actix_web::{
     http, post,
     web::{self, Json},
 };
 use names::{Generator, Name};
-
-use crate::db::util::DbPool;
-use crate::extractors::auth::AuthenticatedUser;
-use crate::model::user::User;
-use crate::server_error::ServerError;
 
 fn random_guest_name() -> String {
     // we might consider storing the generator for (slightly) more efficient RNG
@@ -27,11 +26,8 @@ pub async fn create_guest_user(
 
 #[cfg(test)]
 mod tests {
-
     use crate::{make_guest_user, test::DBTest};
-
     use actix_web::test::{self, TestRequest};
-
     use serial_test::serial;
     use test_context::test_context;
 

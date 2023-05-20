@@ -1,14 +1,12 @@
-use actix_web::{
-    http, post,
-    web::{self, Json},
-};
-
-use serde::Deserialize;
-
 use crate::db::util::DbPool;
 use crate::extractors::auth::AuthenticatedUser;
 use crate::model::user::User;
 use crate::server_error::ServerError;
+use actix_web::{
+    http, post,
+    web::{self, Json},
+};
+use serde::Deserialize;
 
 #[derive(Deserialize)]
 pub struct NewUserBody {
@@ -28,9 +26,7 @@ pub async fn create_user(
 
 #[cfg(test)]
 mod tests {
-
     use crate::{make_user, test::DBTest};
-
     use actix_web::http::StatusCode;
     use actix_web::test::{self, TestRequest};
     use serde_json::json;
