@@ -5,7 +5,7 @@ use crate::{
 };
 use hive_lib::{
     bug::Bug, game_control::GameControl, game_status::GameStatus, game_type::GameType,
-    history::History, piece::Piece, position::Position, state::State,
+    history::History, piece::Piece, position::Position, state::State, color::Color,
 };
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
@@ -25,7 +25,8 @@ pub struct GameStateResponse {
     #[serde_as(as = "Vec<(_, _)>")]
     pub moves: HashMap<String, Vec<Position>>,
     pub spawns: Vec<Position>,
-    pub reserve: HashMap<Bug, i8>,
+    pub reserve_black: HashMap<Bug, i8>,
+    pub reserve_white: HashMap<Bug, i8>,
     pub history: Vec<(String, String)>,
     pub game_control_history: Vec<(i32, GameControl)>,
 }
@@ -51,9 +52,12 @@ impl GameStateResponse {
                 .board
                 .spawnable_positions(state.turn_color)
                 .collect::<Vec<_>>(),
-            reserve: state
+            reserve_black: state
                 .board
-                .reserve(state.turn_color, game.game_type.parse().unwrap()),
+                .reserve(Color::Black, game.game_type.parse().unwrap()),
+            reserve_white: state
+                .board
+                .reserve(Color::White, game.game_type.parse().unwrap()),
             history: state.history.moves.clone(),
             game_control_history: Self::gc_history(&game.game_control_history),
         })
