@@ -7,11 +7,13 @@ mod server_error;
 mod static_files;
 mod websockets;
 
+#[cfg(test)]
+mod test;
+
 use crate::api::game;
 use crate::api::user;
 use crate::config::ServerConfig;
 use crate::db::util::{get_pool, DbPool};
-
 use actix_web::body::MessageBody;
 use actix_web::dev::Server;
 use actix_web::dev::ServiceFactory;
@@ -35,18 +37,18 @@ pub fn config(cfg: &mut web::ServiceConfig) {
         .service(
             web::scope("/api")
                 .service(health::health_check)
-                .service(challenge::get_lobby_challenges)
-                .service(challenge::create_game_challenge)
-                .service(challenge::get_game_challenge)
-                .service(challenge::accept_game_challenge)
-                .service(challenge::delete_game_challenge)
+                .service(game::lobby::get_lobby_challenges)
+                .service(challenge::create::create_game_challenge)
+                .service(challenge::show::get_game_challenge)
+                .service(challenge::accept::accept_game_challenge)
+                .service(challenge::delete::delete_game_challenge)
                 .service(game::play::game_play)
                 .service(game::show::get_game)
-                .service(user::get_user)
-                .service(user::get_user_challenges)
-                .service(user::get_user_games)
-                .service(user::create_user)
-                .service(user::create_guest_user),
+                .service(user::show::get_user)
+                .service(user::challenges::get_user_challenges)
+                .service(user::games::get_user_games)
+                .service(user::create::create_user)
+                .service(user::create_guest::create_guest_user),
         );
 }
 
@@ -95,24 +97,4 @@ pub async fn run(listener: TcpListener) -> Result<Server, std::io::Error> {
     .listen(listener)?
     .run();
     Ok(server)
-}
-
-#[cfg(test)]
-mod test;
-
-#[cfg(test)]
-mod tests {
-    use actix_web::test::{self, TestRequest};
-
-    #[actix_rt::test]
-    async fn health_check() {
-        let app = test::init_service(crate::new_test_app().await).await;
-
-        let resp = TestRequest::get()
-            .uri("/api/health_check")
-            .send_request(&app)
-            .await;
-
-        assert!(resp.status().is_success());
-    }
 }

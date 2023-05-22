@@ -1,7 +1,8 @@
 use std::str::FromStr;
 
-use crate::db::schema::games;
 use crate::db::schema::games::dsl::*;
+
+use crate::db::schema::games;
 use crate::db::util::{get_conn, DbPool};
 use crate::model::games_users::GameUser;
 use diesel::{prelude::*, result::Error, Identifiable, Insertable, QueryDsl, Queryable};
@@ -26,7 +27,9 @@ pub struct NewGame {
     pub white_uid: String, // uid of user
 }
 
-#[derive(Queryable, Identifiable, Serialize, Deserialize, Debug, AsChangeset, Selectable)]
+#[derive(
+    Queryable, Identifiable, Serialize, Clone, Deserialize, Debug, AsChangeset, Selectable,
+)]
 #[diesel(primary_key(id))]
 #[diesel(table_name = games)]
 pub struct Game {
@@ -137,6 +140,25 @@ impl Game {
                 history.eq(new_history),
                 turn.eq(turn - 1),
                 game_status.eq(new_game_status),
+                game_control_history.eq(game_control_history.concat(game_control_string)),
+            ))
+            .get_result(conn)
+            .await
+    }
+
+    pub async fn resign(
+        &self,
+        game_control: GameControl,
+        new_game_status: GameStatus,
+        _winner: Color,
+        pool: &DbPool,
+    ) -> Result<Game, Error> {
+        let conn = &mut get_conn(pool).await?;
+        let game_control_string = format!("{}. {game_control};", self.turn);
+
+        diesel::update(games::table.find(self.id))
+            .set((
+                game_status.eq(new_game_status.to_string()),
                 game_control_history.eq(game_control_history.concat(game_control_string)),
             ))
             .get_result(conn)

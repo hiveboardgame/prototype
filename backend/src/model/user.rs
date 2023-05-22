@@ -89,7 +89,6 @@ impl User {
 
     pub async fn get_games(&self, pool: &DbPool) -> Result<Vec<Game>, Error> {
         let conn = &mut get_conn(pool).await?;
-        println!("here");
         GameUser::belonging_to(self)
             .inner_join(games::table)
             .select(Game::as_select())

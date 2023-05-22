@@ -40,7 +40,7 @@ impl GameStateResponse {
     pub async fn new_from(game: &Game, state: &State, pool: &DbPool) -> Result<Self, ServerError> {
         Ok(Self {
             game_id: game.id,
-            game_status: state.game_status.clone(),
+            game_status: GameStatus::from_str(&game.game_status)?,
             game_type: GameType::from_str(&game.game_type)?,
             tournament_queen_rule: state.tournament,
             turn: state.turn,
@@ -64,7 +64,6 @@ impl GameStateResponse {
         for gc_str in gcs.split_terminator(';') {
             let turn: i32;
             let gc: GameControl;
-            println!("{gc_str}");
             // TODO: This code is janky
             if let Some(turn_str) = gc_str.split(' ').next() {
                 turn = turn_str.strip_suffix('.').unwrap().parse().unwrap();
@@ -80,7 +79,6 @@ impl GameStateResponse {
     fn moves_as_string(
         moves: HashMap<(Piece, Position), Vec<Position>>,
     ) -> HashMap<String, Vec<Position>> {
-        println!("Moves are {moves:?}");
         let mut mapped = HashMap::new();
         for ((piece, _pos), possible_pos) in moves.into_iter() {
             mapped.insert(piece.to_string(), possible_pos);

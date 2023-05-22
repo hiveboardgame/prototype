@@ -1,4 +1,7 @@
-use crate::{api::game::challenge::ChallengeError, extractors::auth::AuthenticationError};
+use crate::{
+    api::game::challenge::game_challenge_response::ChallengeError,
+    extractors::auth::AuthenticationError,
+};
 use actix_web::{error::ResponseError, http::StatusCode, HttpResponse};
 use diesel::result::Error as DieselError;
 use hive_lib::game_error::GameError;
