@@ -60,4 +60,10 @@ diesel::joinable!(games_users -> games (game_id));
 diesel::joinable!(games_users -> users (user_uid));
 diesel::joinable!(ratings -> users (user_uid));
 
-diesel::allow_tables_to_appear_in_same_query!(game_challenges, games, games_users, ratings, users,);
+diesel::allow_tables_to_appear_in_same_query!(
+    game_challenges,
+    games,
+    games_users,
+    ratings,
+    users,
+);
