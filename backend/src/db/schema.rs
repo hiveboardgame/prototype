@@ -5,7 +5,7 @@ diesel::table! {
         id -> Uuid,
         challenger_uid -> Text,
         game_type -> Text,
-        rated -> Bool,
+        ranked -> Bool,
         public -> Bool,
         tournament_queen_rule -> Bool,
         color_choice -> Text,
@@ -21,7 +21,7 @@ diesel::table! {
         game_type -> Text,
         history -> Text,
         game_control_history -> Text,
-        rated -> Bool,
+        ranked -> Bool,
         tournament_queen_rule -> Bool,
         turn -> Int4,
         white_uid -> Text,
@@ -36,38 +36,21 @@ diesel::table! {
 }
 
 diesel::table! {
-    ratings (id) {
-        id -> Int4,
-        user_uid -> Text,
-        rated_games_played -> Nullable<Int8>,
-        puzzle -> Float8,
-        correspondence -> Float8,
-        classical -> Float8,
-        rapid -> Float8,
-        blitz -> Float8,
-        bullet -> Float8,
-    }
-}
-
-diesel::table! {
     users (uid) {
         uid -> Text,
         #[max_length = 40]
         username -> Varchar,
         is_guest -> Bool,
-        games_played -> Int8,
     }
 }
 
 diesel::joinable!(game_challenges -> users (challenger_uid));
 diesel::joinable!(games_users -> games (game_id));
 diesel::joinable!(games_users -> users (user_uid));
-diesel::joinable!(ratings -> users (user_uid));
 
 diesel::allow_tables_to_appear_in_same_query!(
     game_challenges,
     games,
     games_users,
-    ratings,
     users,
 );
