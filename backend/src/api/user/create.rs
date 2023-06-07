@@ -38,7 +38,9 @@ mod tests {
     #[serial]
     async fn user_creation(_ctx: &mut DBTest) {
         let app = test::init_service(crate::new_test_app().await).await;
+        println!("Got app");
         let user = make_user!("black", &app);
+        println!("Made user");
         assert_eq!(user.uid, "black");
         assert_eq!(user.username, "black");
 

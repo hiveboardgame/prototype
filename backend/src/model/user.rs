@@ -1,18 +1,22 @@
 use crate::db::schema::games;
 use crate::db::schema::users;
+use crate::db::schema::ratings;
 use crate::db::schema::users::dsl::users as users_table;
+use crate::db::schema::ratings::dsl::ratings as ratings_table;
 use crate::db::util::{get_conn, DbPool};
+use crate::model::challenge::GameChallenge;
 use crate::model::game::Game;
 use crate::model::games_users::GameUser;
+use crate::model::ratings::NewRating;
 use crate::server_error::ServerError;
 use diesel::{
     query_dsl::BelongingToDsl, result::Error, Identifiable, Insertable, QueryDsl, Queryable,
     SelectableHelper,
 };
+use diesel_async::scoped_futures::ScopedFutureExt;
+use diesel_async::AsyncConnection;
 use diesel_async::RunQueryDsl;
 use serde::{Deserialize, Serialize};
-
-use super::challenge::GameChallenge;
 
 const MAX_USERNAME_LENGTH: usize = 40;
 const VALID_USERNAME_CHARS: &str = "-_";
@@ -58,6 +62,7 @@ pub struct User {
     pub uid: String,
     pub username: String,
     pub is_guest: bool,
+    pub games_played: i64,
 }
 
 impl User {
@@ -68,6 +73,7 @@ impl User {
             uid: uid.into(),
             username: username.into(),
             is_guest,
+            games_played: 0,
         })
     }
 
@@ -77,8 +83,23 @@ impl User {
     }
 
     pub async fn insert(&self, pool: &DbPool) -> Result<(), Error> {
-        let conn = &mut get_conn(pool).await?;
-        self.insert_into(users_table).execute(conn).await?;
+        let connection = &mut get_conn(pool).await?;
+        connection
+            .transaction::<_, diesel::result::Error, _>(|conn| {
+                async move {
+                    self.insert_into(users_table).execute(conn);
+                    println!("Inserted user");
+
+                    let new_rating = NewRating::new(&self.uid);
+                    diesel::insert_into(ratings::table)
+                        .values(&new_rating)
+                        .execute(conn);
+                    println!("Inserted rating");
+                    Ok(())
+                }
+                .scope_boxed()
+            })
+            .await?;
         Ok(())
     }
 

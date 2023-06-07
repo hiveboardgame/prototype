@@ -45,7 +45,7 @@ pub async fn accept_game_challenge(
         tournament_queen_rule: challenge.tournament_queen_rule,
         turn: 0,
         white_uid,
-        ranked: challenge.ranked,
+        rated: challenge.rated,
     };
     let game = Game::create(&new_game, &pool).await?;
     challenge.delete(&pool).await?;

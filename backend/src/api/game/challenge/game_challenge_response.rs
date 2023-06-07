@@ -59,8 +59,8 @@ pub struct NewGameChallengeRequest {
     // Whether this challenge should be listed publicly
     pub public: bool,
 
-    // Whether the game will be ranked
-    pub ranked: bool,
+    // Whether the game will be rated
+    pub rated: bool,
 
     // Whether the game follows the "tournament" rules, i.e. the queen
     // cannot be played first.
@@ -78,7 +78,7 @@ pub struct GameChallengeResponse {
     pub id: Uuid,
     pub challenger: User,
     pub game_type: GameType,
-    pub ranked: bool,
+    pub rated: bool,
     pub public: bool,
     pub tournament_queen_rule: bool,
     pub color_choice: ColorChoice,
@@ -114,7 +114,7 @@ impl GameChallengeResponse {
             id: challenge.id,
             challenger,
             game_type,
-            ranked: challenge.ranked,
+            rated: challenge.rated,
             public: challenge.public,
             tournament_queen_rule: challenge.tournament_queen_rule,
             color_choice,

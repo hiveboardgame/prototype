@@ -71,7 +71,7 @@ macro_rules! make_challenge {
     ( $uid:expr, $color_choice:expr, $app:expr ) => {{
         let request_body = json!({
             "public": true,
-            "ranked": false,
+            "rated": false,
             "tournamentQueenRule": true,
             "gameType": "MLP",
             "colorChoice": $color_choice,
@@ -97,6 +97,20 @@ macro_rules! accept_challenge {
             .to_request();
         let game: GameStateResponse = test::call_and_read_body_json($app, req).await;
         game
+    }};
+}
+
+#[macro_export]
+macro_rules! play_turn_get_resp {
+    ( $game_id:expr, $uid:expr, $move:expr, $app:expr ) => {{
+        let request_body = json!({ "Turn": $move });
+        let resp = TestRequest::post()
+            .uri(&format!("/api/game/{}/play", $game_id))
+            .set_json(&request_body)
+            .insert_header(("x-authentication", $uid))
+            .send_request($app).await;
+        let body = test::read_body(resp).await;
+        println!("body: {:?}", body);
     }};
 }
 

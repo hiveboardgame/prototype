@@ -1,38 +1,54 @@
+use crate::db::schema::ratings;
+use crate::db::util::{get_conn, DbPool};
+use crate::model::user::User;
+use diesel::{
+    result::Error, AsExpression, Associations, BelongingToDsl, Identifiable, Insertable, QueryDsl,
+    Queryable, SelectableHelper,
+};
+use diesel_async::RunQueryDsl;
+use serde::{Deserialize, Serialize};
+
 #[derive(Insertable, Debug)]
 #[diesel(table_name = ratings)]
-struct NewRating {
+pub struct NewRating {
     user_uid: String,
-    game_type: String,
-    games_played: u64,
-    turn_based: f32,
-    puzzle: f32,
+    rated_games_played: i64,
+    puzzle: f64,
+    correspondence: f64,
+    classical: f64,
+    rapid: f64,
+    blitz: f64,
+    bullet: f64,
 }
 
-#[derive(Associations, Identifiable, Queryable, Debug, Serialize)]
+#[derive(Associations, Identifiable, Queryable, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[diesel(belongs_to(User, foreign_key = user_uid))]
 #[diesel(table_name = ratings)]
 pub struct Rating {
     id: i32,
     user_uid: String,
-    game_type: String,
-    games_played: i32,
-    turn_based: f64,
+    rated_games_played: i32,
     puzzle: f64,
+    correspondence: f64,
+    classical: f64,
+    rapid: f64,
+    blitz: f64,
+    bullet: f64,
 }
 
-impl Rating {
-    pub fn new(user_uid: &str, game_typ: &str) -> Result<Self, ServerError> {
-        Ok(User {
-            uid: uid.into(),
-            username: username.into(),
-            is_guest,
-        })
-    }
-
-    pub async fn insert(&self, pool: &DbPool) -> Result<(), Error> {
-        let conn = &mut get_conn(pool).await?;
-        self.insert_into(users_table).execute(conn).await?;
-        Ok(())
+impl NewRating {
+    pub fn new(user_uid: &str) -> Self {
+        Self {
+            user_uid: user_uid.to_string(),
+            rated_games_played: 0,
+            puzzle: 1500.0,
+            correspondence: 1500.0,
+            classical: 1500.0,
+            rapid: 1500.0,
+            blitz: 1500.0,
+            bullet: 1500.0,
+        }
     }
 }
+

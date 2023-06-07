@@ -21,7 +21,7 @@ pub struct NewGame {
     pub game_type: String,
     pub history: String,
     pub game_control_history: String,
-    pub ranked: bool,
+    pub rated: bool,
     pub tournament_queen_rule: bool,
     pub turn: i32,
     pub white_uid: String, // uid of user
@@ -39,7 +39,7 @@ pub struct Game {
     pub game_type: String,
     pub history: String, //"piece pos;piece pos;piece pos;"
     pub game_control_history: String,
-    pub ranked: bool,
+    pub rated: bool,
     pub tournament_queen_rule: bool,
     pub turn: i32,
     pub white_uid: String, // uid of user
