@@ -17,9 +17,10 @@ impl AsyncTestContext for DBTest {
         // env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
         let server_config = ServerConfig::from_test_env().expect("Not all env vars are set");
         let database_url = &server_config.database_url;
+        println!("database_url: {}", database_url);
         let mut conn = PgConnection::establish(database_url)
             .unwrap_or_else(|_| panic!("Error connecting to {}", database_url));
-        conn.revert_all_migrations(MIGRATIONS).unwrap();
+        //conn.revert_all_migrations(MIGRATIONS).unwrap();
         conn.run_pending_migrations(MIGRATIONS).unwrap();
         DBTest { conn }
     }
