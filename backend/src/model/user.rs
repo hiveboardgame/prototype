@@ -87,14 +87,11 @@ impl User {
         connection
             .transaction::<_, diesel::result::Error, _>(|conn| {
                 async move {
-                    self.insert_into(users_table).execute(conn);
-                    println!("Inserted user");
-
+                    self.insert_into(users_table).execute(conn).await?;
                     let new_rating = NewRating::new(&self.uid);
                     diesel::insert_into(ratings::table)
                         .values(&new_rating)
-                        .execute(conn);
-                    println!("Inserted rating");
+                        .execute(conn).await?;
                     Ok(())
                 }
                 .scope_boxed()
