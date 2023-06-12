@@ -452,27 +452,24 @@ impl Board {
             .filter_map(|pos| self.board.get(pos).top_piece())
     }
 
-    pub fn spawns_left(&self, color: Color, game_type: GameType) -> bool {
-        let reserve_bugs_count = self
-            .reserve(color, game_type)
-            .iter()
-            .fold(0, |acc, (_bug, count)| acc + count);
-        !self.spawnable_positions(color).count() == 0 && reserve_bugs_count > 0
-    }
-
-    pub fn reserve(&self, color: Color, game_type: GameType) -> HashMap<Bug, i8> {
+    pub fn reserve(&self, color: Color, game_type: GameType) -> HashMap<Bug, Vec<String>> {
+        let mut res = HashMap::<Bug, Vec<String>>::new();
         let start = 24 * color as usize;
         let end = 24 + start;
-        let mut bugs = Bug::bugs_count(game_type);
+        let bugs_for_game_type = Bug::bugs_count(game_type);
         for (i, maybe_pos) in self.positions[start..end].iter().enumerate() {
-            if maybe_pos.is_some() {
-                let bug = Bug::from(i as u8 / 3);
-                if let Some(num) = bugs.get_mut(&bug) {
-                    *num -= 1;
+            if maybe_pos.is_none() {
+                let piece = self.offset_to_piece(i + 24 * color as usize);
+                if let Some(number_of_bugs) = bugs_for_game_type.get(&piece.bug()) {
+                    if (*number_of_bugs as usize) > (i % 3) {
+                        res.entry(piece.bug())
+                            .or_insert(Vec::new())
+                            .push(piece.to_string());
+                    }
                 }
             }
         }
-        bugs
+        res
     }
 
     pub fn all_taken_positions(&self) -> impl Iterator<Item = Position> {
