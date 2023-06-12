@@ -1,24 +1,58 @@
 use crate::db::schema::ratings;
-use crate::db::util::{get_conn, DbPool};
+use crate::db::schema::sql_types::Gamestatistics;
 use crate::model::user::User;
 use diesel::{
-    result::Error, AsExpression, Associations, BelongingToDsl, Identifiable, Insertable, QueryDsl,
-    Queryable, SelectableHelper,
+    AsExpression, Associations, FromSqlRow, Identifiable, Insertable, Queryable, SqlType,
 };
-use diesel_async::RunQueryDsl;
 use serde::{Deserialize, Serialize};
+
+#[derive(Debug, AsExpression, Serialize, Deserialize)]
+#[diesel(postgres_type(name = "Gamestatistics"))]
+#[diesel(sql_type = Gamestatistics)]
+pub struct Statistics {
+    games_played: i64,
+    rating: f64,
+    deviation: f64,
+    volatility: f64,
+}
+
+impl Statistics {
+    pub fn default() -> Self {
+        Self {
+            games_played: 0,
+            rating: 1500.0,
+            deviation: 350.0,
+            volatility: 0.06,
+        }
+    }
+}
 
 #[derive(Insertable, Debug)]
 #[diesel(table_name = ratings)]
 pub struct NewRating {
     user_uid: String,
     rated_games_played: i64,
-    puzzle: f64,
-    correspondence: f64,
-    classical: f64,
-    rapid: f64,
-    blitz: f64,
-    bullet: f64,
+    puzzle: Statistics,
+    correspondence: Statistics,
+    classical: Statistics,
+    rapid: Statistics,
+    blitz: Statistics,
+    bullet: Statistics,
+}
+
+impl NewRating {
+    pub fn for_uid(user_uid: String) -> Self {
+        Self {
+            user_uid,
+            rated_games_played: 0,
+            puzzle: Statistics::default(),
+            correspondence: Statistics::default(),
+            classical: Statistics::default(),
+            rapid: Statistics::default(),
+            blitz: Statistics::default(),
+            bullet: Statistics::default(),
+        }
+    }
 }
 
 #[derive(Associations, Identifiable, Queryable, Debug, Serialize, Deserialize)]
@@ -26,29 +60,13 @@ pub struct NewRating {
 #[diesel(belongs_to(User, foreign_key = user_uid))]
 #[diesel(table_name = ratings)]
 pub struct Rating {
-    id: i32,
+    id: i64,
     user_uid: String,
-    rated_games_played: i32,
-    puzzle: f64,
-    correspondence: f64,
-    classical: f64,
-    rapid: f64,
-    blitz: f64,
-    bullet: f64,
+    rated_games_played: i64,
+    puzzle: Statistics,
+    correspondence: Statistics,
+    classical: Statistics,
+    rapid: Statistics,
+    blitz: Statistics,
+    bullet: Statistics,
 }
-
-impl NewRating {
-    pub fn new(user_uid: &str) -> Self {
-        Self {
-            user_uid: user_uid.to_string(),
-            rated_games_played: 0,
-            puzzle: 1500.0,
-            correspondence: 1500.0,
-            classical: 1500.0,
-            rapid: 1500.0,
-            blitz: 1500.0,
-            bullet: 1500.0,
-        }
-    }
-}
-

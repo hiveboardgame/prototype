@@ -1,8 +1,7 @@
 use crate::db::schema::games;
-use crate::db::schema::users;
 use crate::db::schema::ratings;
+use crate::db::schema::users;
 use crate::db::schema::users::dsl::users as users_table;
-use crate::db::schema::ratings::dsl::ratings as ratings_table;
 use crate::db::util::{get_conn, DbPool};
 use crate::model::challenge::GameChallenge;
 use crate::model::game::Game;
@@ -88,10 +87,11 @@ impl User {
             .transaction::<_, diesel::result::Error, _>(|conn| {
                 async move {
                     self.insert_into(users_table).execute(conn).await?;
-                    let new_rating = NewRating::new(&self.uid);
+                    let new_rating = NewRating::for_uid(self.uid);
                     diesel::insert_into(ratings::table)
                         .values(&new_rating)
-                        .execute(conn).await?;
+                        .execute(conn)
+                        .await?;
                     Ok(())
                 }
                 .scope_boxed()

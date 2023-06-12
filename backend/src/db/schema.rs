@@ -1,5 +1,11 @@
 // @generated automatically by Diesel CLI.
 
+pub mod sql_types {
+    #[derive(diesel::sql_types::SqlType)]
+    #[diesel(postgres_type(name = "gamestatistics"))]
+    pub struct Gamestatistics;
+}
+
 diesel::table! {
     game_challenges (id) {
         id -> Uuid,
@@ -36,16 +42,19 @@ diesel::table! {
 }
 
 diesel::table! {
+    use diesel::sql_types::*;
+    use super::sql_types::Gamestatistics;
+
     ratings (id) {
         id -> Int4,
         user_uid -> Text,
         rated_games_played -> Nullable<Int8>,
-        puzzle -> Float8,
-        correspondence -> Float8,
-        classical -> Float8,
-        rapid -> Float8,
-        blitz -> Float8,
-        bullet -> Float8,
+        puzzle -> Gamestatistics,
+        correspondence -> Gamestatistics,
+        classical -> Gamestatistics,
+        rapid -> Gamestatistics,
+        blitz -> Gamestatistics,
+        bullet -> Gamestatistics,
     }
 }
 
