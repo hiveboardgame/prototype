@@ -4,8 +4,8 @@ use crate::{
     server_error::ServerError,
 };
 use hive_lib::{
-    bug::Bug, game_control::GameControl, game_status::GameStatus, game_type::GameType,
-    history::History, piece::Piece, position::Position, state::State, color::Color,
+    bug::Bug, color::Color, game_control::GameControl, game_status::GameStatus,
+    game_type::GameType, history::History, piece::Piece, position::Position, state::State,
 };
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
@@ -13,7 +13,7 @@ use std::{collections::HashMap, str::FromStr};
 
 #[serde_as]
 #[serde_with::skip_serializing_none]
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct GameStateResponse {
     pub game_id: i32,
     pub turn: usize,
@@ -25,8 +25,8 @@ pub struct GameStateResponse {
     #[serde_as(as = "Vec<(_, _)>")]
     pub moves: HashMap<String, Vec<Position>>,
     pub spawns: Vec<Position>,
-    pub reserve_black: HashMap<Bug, i8>,
-    pub reserve_white: HashMap<Bug, i8>,
+    pub reserve_black: HashMap<Bug, Vec<String>>,
+    pub reserve_white: HashMap<Bug, Vec<String>>,
     pub history: Vec<(String, String)>,
     pub game_control_history: Vec<(i32, GameControl)>,
 }
