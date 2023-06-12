@@ -10,7 +10,10 @@ use serde::{Deserialize, Serialize};
 #[diesel(postgres_type(name = "Gamestatistics"))]
 #[diesel(sql_type = Gamestatistics)]
 pub struct Statistics {
-    games_played: i64,
+    played: i64,
+    won: i64,
+    lost: i64,
+    draw: i64,
     rating: f64,
     deviation: f64,
     volatility: f64,
@@ -19,7 +22,10 @@ pub struct Statistics {
 impl Statistics {
     pub fn default() -> Self {
         Self {
-            games_played: 0,
+            played: 0,
+            won: 0,
+            lost: 0,
+            draw: 0,
             rating: 1500.0,
             deviation: 350.0,
             volatility: 0.06,
