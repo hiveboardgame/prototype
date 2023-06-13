@@ -194,11 +194,23 @@ impl Rating {
             }
         };
 
-        diesel::update(ratings::table.find(black_rating.id))
+        diesel::update(ratings::table.find(white_rating.id))
             .set((
                 played.eq(played + 1),
                 won.eq(won + white_won),
                 lost.eq(lost + white_lost),
+                rating.eq(white_glicko.rating),
+                deviation.eq(white_glicko.deviation),
+                volatility.eq(white_glicko.volatility),
+            ))
+            .execute(conn)
+            .await?;
+
+        diesel::update(ratings::table.find(black_rating.id))
+            .set((
+                played.eq(played + 1),
+                won.eq(won + white_lost),
+                lost.eq(lost + white_won),
                 rating.eq(black_glicko.rating),
                 deviation.eq(black_glicko.deviation),
                 volatility.eq(black_glicko.volatility),
@@ -206,17 +218,6 @@ impl Rating {
             .execute(conn)
             .await?;
 
-        diesel::update(ratings::table.find(white_rating.id))
-            .set((
-                played.eq(played + 1),
-                won.eq(won + white_lost),
-                lost.eq(lost + white_won),
-                rating.eq(white_glicko.rating),
-                deviation.eq(white_glicko.deviation),
-                volatility.eq(white_glicko.volatility),
-            ))
-            .execute(conn)
-            .await?;
         Ok(())
     }
 }

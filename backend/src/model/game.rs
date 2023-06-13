@@ -1,5 +1,5 @@
-use crate::db::schema::games::dsl::*;
 use crate::db::schema::games;
+use crate::db::schema::games::dsl::*;
 use crate::db::util::{get_conn, DbPool};
 use crate::model::games_users::GameUser;
 use crate::model::ratings::Rating;
@@ -60,10 +60,10 @@ impl Game {
     pub async fn make_move(
         &self,
         mut board_move: String,
-        new_game_status: String,
+        new_game_status: GameStatus,
         pool: &DbPool,
     ) -> Result<Game, Error> {
-        let conn = &mut get_conn(pool).await?;
+        let connection = &mut get_conn(pool).await?;
         if board_move.chars().last().unwrap_or(' ') != ';' {
             board_move = format!("{board_move};");
         }
@@ -80,14 +80,38 @@ impl Game {
             };
             game_control_string = format!("{}. {gc};", self.turn);
         }
-        diesel::update(games::table.find(self.id))
-            .set((
-                history.eq(history.concat(board_move)),
-                turn.eq(turn + 1),
-                game_status.eq(new_game_status),
-                game_control_history.eq(game_control_history.concat(game_control_string)),
-            ))
-            .get_result(conn)
+
+        connection
+            .transaction::<_, diesel::result::Error, _>(|conn| {
+                async move {
+                    if let GameStatus::Finished(game_result) = new_game_status.clone() {
+                        if let GameResult::Unknown = game_result {
+                            // nothing to do here
+                        } else {
+                            Rating::update(
+                                self.white_uid.clone(),
+                                self.black_uid.clone(),
+                                game_result,
+                                conn,
+                                pool,
+                            )
+                            .await?;
+                        }
+                    }
+                    let game = diesel::update(games::table.find(self.id))
+                        .set((
+                            history.eq(history.concat(board_move)),
+                            turn.eq(turn + 1),
+                            game_status.eq(new_game_status.to_string()),
+                            game_control_history
+                                .eq(game_control_history.concat(game_control_string)),
+                        ))
+                        .get_result(conn)
+                        .await?;
+                    Ok(game)
+                }
+                .scope_boxed()
+            })
             .await
     }
 
@@ -161,8 +185,14 @@ impl Game {
                 async move {
                     match new_game_status.clone() {
                         GameStatus::Finished(game_result) => {
-                            Rating::update(self.white_uid.clone(), self.black_uid.clone(), game_result.clone(), conn, pool)
-                                .await?;
+                            Rating::update(
+                                self.white_uid.clone(),
+                                self.black_uid.clone(),
+                                game_result.clone(),
+                                conn,
+                                pool,
+                            )
+                            .await?;
                         }
                         _ => unreachable!(),
                     }
@@ -187,14 +217,31 @@ impl Game {
         game_control: GameControl,
         pool: &DbPool,
     ) -> Result<Game, Error> {
-        let conn = &mut get_conn(pool).await?;
+        let connection = &mut get_conn(pool).await?;
         let game_control_string = format!("{}. {game_control};", self.turn);
-        diesel::update(games::table.find(self.id))
-            .set((
-                game_control_history.eq(game_control_history.concat(game_control_string)),
-                game_status.eq(GameStatus::Finished(GameResult::Draw).to_string()),
-            ))
-            .get_result(conn)
+        connection
+            .transaction::<_, diesel::result::Error, _>(|conn| {
+                async move {
+                    Rating::update(
+                        self.white_uid.clone(),
+                        self.black_uid.clone(),
+                        GameResult::Draw,
+                        conn,
+                        pool,
+                    )
+                    .await?;
+                    let game = diesel::update(games::table.find(self.id))
+                        .set((
+                            game_control_history
+                                .eq(game_control_history.concat(game_control_string)),
+                            game_status.eq(GameStatus::Finished(GameResult::Draw).to_string()),
+                        ))
+                        .get_result(conn)
+                        .await?;
+                    Ok(game)
+                }
+                .scope_boxed()
+            })
             .await
     }
 

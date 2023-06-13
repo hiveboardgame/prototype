@@ -68,7 +68,7 @@ async fn play_turn(
     state.play_turn(piece, position)?;
     let board_move = format!("{piece} {pos}");
     let game = game
-        .make_move(board_move, state.game_status.to_string(), pool)
+        .make_move(board_move, state.game_status.clone(), pool)
         .await?;
     // TODO: handle game end, update rating
     GameStateResponse::new_from(&game, &state, pool).await
