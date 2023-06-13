@@ -61,7 +61,6 @@ pub struct User {
     pub uid: String,
     pub username: String,
     pub is_guest: bool,
-    pub games_played: i64,
 }
 
 impl User {
@@ -72,7 +71,6 @@ impl User {
             uid: uid.into(),
             username: username.into(),
             is_guest,
-            games_played: 0,
         })
     }
 
@@ -86,8 +84,8 @@ impl User {
         connection
             .transaction::<_, diesel::result::Error, _>(|conn| {
                 async move {
-                    self.insert_into(users_table).execute(conn).await?;
-                    let new_rating = NewRating::for_uid(self.uid.clone());
+                    self.insert_into(users::table).execute(conn).await?;
+                    let new_rating = NewRating::for_uid(&self.uid);
                     diesel::insert_into(ratings::table)
                         .values(&new_rating)
                         .execute(conn)

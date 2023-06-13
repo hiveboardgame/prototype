@@ -1,13 +1,13 @@
-use std::str::FromStr;
-
 use crate::db::schema::games::dsl::*;
 use crate::db::schema::{games, ratings};
 use crate::db::util::{get_conn, DbPool};
+use crate::model::game::ratings::*;
 use crate::model::games_users::GameUser;
 use crate::model::ratings::Rating;
 use crate::model::user::User;
-use diesel::associations::BelongsTo;
 use diesel::{prelude::*, result::Error, Identifiable, Insertable, QueryDsl, Queryable};
+use diesel_async::scoped_futures::ScopedFutureExt;
+use diesel_async::AsyncConnection;
 use diesel_async::RunQueryDsl;
 use hive_lib::{
     color::Color, game_control::GameControl, game_result::GameResult, game_status::GameStatus,
@@ -17,6 +17,7 @@ use skillratings::{
     glicko2::{glicko2, Glicko2Config, Glicko2Rating},
     Outcomes,
 };
+use std::str::FromStr;
 
 #[derive(Insertable, Debug)]
 #[diesel(table_name = games)]
@@ -159,57 +160,86 @@ impl Game {
         winner: Color,
         pool: &DbPool,
     ) -> Result<Game, Error> {
-        let conn = &mut get_conn(pool).await?;
+        let connection = &mut get_conn(pool).await?;
         let game_control_string = format!("{}. {game_control};", self.turn);
 
-        // transaction to update
-        // - winner rating
-        // - loser rating
-        // - game
+        connection
+            .transaction::<_, diesel::result::Error, _>(|conn| {
+                async move {
+                    let white = User::find_by_uid(pool, &self.white_uid).await?;
+                    let white_rating: Rating =
+                        Rating::belonging_to(&white).get_result(conn).await?;
 
-        let outcome = {
-            if winner == Color::White {
-                Outcomes::WIN
-            } else {
-                Outcomes::LOSS
-            }
-        };
+                    let black = User::find_by_uid(pool, &self.black_uid).await?;
+                    let black_rating: Rating =
+                        Rating::belonging_to(&black).get_result(conn).await?;
 
-        let config = Glicko2Config {
-            tau: 0.5,
-            ..Default::default()
-        };
+                    let mut white_glicko = Glicko2Rating {
+                        rating: white_rating.rating,
+                        deviation: white_rating.deviation,
+                        volatility: white_rating.volatility,
+                    };
 
-        let white = User::find_by_uid(pool, &self.white_uid).await?;
-        let white_rating: Rating = Rating::belonging_to(&white).get_result(conn).await?;
+                    let mut black_glicko = Glicko2Rating {
+                        rating: black_rating.rating,
+                        deviation: black_rating.deviation,
+                        volatility: black_rating.volatility,
+                    };
 
-        let black = User::find_by_uid(pool, &self.black_uid).await?;
-        let black_rating: Rating = Rating::belonging_to(&black).get_result(conn).await?;
+                    let (outcome, white_won, white_lost) = {
+                        if winner == Color::White {
+                            (Outcomes::WIN, 1, 0)
+                        } else {
+                            (Outcomes::LOSS, 0, 1)
+                        }
+                    };
 
-        let mut white_glicko = Glicko2Rating {
-            rating: white_rating.rating,
-            deviation: white_rating.deviation,
-            volatility: white_rating.volatility,
-        };
+                    let config = Glicko2Config {
+                        tau: 0.5,
+                        ..Default::default()
+                    };
 
-        let mut black_glicko = Glicko2Rating {
-            rating: black_rating.rating,
-            deviation: black_rating.deviation,
-            volatility: black_rating.volatility,
-        };
+                    (white_glicko, black_glicko) =
+                        glicko2(&white_glicko, &black_glicko, &outcome, &config);
 
-        println!("White: {white_glicko:?}");
+                    let _foo = 1;
 
-        (white_glicko, black_glicko) = glicko2(&white_glicko, &black_glicko, &outcome, &config);
+                    diesel::update(ratings::table.find(black_rating.id))
+                        .set((
+                            played.eq(played + 1),
+                            won.eq(won + white_won),
+                            lost.eq(lost + white_lost),
+                            rating.eq(black_glicko.rating),
+                            deviation.eq(black_glicko.deviation),
+                            volatility.eq(black_glicko.volatility),
+                        ))
+                        .execute(conn)
+                        .await?;
 
-        println!("White: {white_glicko:?}");
+                    diesel::update(ratings::table.find(white_rating.id))
+                        .set((
+                            played.eq(played + 1),
+                            won.eq(won + white_lost),
+                            lost.eq(lost + white_won),
+                            rating.eq(white_glicko.rating),
+                            deviation.eq(white_glicko.deviation),
+                            volatility.eq(white_glicko.volatility),
+                        ))
+                        .execute(conn)
+                        .await?;
 
-        diesel::update(games::table.find(self.id))
-            .set((
-                game_status.eq(new_game_status.to_string()),
-                game_control_history.eq(game_control_history.concat(game_control_string)),
-            ))
-            .get_result(conn)
+                    let game = diesel::update(games::table.find(self.id))
+                        .set((
+                            game_status.eq(new_game_status.to_string()),
+                            game_control_history
+                                .eq(game_control_history.concat(game_control_string)),
+                        ))
+                        .get_result(conn)
+                        .await?;
+                    Ok(game)
+                }
+                .scope_boxed()
+            })
             .await
     }
 

@@ -1,5 +1,4 @@
 use crate::challenge::game_challenge_response::NewGameChallengeRequest;
-
 use crate::db::schema::{game_challenges, users};
 use crate::db::util::{get_conn, DbPool};
 use crate::extractors::auth::AuthenticatedUser;
@@ -55,16 +54,10 @@ impl GameChallenge {
             tournament_queen_rule: challenge_request.tournament_queen_rule,
             created_at: Utc::now(),
         };
-        println!("challenge: {:?}", new_challenge);
-        match 
-            diesel::insert_into(game_challenges::table)
+        diesel::insert_into(game_challenges::table)
             .values(&new_challenge)
             .get_result(conn)
-            .await {
-                Ok(ch) => return Ok(ch),
-                Err(err) => {println!("Err: {:?}", err); assert!(false)},
-            }
-        unreachable!();
+            .await
     }
 
     pub async fn get_public(pool: &DbPool) -> Result<Vec<GameChallenge>, Error> {

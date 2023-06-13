@@ -1,5 +1,4 @@
 use crate::config::ServerConfig;
-
 use diesel::pg::PgConnection;
 use diesel::Connection;
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
@@ -20,7 +19,7 @@ impl AsyncTestContext for DBTest {
         println!("database_url: {}", database_url);
         let mut conn = PgConnection::establish(database_url)
             .unwrap_or_else(|_| panic!("Error connecting to {}", database_url));
-        //conn.revert_all_migrations(MIGRATIONS).unwrap();
+        conn.revert_all_migrations(MIGRATIONS).unwrap();
         conn.run_pending_migrations(MIGRATIONS).unwrap();
         DBTest { conn }
     }

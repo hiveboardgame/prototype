@@ -4,8 +4,8 @@ use crate::{
     server_error::ServerError,
 };
 use hive_lib::{
-    bug::Bug, game_control::GameControl, game_status::GameStatus, game_type::GameType,
-    history::History, piece::Piece, position::Position, state::State, color::Color,
+    bug::Bug, color::Color, game_control::GameControl, game_status::GameStatus,
+    game_type::GameType, history::History, piece::Piece, position::Position, state::State,
 };
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
