@@ -1,15 +1,24 @@
 use crate::db::schema::ratings;
-use crate::db::schema::sql_types::Gamestatistics;
 use crate::model::user::User;
 use diesel::{
     AsExpression, Associations, FromSqlRow, Identifiable, Insertable, Queryable, SqlType,
+    AsChangeset,
 };
 use serde::{Deserialize, Serialize};
+use crate::challenge::game_challenge_response::NewGameChallengeRequest;
 
-#[derive(Debug, AsExpression, Serialize, Deserialize)]
-#[diesel(postgres_type(name = "Gamestatistics"))]
-#[diesel(sql_type = Gamestatistics)]
-pub struct Statistics {
+use crate::db::schema::{game_challenges, users};
+use crate::db::util::{get_conn, DbPool};
+use crate::extractors::auth::AuthenticatedUser;
+use chrono::prelude::*;
+use diesel::prelude::*;
+use diesel::result::Error;
+use diesel_async::RunQueryDsl;
+
+#[derive(Insertable, Debug)]
+#[diesel(table_name = ratings)]
+pub struct NewRating {
+    user_uid: String,
     played: i64,
     won: i64,
     lost: i64,
@@ -19,9 +28,10 @@ pub struct Statistics {
     volatility: f64,
 }
 
-impl Statistics {
-    pub fn default() -> Self {
+impl NewRating {
+    pub fn for_uid(user_uid: String) -> Self {
         Self {
+            user_uid,
             played: 0,
             won: 0,
             lost: 0,
@@ -33,46 +43,18 @@ impl Statistics {
     }
 }
 
-#[derive(Insertable, Debug)]
-#[diesel(table_name = ratings)]
-pub struct NewRating {
-    user_uid: String,
-    rated_games_played: i64,
-    puzzle: Statistics,
-    correspondence: Statistics,
-    classical: Statistics,
-    rapid: Statistics,
-    blitz: Statistics,
-    bullet: Statistics,
-}
-
-impl NewRating {
-    pub fn for_uid(user_uid: String) -> Self {
-        Self {
-            user_uid,
-            rated_games_played: 0,
-            puzzle: Statistics::default(),
-            correspondence: Statistics::default(),
-            classical: Statistics::default(),
-            rapid: Statistics::default(),
-            blitz: Statistics::default(),
-            bullet: Statistics::default(),
-        }
-    }
-}
-
-#[derive(Associations, Identifiable, Queryable, Debug, Serialize, Deserialize)]
+#[derive(Associations, Identifiable, Queryable, Debug, Serialize, Deserialize, AsChangeset)]
 #[serde(rename_all = "camelCase")]
 #[diesel(belongs_to(User, foreign_key = user_uid))]
 #[diesel(table_name = ratings)]
 pub struct Rating {
-    id: i64,
-    user_uid: String,
-    rated_games_played: i64,
-    puzzle: Statistics,
-    correspondence: Statistics,
-    classical: Statistics,
-    rapid: Statistics,
-    blitz: Statistics,
-    bullet: Statistics,
+    pub id: i32,
+    pub user_uid: String,
+    pub played: i64,
+    pub won: i64,
+    pub lost: i64,
+    pub draw: i64,
+    pub rating: f64,
+    pub deviation: f64,
+    pub volatility: f64,
 }

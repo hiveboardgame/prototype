@@ -1,16 +1,22 @@
 use std::str::FromStr;
 
 use crate::db::schema::games::dsl::*;
-
-use crate::db::schema::games;
+use crate::db::schema::{games, ratings};
 use crate::db::util::{get_conn, DbPool};
 use crate::model::games_users::GameUser;
+use crate::model::ratings::Rating;
+use crate::model::user::User;
+use diesel::associations::BelongsTo;
 use diesel::{prelude::*, result::Error, Identifiable, Insertable, QueryDsl, Queryable};
 use diesel_async::RunQueryDsl;
 use hive_lib::{
     color::Color, game_control::GameControl, game_result::GameResult, game_status::GameStatus,
 };
 use serde::{Deserialize, Serialize};
+use skillratings::{
+    glicko2::{glicko2, Glicko2Config, Glicko2Rating},
+    Outcomes,
+};
 
 #[derive(Insertable, Debug)]
 #[diesel(table_name = games)]
@@ -150,11 +156,53 @@ impl Game {
         &self,
         game_control: GameControl,
         new_game_status: GameStatus,
-        _winner: Color,
+        winner: Color,
         pool: &DbPool,
     ) -> Result<Game, Error> {
         let conn = &mut get_conn(pool).await?;
         let game_control_string = format!("{}. {game_control};", self.turn);
+
+        // transaction to update
+        // - winner rating
+        // - loser rating
+        // - game
+
+        let outcome = {
+            if winner == Color::White {
+                Outcomes::WIN
+            } else {
+                Outcomes::LOSS
+            }
+        };
+
+        let config = Glicko2Config {
+            tau: 0.5,
+            ..Default::default()
+        };
+
+        let white = User::find_by_uid(pool, &self.white_uid).await?;
+        let white_rating: Rating = Rating::belonging_to(&white).get_result(conn).await?;
+
+        let black = User::find_by_uid(pool, &self.black_uid).await?;
+        let black_rating: Rating = Rating::belonging_to(&black).get_result(conn).await?;
+
+        let mut white_glicko = Glicko2Rating {
+            rating: white_rating.rating,
+            deviation: white_rating.deviation,
+            volatility: white_rating.volatility,
+        };
+
+        let mut black_glicko = Glicko2Rating {
+            rating: black_rating.rating,
+            deviation: black_rating.deviation,
+            volatility: black_rating.volatility,
+        };
+
+        println!("White: {white_glicko:?}");
+
+        (white_glicko, black_glicko) = glicko2(&white_glicko, &black_glicko, &outcome, &config);
+
+        println!("White: {white_glicko:?}");
 
         diesel::update(games::table.find(self.id))
             .set((

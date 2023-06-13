@@ -87,7 +87,7 @@ impl User {
             .transaction::<_, diesel::result::Error, _>(|conn| {
                 async move {
                     self.insert_into(users_table).execute(conn).await?;
-                    let new_rating = NewRating::for_uid(self.uid);
+                    let new_rating = NewRating::for_uid(self.uid.clone());
                     diesel::insert_into(ratings::table)
                         .values(&new_rating)
                         .execute(conn)

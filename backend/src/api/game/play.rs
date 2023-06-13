@@ -323,6 +323,7 @@ mod tests {
                 hive_lib::color::Color::Black
             ))
         );
+        assert!(false);
 
         // Can't resign a finished game
         let request_body = json!({
