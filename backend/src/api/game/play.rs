@@ -215,7 +215,6 @@ async fn handle_resign(
         .resign(
             game_control,
             GameStatus::Finished(GameResult::Winner(winner_color)),
-            winner_color,
             pool,
         )
         .await?;
