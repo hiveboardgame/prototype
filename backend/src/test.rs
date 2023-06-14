@@ -48,9 +48,7 @@ macro_rules! make_user {
                 .set_json(&request_body)
                 .insert_header(("x-authentication", $username))
                 .to_request();
-            println!("here");
             let user: $crate::user::user_response::UserResponse = test::call_and_read_body_json($app, req).await;
-            println!("not here");
             assert_eq!(user.username, $username);
             assert_eq!(user.uid, $username);
             user
