@@ -5,7 +5,7 @@ diesel::table! {
         id -> Uuid,
         challenger_uid -> Text,
         game_type -> Text,
-        ranked -> Bool,
+        rated -> Bool,
         public -> Bool,
         tournament_queen_rule -> Bool,
         color_choice -> Text,
@@ -21,10 +21,14 @@ diesel::table! {
         game_type -> Text,
         history -> Text,
         game_control_history -> Text,
-        ranked -> Bool,
+        rated -> Bool,
         tournament_queen_rule -> Bool,
         turn -> Int4,
         white_uid -> Text,
+        white_rating -> Nullable<Float8>,
+        black_rating -> Nullable<Float8>,
+        white_rating_change -> Nullable<Float8>,
+        black_rating_change -> Nullable<Float8>,
     }
 }
 
@@ -32,6 +36,20 @@ diesel::table! {
     games_users (game_id, user_uid) {
         game_id -> Int4,
         user_uid -> Text,
+    }
+}
+
+diesel::table! {
+    ratings (id) {
+        id -> Int4,
+        user_uid -> Text,
+        played -> Int8,
+        won -> Int8,
+        lost -> Int8,
+        draw -> Int8,
+        rating -> Float8,
+        deviation -> Float8,
+        volatility -> Float8,
     }
 }
 

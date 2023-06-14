@@ -2,6 +2,7 @@ use crate::db::util::DbPool;
 use crate::extractors::auth::AuthenticatedUser;
 use crate::model::user::User;
 use crate::server_error::ServerError;
+use crate::user::user_response::UserResponse;
 use actix_web::{
     http, post,
     web::{self, Json},
@@ -18,10 +19,11 @@ fn random_guest_name() -> String {
 pub async fn create_guest_user(
     auth_user: AuthenticatedUser,
     pool: web::Data<DbPool>,
-) -> Result<(Json<User>, http::StatusCode), ServerError> {
+) -> Result<(Json<UserResponse>, http::StatusCode), ServerError> {
     let user = User::new(&auth_user.uid, &random_guest_name(), true)?;
     user.insert(&pool).await?;
-    Ok((Json(user), http::StatusCode::CREATED))
+    let user_response = UserResponse::from_uid(&user.uid, &pool).await?;
+    Ok((Json(user_response), http::StatusCode::CREATED))
 }
 
 #[cfg(test)]

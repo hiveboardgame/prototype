@@ -12,13 +12,12 @@ pub async fn get_user_challenges(
     pool: web::Data<DbPool>,
 ) -> Result<HttpResponse, ServerError> {
     auth_user.authorize(&uid)?;
-    let user = User::find_by_uid(pool.get_ref(), uid.as_ref()).await?;
+    let user = User::find_by_uid(uid.as_ref(), pool.get_ref()).await?;
     let mut response: Vec<GameChallengeResponse> = Vec::new();
     for challenge in &user.get_challenges(&pool).await? {
-        response.push(GameChallengeResponse::from_model_with_user(
-            challenge,
-            user.clone(),
-        )?);
+        response.push(
+            GameChallengeResponse::from_model_with_user(challenge, user.clone(), &pool).await?,
+        );
     }
     Ok(HttpResponse::Ok().json(response))
 }

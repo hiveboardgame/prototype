@@ -1,18 +1,21 @@
 use crate::db::schema::games;
+use crate::db::schema::ratings;
 use crate::db::schema::users;
 use crate::db::schema::users::dsl::users as users_table;
 use crate::db::util::{get_conn, DbPool};
+use crate::model::challenge::GameChallenge;
 use crate::model::game::Game;
 use crate::model::games_users::GameUser;
+use crate::model::ratings::NewRating;
 use crate::server_error::ServerError;
 use diesel::{
     query_dsl::BelongingToDsl, result::Error, Identifiable, Insertable, QueryDsl, Queryable,
     SelectableHelper,
 };
+use diesel_async::scoped_futures::ScopedFutureExt;
+use diesel_async::AsyncConnection;
 use diesel_async::RunQueryDsl;
 use serde::{Deserialize, Serialize};
-
-use super::challenge::GameChallenge;
 
 const MAX_USERNAME_LENGTH: usize = 40;
 const VALID_USERNAME_CHARS: &str = "-_";
@@ -71,14 +74,27 @@ impl User {
         })
     }
 
-    pub async fn find_by_uid(pool: &DbPool, uid: &str) -> Result<User, Error> {
+    pub async fn find_by_uid(uid: &str, pool: &DbPool) -> Result<User, Error> {
         let conn = &mut get_conn(pool).await?;
         users_table.find(uid).first(conn).await
     }
 
     pub async fn insert(&self, pool: &DbPool) -> Result<(), Error> {
-        let conn = &mut get_conn(pool).await?;
-        self.insert_into(users_table).execute(conn).await?;
+        let connection = &mut get_conn(pool).await?;
+        connection
+            .transaction::<_, diesel::result::Error, _>(|conn| {
+                async move {
+                    self.insert_into(users::table).execute(conn).await?;
+                    let new_rating = NewRating::for_uid(&self.uid);
+                    diesel::insert_into(ratings::table)
+                        .values(&new_rating)
+                        .execute(conn)
+                        .await?;
+                    Ok(())
+                }
+                .scope_boxed()
+            })
+            .await?;
         Ok(())
     }
 

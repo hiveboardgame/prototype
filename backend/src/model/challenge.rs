@@ -1,5 +1,4 @@
 use crate::challenge::game_challenge_response::NewGameChallengeRequest;
-
 use crate::db::schema::{game_challenges, users};
 use crate::db::util::{get_conn, DbPool};
 use crate::extractors::auth::AuthenticatedUser;
@@ -16,7 +15,7 @@ use uuid::Uuid;
 struct NewGameChallenge {
     challenger_uid: String,
     game_type: String,
-    ranked: bool,
+    rated: bool,
     public: bool,
     tournament_queen_rule: bool,
     color_choice: String,
@@ -31,7 +30,7 @@ pub struct GameChallenge {
     pub id: Uuid,
     pub challenger_uid: String,
     pub game_type: String,
-    pub ranked: bool,
+    pub rated: bool,
     pub public: bool,
     pub tournament_queen_rule: bool,
     pub color_choice: String,
@@ -50,13 +49,13 @@ impl GameChallenge {
             challenger_uid: challenger.uid.to_string(),
             color_choice: challenge_request.color_choice.to_string(),
             game_type: challenge_request.game_type.to_string(),
-            ranked: challenge_request.ranked,
+            rated: challenge_request.rated,
             public: challenge_request.public,
             tournament_queen_rule: challenge_request.tournament_queen_rule,
             created_at: Utc::now(),
         };
-        new_challenge
-            .insert_into(game_challenges::table)
+        diesel::insert_into(game_challenges::table)
+            .values(&new_challenge)
             .get_result(conn)
             .await
     }

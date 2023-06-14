@@ -68,9 +68,8 @@ async fn play_turn(
     state.play_turn(piece, position)?;
     let board_move = format!("{piece} {pos}");
     let game = game
-        .make_move(board_move, state.game_status.to_string(), pool)
+        .make_move(board_move, state.game_status.clone(), pool)
         .await?;
-    // TODO: handle game end, update rating
     GameStateResponse::new_from(&game, &state, pool).await
 }
 
@@ -215,7 +214,6 @@ async fn handle_resign(
         .resign(
             game_control,
             GameStatus::Finished(GameResult::Winner(winner_color)),
-            winner_color,
             pool,
         )
         .await?;
@@ -407,6 +405,7 @@ mod tests {
             &(game.turn as i32, GameControl::Abort(Color::Black))
         );
     }
+
     #[test_context(DBTest)]
     #[actix_rt::test]
     #[serial]
@@ -474,6 +473,7 @@ mod tests {
             )
         );
     }
+
     #[test_context(DBTest)]
     #[actix_rt::test]
     #[serial]
@@ -483,6 +483,8 @@ mod tests {
         let white = make_user!("white", &app);
         let challenge_response = make_challenge!(white.uid.clone(), "White", &app);
         let mut game = accept_challenge!(challenge_response.id, black.uid.clone(), &app);
+        assert_eq!(game.white_player.rating, 1500);
+        assert_eq!(game.white_player.played, 0);
         let moves = vec![
             ["wL", "."],
             ["bL", "/wL"],
@@ -515,6 +517,8 @@ mod tests {
                 hive_lib::color::Color::White
             ))
         );
+        assert_eq!(game.white_player.played, 1);
+        assert_eq!(game.white_player.win, 1);
         assert_eq!(game.turn, 16);
         // Can't play on a finished game
         let request_body = json!({
