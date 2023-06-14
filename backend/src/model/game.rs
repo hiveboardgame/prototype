@@ -26,6 +26,10 @@ pub struct NewGame {
     pub tournament_queen_rule: bool,
     pub turn: i32,
     pub white_uid: String, // uid of user
+    pub white_rating: Option<f64>,
+    pub black_rating: Option<f64>,
+    pub white_rating_change: Option<f64>,
+    pub black_rating_change: Option<f64>,
 }
 
 #[derive(
@@ -44,6 +48,10 @@ pub struct Game {
     pub tournament_queen_rule: bool,
     pub turn: i32,
     pub white_uid: String, // uid of user
+    pub white_rating: Option<f64>,
+    pub black_rating: Option<f64>,
+    pub white_rating_change: Option<f64>,
+    pub black_rating_change: Option<f64>,
 }
 
 impl Game {
@@ -84,20 +92,28 @@ impl Game {
         connection
             .transaction::<_, diesel::result::Error, _>(|conn| {
                 async move {
-                    if let GameStatus::Finished(game_result) = new_game_status.clone() {
-                        if let GameResult::Unknown = game_result {
-                            // nothing to do here
+                    let changes: Option<(f64, f64)> =
+                        if let GameStatus::Finished(game_result) = new_game_status.clone() {
+                            if let GameResult::Unknown = game_result {
+                                None
+                            } else {
+                                Rating::update(
+                                    self.rated,
+                                    self.white_uid.clone(),
+                                    self.black_uid.clone(),
+                                    game_result,
+                                    conn,
+                                )
+                                .await?
+                            }
                         } else {
-                            Rating::update(
-                                self.white_uid.clone(),
-                                self.black_uid.clone(),
-                                game_result,
-                                conn,
-                                pool,
-                            )
-                            .await?;
-                        }
-                    }
+                            None
+                        };
+                    let (w_change, b_change) = if let Some((white_change, black_change)) = changes {
+                        (Some(white_change), Some(black_change))
+                    } else {
+                        (None, None)
+                    };
                     let game = diesel::update(games::table.find(self.id))
                         .set((
                             history.eq(history.concat(board_move)),
@@ -105,6 +121,8 @@ impl Game {
                             game_status.eq(new_game_status.to_string()),
                             game_control_history
                                 .eq(game_control_history.concat(game_control_string)),
+                            white_rating_change.eq(w_change),
+                            black_rating_change.eq(b_change),
                         ))
                         .get_result(conn)
                         .await?;
@@ -183,25 +201,33 @@ impl Game {
         connection
             .transaction::<_, diesel::result::Error, _>(|conn| {
                 async move {
-                    match new_game_status.clone() {
+                    let changes: Option<(f64, f64)> = match new_game_status.clone() {
                         GameStatus::Finished(game_result) => {
                             Rating::update(
+                                self.rated,
                                 self.white_uid.clone(),
                                 self.black_uid.clone(),
                                 game_result.clone(),
                                 conn,
-                                pool,
                             )
-                            .await?;
+                            .await?
                         }
                         _ => unreachable!(),
-                    }
+                    };
+
+                    let (w_change, b_change) = if let Some((white_change, black_change)) = changes {
+                        (Some(white_change), Some(black_change))
+                    } else {
+                        (None, None)
+                    };
 
                     let game = diesel::update(games::table.find(self.id))
                         .set((
                             game_status.eq(new_game_status.to_string()),
                             game_control_history
                                 .eq(game_control_history.concat(game_control_string)),
+                            white_rating_change.eq(w_change),
+                            black_rating_change.eq(b_change),
                         ))
                         .get_result(conn)
                         .await?;
@@ -222,19 +248,26 @@ impl Game {
         connection
             .transaction::<_, diesel::result::Error, _>(|conn| {
                 async move {
-                    Rating::update(
+                    let changes: Option<(f64, f64)> = Rating::update(
+                        self.rated,
                         self.white_uid.clone(),
                         self.black_uid.clone(),
                         GameResult::Draw,
                         conn,
-                        pool,
                     )
                     .await?;
+                    let (w_change, b_change) = if let Some((white_change, black_change)) = changes {
+                        (Some(white_change), Some(black_change))
+                    } else {
+                        (None, None)
+                    };
                     let game = diesel::update(games::table.find(self.id))
                         .set((
                             game_control_history
                                 .eq(game_control_history.concat(game_control_string)),
                             game_status.eq(GameStatus::Finished(GameResult::Draw).to_string()),
+                            white_rating_change.eq(w_change),
+                            black_rating_change.eq(b_change),
                         ))
                         .get_result(conn)
                         .await?;

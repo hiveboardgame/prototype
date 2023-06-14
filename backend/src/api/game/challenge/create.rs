@@ -38,10 +38,7 @@ mod tests {
         let app = test::init_service(crate::new_test_app().await).await;
         let black = make_user!("black", &app);
         let white = make_user!("white", &app);
-        println!("black {:?}", black);
-        println!("white {:?}", white);
         let challenge_response = make_challenge!(white.uid.clone(), "White", &app);
-        println!("challenge created");
         let game = accept_challenge!(challenge_response.id, black.uid.clone(), &app);
         assert_eq!(game.game_status, GameStatus::NotStarted);
     }

@@ -1,11 +1,12 @@
 use crate::{
     db::util::DbPool,
-    model::{game::Game, user::User},
+    model::{game::Game, ratings::Rating, user::User},
     server_error::ServerError,
 };
 use hive_lib::{
     bug::Bug, color::Color, game_control::GameControl, game_status::GameStatus,
-    game_type::GameType, history::History, piece::Piece, position::Position, state::State,
+    game_status::GameStatus::Finished, game_type::GameType, history::History, piece::Piece,
+    position::Position, state::State,
 };
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
@@ -13,7 +14,7 @@ use std::{collections::HashMap, str::FromStr};
 
 #[serde_as]
 #[serde_with::skip_serializing_none]
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct GameStateResponse {
     pub game_id: i32,
     pub turn: usize,
@@ -29,6 +30,10 @@ pub struct GameStateResponse {
     pub reserve_white: HashMap<Bug, i8>,
     pub history: Vec<(String, String)>,
     pub game_control_history: Vec<(i32, GameControl)>,
+    pub white_rating: Option<f64>,
+    pub black_rating: Option<f64>,
+    pub white_rating_change: Option<f64>,
+    pub black_rating_change: Option<f64>,
 }
 
 impl GameStateResponse {
@@ -39,14 +44,31 @@ impl GameStateResponse {
     }
 
     pub async fn new_from(game: &Game, state: &State, pool: &DbPool) -> Result<Self, ServerError> {
+        let (white_rating, black_rating, white_rating_change, black_rating_change) = {
+            if let Finished(_) = GameStatus::from_str(&game.game_status).unwrap() {
+                (
+                    game.white_rating,
+                    game.black_rating,
+                    game.white_rating_change,
+                    game.black_rating_change,
+                )
+            } else {
+                (
+                    Some(Rating::for_uid(&game.white_uid, pool).await?.rating),
+                    Some(Rating::for_uid(&game.black_uid, pool).await?.rating),
+                    None,
+                    None,
+                )
+            }
+        };
         Ok(Self {
             game_id: game.id,
             game_status: GameStatus::from_str(&game.game_status)?,
             game_type: GameType::from_str(&game.game_type)?,
             tournament_queen_rule: state.tournament,
             turn: state.turn,
-            white_player: User::find_by_uid(pool, &game.white_uid).await?,
-            black_player: User::find_by_uid(pool, &game.black_uid).await?,
+            white_player: User::find_by_uid(&game.white_uid, pool).await?,
+            black_player: User::find_by_uid(&game.black_uid, pool).await?,
             moves: GameStateResponse::moves_as_string(state.board.moves(state.turn_color)),
             spawns: state
                 .board
@@ -60,6 +82,10 @@ impl GameStateResponse {
                 .reserve(Color::White, game.game_type.parse().unwrap()),
             history: state.history.moves.clone(),
             game_control_history: Self::gc_history(&game.game_control_history),
+            white_rating,
+            black_rating,
+            white_rating_change,
+            black_rating_change,
         })
     }
 

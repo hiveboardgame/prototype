@@ -1,6 +1,6 @@
 use crate::{
     db::util::DbPool,
-    model::{challenge::GameChallenge, user::User},
+    model::{challenge::GameChallenge, ratings::Rating, user::User},
     server_error::ServerError,
 };
 use chrono::{DateTime, Utc};
@@ -83,6 +83,7 @@ pub struct GameChallengeResponse {
     pub tournament_queen_rule: bool,
     pub color_choice: ColorChoice,
     pub created_at: DateTime<Utc>,
+    pub challenger_rating: f64,
 }
 
 impl GameChallengeResponse {
@@ -95,12 +96,13 @@ impl GameChallengeResponse {
             }
             Err(err) => return Err(err.into()),
         };
-        GameChallengeResponse::from_model_with_user(challenge, challenger)
+        GameChallengeResponse::from_model_with_user(challenge, challenger, pool).await
     }
 
-    pub fn from_model_with_user(
+    pub async fn from_model_with_user(
         challenge: &GameChallenge,
         challenger: User,
+        pool: &DbPool,
     ) -> Result<Self, ServerError> {
         let game_type: GameType = challenge
             .game_type
@@ -110,6 +112,7 @@ impl GameChallengeResponse {
             .color_choice
             .parse()
             .map_err(ServerError::InternalGameError)?;
+        let challenger_rating = Rating::for_uid(&challenger.uid, pool).await?;
         Ok(GameChallengeResponse {
             id: challenge.id,
             challenger,
@@ -119,6 +122,7 @@ impl GameChallengeResponse {
             tournament_queen_rule: challenge.tournament_queen_rule,
             color_choice,
             created_at: challenge.created_at,
+            challenger_rating: challenger_rating.rating,
         })
     }
 }

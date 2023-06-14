@@ -8,7 +8,7 @@ pub async fn get_user(
     uid: web::Path<String>,
     pool: web::Data<DbPool>,
 ) -> Result<HttpResponse, ServerError> {
-    let user = User::find_by_uid(pool.get_ref(), uid.as_ref()).await?;
+    let user = User::find_by_uid(uid.as_ref(), pool.get_ref()).await?;
     Ok(HttpResponse::Ok().json(user))
 }
 

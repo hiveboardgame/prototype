@@ -25,6 +25,10 @@ diesel::table! {
         tournament_queen_rule -> Bool,
         turn -> Int4,
         white_uid -> Text,
+        white_rating -> Nullable<Float8>,
+        black_rating -> Nullable<Float8>,
+        white_rating_change -> Nullable<Float8>,
+        black_rating_change -> Nullable<Float8>,
     }
 }
 

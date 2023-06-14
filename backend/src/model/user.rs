@@ -74,7 +74,7 @@ impl User {
         })
     }
 
-    pub async fn find_by_uid(pool: &DbPool, uid: &str) -> Result<User, Error> {
+    pub async fn find_by_uid(uid: &str, pool: &DbPool) -> Result<User, Error> {
         let conn = &mut get_conn(pool).await?;
         users_table.find(uid).first(conn).await
     }

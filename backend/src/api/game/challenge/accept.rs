@@ -6,6 +6,7 @@ use crate::{
     model::{
         challenge::GameChallenge,
         game::{Game, NewGame},
+        ratings::Rating,
     },
     server_error::ServerError,
 };
@@ -37,15 +38,19 @@ pub async fn accept_game_challenge(
         }
     };
     let new_game = NewGame {
-        black_uid,
+        white_uid: white_uid.clone(),
+        black_uid: black_uid.clone(),
         game_status: "NotStarted".to_string(),
         game_type: challenge.game_type.clone(),
         history: String::new(),
         game_control_history: String::new(),
         tournament_queen_rule: challenge.tournament_queen_rule,
         turn: 0,
-        white_uid,
         rated: challenge.rated,
+        white_rating: Some(Rating::for_uid(&white_uid, &pool).await?.rating),
+        black_rating: Some(Rating::for_uid(&black_uid, &pool).await?.rating),
+        white_rating_change: None,
+        black_rating_change: None,
     };
     let game = Game::create(&new_game, &pool).await?;
     challenge.delete(&pool).await?;

@@ -70,7 +70,6 @@ async fn play_turn(
     let game = game
         .make_move(board_move, state.game_status.clone(), pool)
         .await?;
-    // TODO: handle game end, update rating
     GameStateResponse::new_from(&game, &state, pool).await
 }
 
@@ -406,6 +405,7 @@ mod tests {
             &(game.turn as i32, GameControl::Abort(Color::Black))
         );
     }
+
     #[test_context(DBTest)]
     #[actix_rt::test]
     #[serial]
@@ -473,6 +473,7 @@ mod tests {
             )
         );
     }
+
     #[test_context(DBTest)]
     #[actix_rt::test]
     #[serial]

@@ -1,4 +1,7 @@
-use crate::config::ServerConfig;
+use crate::{
+    config::ServerConfig,
+    db::util::{get_pool, DbPool},
+};
 use diesel::pg::PgConnection;
 use diesel::Connection;
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
@@ -8,6 +11,7 @@ pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations");
 
 pub struct DBTest {
     pub conn: PgConnection,
+    pub pool: DbPool,
 }
 
 #[async_trait::async_trait]
@@ -16,12 +20,12 @@ impl AsyncTestContext for DBTest {
         // env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
         let server_config = ServerConfig::from_test_env().expect("Not all env vars are set");
         let database_url = &server_config.database_url;
-        println!("database_url: {}", database_url);
         let mut conn = PgConnection::establish(database_url)
             .unwrap_or_else(|_| panic!("Error connecting to {}", database_url));
         conn.revert_all_migrations(MIGRATIONS).unwrap();
         conn.run_pending_migrations(MIGRATIONS).unwrap();
-        DBTest { conn }
+        let pool: DbPool = get_pool(database_url).await.unwrap();
+        DBTest { conn, pool }
     }
 
     async fn teardown(mut self) {
@@ -88,6 +92,27 @@ macro_rules! make_challenge {
 }
 
 #[macro_export]
+macro_rules! make_rated_challenge {
+    ( $uid:expr, $color_choice:expr, $app:expr ) => {{
+        let request_body = json!({
+            "public": true,
+            "rated": true,
+            "tournamentQueenRule": true,
+            "gameType": "MLP",
+            "colorChoice": $color_choice,
+        });
+        let req = TestRequest::post()
+            .uri("/api/game/challenge")
+            .set_json(&request_body)
+            .insert_header(("x-authentication", $uid))
+            .to_request();
+        let game_challenge_response: GameChallengeResponse =
+            test::call_and_read_body_json($app, req).await;
+        game_challenge_response
+    }};
+}
+
+#[macro_export]
 macro_rules! accept_challenge {
     ( $challenge_id:expr, $uid:expr, $app:expr ) => {{
         // white user accepts challenge
@@ -100,6 +125,7 @@ macro_rules! accept_challenge {
     }};
 }
 
+// INFO: This is here for when we need to debug
 #[macro_export]
 macro_rules! play_turn_get_resp {
     ( $game_id:expr, $uid:expr, $move:expr, $app:expr ) => {{
