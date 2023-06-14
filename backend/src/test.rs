@@ -29,7 +29,7 @@ impl AsyncTestContext for DBTest {
     }
 
     async fn teardown(mut self) {
-        //self.conn.revert_all_migrations(migrations).unwrap();
+        //self.conn.revert_all_migrations(MIGRATIONS).unwrap();
     }
 }
 
