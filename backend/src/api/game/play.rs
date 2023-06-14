@@ -483,6 +483,8 @@ mod tests {
         let white = make_user!("white", &app);
         let challenge_response = make_challenge!(white.uid.clone(), "White", &app);
         let mut game = accept_challenge!(challenge_response.id, black.uid.clone(), &app);
+        assert_eq!(game.white_player.rating, 1500);
+        assert_eq!(game.white_player.played, 0);
         let moves = vec![
             ["wL", "."],
             ["bL", "/wL"],
@@ -515,6 +517,8 @@ mod tests {
                 hive_lib::color::Color::White
             ))
         );
+        assert_eq!(game.white_player.played, 1);
+        assert_eq!(game.white_player.win, 1);
         assert_eq!(game.turn, 16);
         // Can't play on a finished game
         let request_body = json!({

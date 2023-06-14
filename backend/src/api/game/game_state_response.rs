@@ -1,6 +1,7 @@
 use crate::{
+    api::user::user_response::UserResponse,
     db::util::DbPool,
-    model::{game::Game, ratings::Rating, user::User},
+    model::{game::Game, ratings::Rating},
     server_error::ServerError,
 };
 use hive_lib::{
@@ -14,15 +15,15 @@ use std::{collections::HashMap, str::FromStr};
 
 #[serde_as]
 #[serde_with::skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize)]
 pub struct GameStateResponse {
     pub game_id: i32,
     pub turn: usize,
     pub game_status: GameStatus,
     pub game_type: GameType,
     pub tournament_queen_rule: bool,
-    pub white_player: User,
-    pub black_player: User,
+    pub white_player: UserResponse,
+    pub black_player: UserResponse,
     #[serde_as(as = "Vec<(_, _)>")]
     pub moves: HashMap<String, Vec<Position>>,
     pub spawns: Vec<Position>,
@@ -67,8 +68,8 @@ impl GameStateResponse {
             game_type: GameType::from_str(&game.game_type)?,
             tournament_queen_rule: state.tournament,
             turn: state.turn,
-            white_player: User::find_by_uid(&game.white_uid, pool).await?,
-            black_player: User::find_by_uid(&game.black_uid, pool).await?,
+            white_player: UserResponse::from_uid(&game.white_uid, pool).await?,
+            black_player: UserResponse::from_uid(&game.black_uid, pool).await?,
             moves: GameStateResponse::moves_as_string(state.board.moves(state.turn_color)),
             spawns: state
                 .board

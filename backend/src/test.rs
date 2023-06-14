@@ -48,7 +48,9 @@ macro_rules! make_user {
                 .set_json(&request_body)
                 .insert_header(("x-authentication", $username))
                 .to_request();
-            let user: $crate::model::user::User = test::call_and_read_body_json($app, req).await;
+            println!("here");
+            let user: $crate::user::user_response::UserResponse = test::call_and_read_body_json($app, req).await;
+            println!("not here");
             assert_eq!(user.username, $username);
             assert_eq!(user.uid, $username);
             user
@@ -63,7 +65,8 @@ macro_rules! make_guest_user {
             .uri("/api/guest-user")
             .insert_header(("x-authentication", $uid))
             .to_request();
-        let user: $crate::model::user::User = test::call_and_read_body_json($app, req).await;
+        let user: $crate::user::user_response::UserResponse =
+            test::call_and_read_body_json($app, req).await;
         assert_eq!(user.uid, $uid);
         assert_ne!(user.username, $uid);
         user
