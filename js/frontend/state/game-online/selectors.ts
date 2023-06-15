@@ -39,7 +39,7 @@ export const selectGame = (state: GameState): Game | null => state.game;
 /**
  * Get the set of valid next moves
  */
-export const selectValidMoves = (state: GameState): Move[] | null =>
+export const selectValidMoves = (state: GameState): PossibleMove[] | null =>
   state.validNextMoves;
 
 /**
@@ -143,7 +143,9 @@ export const selectGameBoard = createSelector(
  */
 export const selectDisplayGameBoard = createSelector(
   [selectDisplayMoves, selectDisplayUpTo],
-  (moves, upTo): GameBoard => buildBoard(moves, upTo)
+  (moves, upTo): GameBoard => {
+    return buildBoard(moves, upTo);
+  }
 );
 
 /**

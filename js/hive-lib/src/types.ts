@@ -70,6 +70,12 @@ export type GameOptions = {
   mosquito: boolean;
 };
 
+export type PossibleMove = {
+  qCoordinate: number;
+  rCoordinate: number;
+  tileId: TileId;
+};
+
 /**
  * An object describing a player's move, which can either be a pass or move or
  * place a tile.

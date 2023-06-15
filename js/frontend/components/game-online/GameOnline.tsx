@@ -30,6 +30,8 @@ const GameOnline = ({ uid, game }: { uid: string | null; game: Game }) => {
   const boardCentered = useGameSelector(selectBoardCentered);
   const { authToken } = usePlayer();
 
+  console.log(ghosts);
+
   // TODO: Neel: probably not the right place to do this
   useEffect(() => dispatch(authTokenAdded(authToken)));
 

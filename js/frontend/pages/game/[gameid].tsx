@@ -1,7 +1,7 @@
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import { Provider } from 'react-redux';
-import { Game, usePlayer } from 'hive-db';
+import { Game, usePlayer, getGame, newGameFromBackendGame } from 'hive-db';
 import { GameOnline } from '../../components/game-online/GameOnline';
 import { GameOnlineSidebar } from '../../components/game-online/GameOnlineSidebar';
 import { NavBar } from '../../components/nav/NavBar';
@@ -62,10 +62,13 @@ const Game = () => {
 
   useEffect(() => {
     // TODO: should this be a strict type check while enforcing that gameid is a string?
-    setGame(activeGames.find((g) => g.gid == gameid));
-  }, [activeGames, gameid]);
-
-  console.log(game);
+    if (gameid) {
+      getGame(gameid).then((game) => {
+        console.log(game);
+        setGame(newGameFromBackendGame(game));
+      });
+    }
+  }, [gameid]);
 
   return (
     <>
@@ -75,7 +78,11 @@ const Game = () => {
       <NavBar fullWidth className='border-b' />
       <div className='relative w-full h-full overflow-hidden'>
         <Provider store={store}>
-          {game ? <GameView uid={user.uid} game={game} /> : 'Loading...'}
+          {game && user ? (
+            <GameView uid={user.uid} game={game} />
+          ) : (
+            'Loading...'
+          )}
         </Provider>
       </div>
     </>

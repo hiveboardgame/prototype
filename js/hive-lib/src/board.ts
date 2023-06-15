@@ -40,8 +40,6 @@ export function buildBoard(moves: Move[], upTo?: number): GameBoard {
       // Extract the data we need from the move object
       const { tileId, refId, dir } = move;
 
-      console.log(draft);
-
       if (isEmpty(draft)) {
         // The first tile placed on the board is always at (0, 0)
         _placeTile(draft, tileId, { q: 0, r: 0 });

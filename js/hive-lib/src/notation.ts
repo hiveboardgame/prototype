@@ -53,12 +53,8 @@ export function buildMoveNotation(
  * @return An array of *Move* objects.
  */
 export function getGameMoves(notation: string): Move[] {
-  const turns = _parseGameNotation(notation);
-  return flatten(
-    turns.map((turn) =>
-      turn.white ? (turn.black ? [turn.white, turn.black] : [turn.white]) : []
-    )
-  );
+  const turns = _parseMoves(notation);
+  return turns;
 }
 
 /**
@@ -126,9 +122,27 @@ export function _buildTurnNotation(
  * @return An array of *Turn* objects.
  */
 export function _parseGameNotation(notation: string): Turn[] {
-  return notation
+  return [];
+  // return notation
+  //   .split(';')
+  //   .filter((s) => s)
+  //   .map((turnNotation) => _parseMoveNotation(turnNotation));
+}
+
+/**
+ * Create an ordered array of *Move* objects by parsing a game notation string.
+ *
+ * @param notation A game notation string.
+ * @return An array of *Move* objects.
+ */
+export function _parseMoves(notation: string): Move[] {
+  if (!notation) {
+    return [];
+  }
+  return (notation + '')
     .split(';')
-    .map((turnNotation) => _parseTurnNotation(turnNotation));
+    .filter((s) => s)
+    .map((moveNotation) => _parseMoveNotation(moveNotation));
 }
 
 /**
@@ -137,27 +151,27 @@ export function _parseGameNotation(notation: string): Turn[] {
  * @param notation A turn notation string.
  * @return A *Turn* object.
  */
-// export function _parseTurnNotation(notation: string, index: number): Turn {
-//   const moves = notation.split(' ');
-//   return {
-//     notation,
-//     index: index + 1,
-//     white: _parseMoveNotation(moves[0]),
-//     black: _parseMoveNotation(moves[1])
-//   };
-// }
-export function _parseTurnNotation(notation: string): Turn {
-  const sepLocation = notation.indexOf('.');
-  const indexString = notation.slice(0, sepLocation);
-  const placementsString = notation.slice(sepLocation + 1);
-  const placements = placementsString.split(' ');
+export function _parseTurnNotation(notation: string, index: number): Turn {
+  const moves = notation.split(' ');
   return {
     notation,
-    index: parseInt(indexString),
-    white: _parseMoveNotation(placements[0]),
-    black: _parseMoveNotation(placements[1])
+    index: index + 1,
+    white: _parseMoveNotation(moves[0]),
+    black: _parseMoveNotation(moves[1])
   };
 }
+// export function _parseTurnNotation(notation: string): Turn {
+//   const sepLocation = notation.indexOf('.');
+//   const indexString = notation.slice(0, sepLocation);
+//   const placementsString = notation.slice(sepLocation + 1);
+//   const placements = placementsString.split(' ');
+//   return {
+//     notation,
+//     index: parseInt(indexString),
+//     white: _parseMoveNotation(placements[0]),
+//     black: _parseMoveNotation(placements[1])
+//   };
+// }
 
 /**
  * Create a *Move* object by parsing a move notation string.
@@ -165,15 +179,12 @@ export function _parseTurnNotation(notation: string): Turn {
  * @param notation A move notation string.
  * @return A *Move* object.
  */
-export function _parseMoveNotation(notation?: string): Move | undefined {
-  if (!notation) return undefined;
-
+export function _parseMoveNotation(notation: string): Move {
   // Split notation into moving tile and reference tile portions
   notation = notation.trim();
-  let [tileId, refNotation] = notation.split(/\s/g);
-  console.log(notation);
-  console.log(tileId);
-  console.log(refNotation);
+
+  // TODO: Neel: figure out why this is getting called twice, once with commas as separators and once with spaces
+  let [tileId, refNotation] = notation.split(/\s|,/g);
 
   // Check for and return a passing move
   if (tileId === 'x')
@@ -186,17 +197,9 @@ export function _parseMoveNotation(notation?: string): Move | undefined {
 
   // Parse the reference notation to get the reference tile and direction
   let { refId, dir, end } =
-    refNotation !== undefined
-      ? _parseReferenceNotation(refNotation) // only when there is one
-      : { refId: tileId, dir: 0, end: false }; // first move notation
-
-  // // TODO: is this the right way to do this?
-  // // handle first move notation
-  // if (tileId === '.') {
-  //   refId = tileId;
-  //   dir = 0;
-  //   end = false;
-  // }
+    refNotation === '.'
+      ? { refId: tileId, dir: 0, end: false } // first move notation
+      : _parseReferenceNotation(refNotation); // only when there is one
 
   // Return a playing move
   return {

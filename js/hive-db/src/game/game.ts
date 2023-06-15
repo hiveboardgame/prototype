@@ -1,4 +1,4 @@
-import type { ColorKey, GameOptions } from 'hive-lib';
+import type { ColorKey, GameOptions, HexCoordinate } from 'hive-lib';
 import type { GameMeta } from './meta';
 import type { GamePlayers } from './players';
 import type { GameState } from './state';
@@ -23,15 +23,22 @@ export interface BackendGame {
   ranked: boolean;
   tournament_queen_rule: boolean;
   turn: number;
+  moves: string;
+  spawns: HexCoordinate[];
 }
 
-export interface Game {
+export interface GameOverview {
   gid: string;
   meta: GameMeta;
   options: GameOptions;
   players: GamePlayers;
   state: GameState;
 }
+
+export type Game = GameOverview & {
+  validMoves: string[];
+  validSpawns: string[];
+};
 
 /**
  * Create a new game object.
@@ -46,7 +53,7 @@ export function newGame(
   players: GamePlayers,
   options: GameOptions,
   isPublic: boolean
-): Game {
+): OverviewGame {
   return {
     gid: '',
     options,
@@ -158,6 +165,35 @@ function getStateFromBackendGame(backendGame: BackendGame): GameState {
   return newGameState(backendGame.history);
 }
 
+function getValidMovesFromBackendGame(
+  backendGame: BackendGame
+): PossibleMove[] {
+  console.log(backendGame.moves);
+  return backendGame.moves;
+}wekj
+
+function convertReserveToPieceSymbol(colorSymbol: string, pieceName: string, reserveSize: number): string {
+  const pieceNumber = reserveSize 
+  return colorSymbol + pieceName[0].toUpperCase() + ;
+
+function getValidSpawnsFromBackendGame(
+  backendGame: BackendGame
+): PossibleMove[] {
+  const reserve = backendGame.turn % 2 == 0 ? backendGame.reserve_white : backendGame.reserve_black;
+  const colorSymbol = backendGame.turn % 2 == 0 ? 'w' : 'b';
+  const spawnablePieces = [];
+  for (let [key, value] of reserve) {
+    if (value === 0)
+      continue;
+    spawnablePieces.push(convertReserveToPieceSymbol(colorSymbol, key, value))
+    console.log(key + ' = ' + value);
+  }
+  for (const spawn of backendGame.spawns) {
+    console.log(spawn);
+  }
+  return backendGame.spawns;
+}
+
 /**
  * Create a new game object from the backend's representation of a game.
  *
@@ -172,13 +208,17 @@ export function newGameFromBackendGame(backendGame: BackendGame): Game {
   const players = getPlayersFromBackendGame(backendGame);
   const meta = getMetaFromBackendGame(backendGame);
   const state = getStateFromBackendGame(backendGame);
+  const validMoves = getValidMovesFromBackendGame(backendGame);
+  const validSpawns = getValidSpawnsFromBackendGame(backendGame);
 
   return {
     gid: backendGame.id,
     options,
     players,
     meta,
-    state
+    state,
+    validMoves,
+    validSpawns
   };
 }
 
@@ -214,6 +254,10 @@ export function getUserGames(user: UserData): Promise<Game[]> {
     }
     return maybeGames;
   });
+}
+
+export function getGame(uid: string): Promise<Game[]> {
+  return getJSON<Game[]>(`/api/game/${uid}`);
 }
 
 /**

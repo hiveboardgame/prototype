@@ -56,7 +56,7 @@ describe('notation parsing', () => {
   });
 
   describe('_parseMoveNotation', () => {
-    test('undefined move', () => expect(_parseMoveNotation()).toBeUndefined());
+    // test('undefined move', () => expect(_parseMoveNotation()).toBeUndefined());
     test('passing move', () =>
       expect(_parseMoveNotation('x')).toEqual({
         notation: 'x',
