@@ -9,7 +9,7 @@ on:
     - main
   workflow_dispatch:
     branches:
-    - db_actions
+    - main
 env: 
   CARGO_TERM_COLOR: always
   DATABASE_URL: postgres://hive:password@0.0.0.0:5432/hive-local
