@@ -7,7 +7,9 @@ on:
   pull_request:
     branches:
     - main
-
+  workflow_dispatch:
+    branches:
+    - db_actions
 env: 
   CARGO_TERM_COLOR: always
 
