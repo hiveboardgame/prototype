@@ -12,7 +12,10 @@ on:
     - db_actions
 env: 
   CARGO_TERM_COLOR: always
-  TEST_DATABASE_URL: "0.0.0.0:5432/hive-test"
+  DATABASE_URL: "hive@0.0.0.0:5432/hive-local"
+  TEST_DATABASE_URL: "hive@0.0.0.0:5432/hive-test"
+  FIREBASE_JWT_ISSUER: "-"  
+  STATIC_FILES_PATH: ./backend/dist
 
 jobs:
   build_and_test:
@@ -24,7 +27,6 @@ jobs:
         # Docker Hub image
         image: postgres
         env:
-          POSTGRES_PASSWORD: postgres
           POSTGRES_USER: hive
           POSTGRES_DB: hive-test
         # Set health checks to wait until postgres has started
