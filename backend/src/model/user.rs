@@ -1,14 +1,14 @@
 use crate::db::schema::games;
 use crate::db::schema::ratings;
 use crate::db::schema::users;
-use crate::db::schema::users::dsl::users as users_table;
+use crate::db::schema::users::dsl::*;
 use crate::db::util::{get_conn, DbPool};
 use crate::model::challenge::GameChallenge;
 use crate::model::game::Game;
 use crate::model::games_users::GameUser;
 use crate::model::ratings::NewRating;
 use crate::server_error::ServerError;
-use diesel::{debug_query,pg::Pg,
+use diesel::{ExpressionMethods,
     query_dsl::BelongingToDsl, result::Error, Identifiable, Insertable, QueryDsl, Queryable,
     SelectableHelper, AsChangeset,
 };
@@ -24,8 +24,8 @@ fn valid_uid_char(c: char) -> bool {
     c.is_ascii_alphanumeric()
 }
 
-fn validate_uid(uid: &str) -> Result<(), ServerError> {
-    if !uid.chars().all(valid_uid_char) {
+fn validate_uid(id: &str) -> Result<(), ServerError> {
+    if !id.chars().all(valid_uid_char) {
         return Err(ServerError::UserInputError {
             field: "uid".into(),
             reason: "invalid characters".into(),
@@ -38,14 +38,14 @@ fn valid_username_char(c: char) -> bool {
     c.is_ascii_alphanumeric() || VALID_USERNAME_CHARS.contains(c)
 }
 
-fn validate_username(username: &str) -> Result<(), ServerError> {
-    if !username.chars().all(valid_username_char) {
+fn validate_username(candidate_username: &str) -> Result<(), ServerError> {
+    if !candidate_username.chars().all(valid_username_char) {
         let reason = format!("invalid username characters: {:?}", username);
         return Err(ServerError::UserInputError {
             field: "username".into(),
             reason,
         });
-    } else if username.len() > MAX_USERNAME_LENGTH {
+    } else if candidate_username.len() > MAX_USERNAME_LENGTH {
         let reason = format!("username must be <= {} chars", MAX_USERNAME_LENGTH);
         return Err(ServerError::UserInputError {
             field: "username".into(),
@@ -64,19 +64,19 @@ pub struct User {
 }
 
 impl User {
-    pub fn new(uid: &str, username: &str, is_guest: bool) -> Result<User, ServerError> {
-        validate_uid(uid)?;
-        validate_username(username)?;
+    pub fn new(new_uid: &str, new_username: &str, guest: bool) -> Result<User, ServerError> {
+        validate_uid(new_uid)?;
+        validate_username(new_username)?;
         Ok(User {
-            uid: uid.into(),
-            username: username.into(),
-            is_guest,
+            uid: new_uid.into(),
+            username: new_username.into(),
+            is_guest: guest,
         })
     }
 
-    pub async fn find_by_uid(uid: &str, pool: &DbPool) -> Result<User, Error> {
+    pub async fn find_by_uid(id: &str, pool: &DbPool) -> Result<User, Error> {
         let conn = &mut get_conn(pool).await?;
-        users_table.find(uid).first(conn).await
+        users.find(id).first(conn).await
     }
 
     pub async fn insert(&self, pool: &DbPool) -> Result<(), Error> {
@@ -119,9 +119,9 @@ impl User {
     ) -> Result<(), ServerError> {
         let conn = &mut get_conn(pool).await?;
         validate_username(new_username)?;
-        let query = diesel::update(users_table.find(&self.uid))
+        diesel::update(users.find(&self.uid))
             .set(username.eq(new_username))
-            .execute(conn);
+            .execute(conn).await?;
         Ok(())
     }
 }
