@@ -44,6 +44,7 @@ pub fn config(cfg: &mut web::ServiceConfig) {
                 .service(challenge::delete::delete_game_challenge)
                 .service(game::play::game_play)
                 .service(game::show::get_game)
+                .service(user::edit::edit_user)
                 .service(user::show::get_user)
                 .service(user::challenges::get_user_challenges)
                 .service(user::games::get_user_games)

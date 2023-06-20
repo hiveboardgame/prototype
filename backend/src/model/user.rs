@@ -8,9 +8,9 @@ use crate::model::game::Game;
 use crate::model::games_users::GameUser;
 use crate::model::ratings::NewRating;
 use crate::server_error::ServerError;
-use diesel::{
+use diesel::{debug_query,pg::Pg,
     query_dsl::BelongingToDsl, result::Error, Identifiable, Insertable, QueryDsl, Queryable,
-    SelectableHelper,
+    SelectableHelper, AsChangeset,
 };
 use diesel_async::scoped_futures::ScopedFutureExt;
 use diesel_async::AsyncConnection;
@@ -55,7 +55,7 @@ fn validate_username(username: &str) -> Result<(), ServerError> {
     Ok(())
 }
 
-#[derive(Queryable, Identifiable, Insertable, Serialize, Deserialize, Debug, Clone)]
+#[derive(AsChangeset, Queryable, Identifiable, Insertable, Serialize, Deserialize, Debug, Clone)]
 #[diesel(primary_key(uid))]
 pub struct User {
     pub uid: String,
@@ -110,5 +110,18 @@ impl User {
             .select(Game::as_select())
             .get_results(conn)
             .await
+    }
+
+    pub async fn update_username(
+        &self,
+        new_username: &str,
+        pool: &DbPool,
+    ) -> Result<(), ServerError> {
+        let conn = &mut get_conn(pool).await?;
+        validate_username(new_username)?;
+        let query = diesel::update(users_table.find(&self.uid))
+            .set(username.eq(new_username))
+            .execute(conn);
+        Ok(())
     }
 }
