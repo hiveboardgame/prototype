@@ -20,7 +20,7 @@ pub async fn get_user(
 }
 
 #[get("/user")]
-pub async fn get_user_by_params(
+pub async fn get_user_by_params(
     req: HttpRequest,
     pool: web::Data<DbPool>,
 ) -> Result<HttpResponse, ServerError> {
