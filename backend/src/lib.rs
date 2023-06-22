@@ -46,6 +46,7 @@ pub fn config(cfg: &mut web::ServiceConfig) {
                 .service(game::show::get_game)
                 .service(user::edit::edit_user)
                 .service(user::show::get_user)
+                .service(user::show::get_user_by_params)
                 .service(user::challenges::get_user_challenges)
                 .service(user::games::get_user_games)
                 .service(user::create::create_user)

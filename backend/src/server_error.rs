@@ -2,7 +2,11 @@ use crate::{
     api::game::challenge::game_challenge_response::ChallengeError,
     extractors::auth::AuthenticationError,
 };
-use actix_web::{error::ResponseError, http::StatusCode, HttpResponse};
+use actix_web::{
+    error::{QueryPayloadError, ResponseError},
+    http::StatusCode,
+    HttpResponse,
+};
 use diesel::result::Error as DieselError;
 use hive_lib::game_error::GameError;
 use serde::Serialize;
@@ -28,6 +32,9 @@ pub enum ServerError {
     DatabaseError(#[from] DieselError),
     #[error("Challenge error: {0}")]
     ChallengeError(#[from] ChallengeError),
+    #[error("Missing Query parm error: {0}")]
+    QueryParamError(#[from] QueryPayloadError),
+
     #[error("Unimplemented")]
     Unimplemented,
 }
@@ -58,6 +65,7 @@ impl ResponseError for ServerError {
                 ChallengeError::MissingChallenger(_) => StatusCode::INTERNAL_SERVER_ERROR,
                 ChallengeError::OwnChallenge => StatusCode::BAD_REQUEST,
             },
+            Self::QueryParamError(_) => StatusCode::BAD_REQUEST,
             Self::Unimplemented => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }

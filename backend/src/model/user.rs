@@ -8,9 +8,9 @@ use crate::model::game::Game;
 use crate::model::games_users::GameUser;
 use crate::model::ratings::NewRating;
 use crate::server_error::ServerError;
-use diesel::{ExpressionMethods,
-    query_dsl::BelongingToDsl, result::Error, Identifiable, Insertable, QueryDsl, Queryable,
-    SelectableHelper, AsChangeset,
+use diesel::{
+    query_dsl::BelongingToDsl, result::Error, AsChangeset, ExpressionMethods, Identifiable,
+    Insertable, QueryDsl, Queryable, SelectableHelper,
 };
 use diesel_async::scoped_futures::ScopedFutureExt;
 use diesel_async::AsyncConnection;
@@ -55,7 +55,9 @@ fn validate_username(candidate_username: &str) -> Result<(), ServerError> {
     Ok(())
 }
 
-#[derive(AsChangeset, Queryable, Identifiable, Insertable, Serialize, Deserialize, Debug, Clone)]
+#[derive(
+    AsChangeset, Queryable, Identifiable, Insertable, Serialize, Deserialize, Debug, Clone,
+)]
 #[diesel(primary_key(uid))]
 pub struct User {
     pub uid: String,
@@ -77,6 +79,11 @@ impl User {
     pub async fn find_by_uid(id: &str, pool: &DbPool) -> Result<User, Error> {
         let conn = &mut get_conn(pool).await?;
         users.find(id).first(conn).await
+    }
+
+    pub async fn find_by_username(uname: &str, pool: &DbPool) -> Result<User, Error> {
+        let conn = &mut get_conn(pool).await?;
+        users.filter(username.eq(uname)).first(conn).await
     }
 
     pub async fn insert(&self, pool: &DbPool) -> Result<(), Error> {
@@ -121,7 +128,8 @@ impl User {
         validate_username(new_username)?;
         diesel::update(users.find(&self.uid))
             .set(username.eq(new_username))
-            .execute(conn).await?;
+            .execute(conn)
+            .await?;
         Ok(())
     }
 }
