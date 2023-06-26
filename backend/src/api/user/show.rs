@@ -32,12 +32,11 @@ pub async fn search_user(
         let user_response =
             UserResponse::from_username(&search_request.username.clone().unwrap(), &pool).await?;
         return Ok(HttpResponse::Ok().json(user_response));
-    } else {
-        return Err(ServerError::UserInputError {
-            field: ("JSON".to_string()),
-            reason: ("Missing fields uid or username".to_string()),
-        });
     }
+    Err(ServerError::UserInputError {
+        field: ("JSON".to_string()),
+        reason: ("Missing fields uid or username".to_string()),
+    })
 }
 
 #[cfg(test)]
@@ -95,14 +94,12 @@ mod tests {
         assert_eq!(user.played, 0);
         assert_eq!(user.rating, 1500);
 
-        //This fails with panicked at 'called `Result::unwrap()` on an `Err` value: InvalidUri(InvalidFormat)
-
-        //let request_body = json!({"test": "test"});
-        //let resp = TestRequest::get()
-        //    .uri("api/user/")
-        //    .set_json(&request_body)
-        //    .send_request(&app)
-        //    .await;
-        //assert!(resp.status().is_client_error());
+        let request_body = json!({});
+        let resp = TestRequest::get()
+            .uri("/api/user/")
+            .set_json(&request_body)
+            .send_request(&app)
+            .await;
+        assert!(resp.status().is_client_error());
     }
 }
