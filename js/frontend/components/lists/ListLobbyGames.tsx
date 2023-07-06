@@ -17,7 +17,7 @@ interface LobbyChallengeRowProps {
 
 const LobbyChallengeRow = ({ challenge }: LobbyChallengeRowProps) => {
   const { user, authToken } = usePlayer();
-  const isRanked = challenge.ranked;
+  const isRated = challenge.rated;
   const tournament = challenge.tournamentQueenRule;
   const mosquito = challenge.gameType.mosquito;
   const ladybug = challenge.gameType.ladybug;
@@ -26,7 +26,7 @@ const LobbyChallengeRow = ({ challenge }: LobbyChallengeRowProps) => {
   return (
     <Row>
       <RowItem>{challenge.challenger.username}</RowItem>
-      <RowItem>{isRanked ? 'Ranked' : 'Unranked'}</RowItem>
+      <RowItem>{isRated ? 'Rated' : 'Unrated'}</RowItem>
       <RowItem>{tournament ? 'Tournament' : 'Normal'}</RowItem>
       <ExpansionsItem ladybug={ladybug} mosquito={mosquito} pillbug={pillbug} />
       <RowItem>{challenge.createdAt.toDateString()}</RowItem>
@@ -62,7 +62,7 @@ const ListLobbyGames = (props: ListLobbyGamesProps) => {
     <div className={`grid grid-cols-6 w-full ${className || ''}`} {...rest}>
       <Header>
         <HeaderItem>User</HeaderItem>
-        <HeaderItem>Ranked</HeaderItem>
+        <HeaderItem>Rated</HeaderItem>
         <HeaderItem>Opening</HeaderItem>
         <HeaderItem>Expansions</HeaderItem>
         <HeaderItem>Date Created</HeaderItem>

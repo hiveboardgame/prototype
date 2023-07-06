@@ -66,14 +66,14 @@ const PlayerChallengeRow = ({ challenge }: PlayerChallengeRowProps) => {
   const { mutate: mutateLobbyChallenges } = useLobbyChallenges();
   const id = challenge.id;
   const isPublic = challenge.public;
-  const isRanked = challenge.ranked;
+  const isRated = challenge.rated;
   const tournament = challenge.tournamentQueenRule;
   const mosquito = challenge.gameType.mosquito;
   const ladybug = challenge.gameType.ladybug;
   const pillbug = challenge.gameType.pillbug;
   return (
     <Row>
-      <RowItem>{isRanked ? 'Ranked' : 'Unranked'}</RowItem>
+      <RowItem>{isRated ? 'Rated' : 'Unrated'}</RowItem>
       <RowItem>{isPublic ? 'Public' : 'Private'}</RowItem>
       <RowItem>{tournament ? 'Tournament' : 'Normal'}</RowItem>
       <ExpansionsItem ladybug={ladybug} mosquito={mosquito} pillbug={pillbug} />
@@ -107,7 +107,7 @@ const ListPlayerChallenges = (props: HTMLAttributes<HTMLDivElement>) => {
   return (
     <div className={`grid grid-cols-7 w-full ${className || ''}`} {...rest}>
       <Header>
-        <HeaderItem>Ranked</HeaderItem>
+        <HeaderItem>Rated</HeaderItem>
         <HeaderItem>Visibility</HeaderItem>
         <HeaderItem>Opening</HeaderItem>
         <HeaderItem>Expansions</HeaderItem>
