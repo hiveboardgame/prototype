@@ -34,4 +34,20 @@ impl UserResponse {
             draw: rating.draw,
         })
     }
+
+    pub async fn from_username(uname: &str, pool: &DbPool) -> Result<Self, ServerError> {
+        let user = User::find_by_username(uname, pool).await?;
+        let rating = Rating::for_uid(&user.uid, pool).await?;
+
+        Ok(Self {
+            username: user.username,
+            uid: user.uid,
+            is_guest: user.is_guest,
+            rating: rating.rating.floor() as u64,
+            played: rating.played,
+            win: rating.won,
+            loss: rating.lost,
+            draw: rating.draw,
+        })
+    }
 }
