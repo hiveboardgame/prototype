@@ -43,13 +43,13 @@ interface ChallengeInfoBoxProps {
 }
 
 const ChallengeInfoBox = ({ challenge }: ChallengeInfoBoxProps) => {
-  const { ranked, tournamentQueenRule, gameType, colorChoice, createdAt } = challenge;
+  const { rated, tournamentQueenRule, gameType, colorChoice, createdAt } = challenge;
   return (
     <>
       <List>
         <ListItem>
           <ListIcon as={MdOutlineEmojiEvents} />
-          { ranked ? 'Ranked' : 'Unranked' }
+          { rated ? 'Rated' : 'Unrated' }
         </ListItem>
         <ListItem>
           <ListIcon as={MdLooksOne}/>

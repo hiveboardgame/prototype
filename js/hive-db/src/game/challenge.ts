@@ -10,7 +10,7 @@ import { usePlayer } from '../PlayerProvider';
 export interface GameChallengeResponse {
   id: string,
   gameType: string,
-  ranked: boolean,
+  rated: boolean,
   public: boolean,
   tournamentQueenRule: boolean,
   colorChoice: string,
@@ -21,7 +21,7 @@ export interface GameChallengeResponse {
 export class GameChallenge {
   public id: string;
   public gameType: ExpansionsChoice;
-  public ranked: boolean;
+  public rated: boolean;
   public public: boolean;
   public tournamentQueenRule: boolean;
   public colorChoice: ColorChoice;
@@ -65,7 +65,7 @@ export async function createGameChallenge(
   ));
   const reqBody = {
     public: isPublic,
-    ranked: false, // not implemented yet
+    rated: false, // not implemented yet
     tournamentQueenRule: true, // always on for now
     gameType,
     colorChoice,
