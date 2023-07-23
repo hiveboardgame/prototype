@@ -8,14 +8,14 @@ import useSWR, { Fetcher } from 'swr';
 import { usePlayer } from '../PlayerProvider';
 
 export interface GameChallengeResponse {
-  id: string,
-  gameType: string,
-  rated: boolean,
-  public: boolean,
-  tournamentQueenRule: boolean,
-  colorChoice: string,
-  createdAt: Date,
-  challenger: UserData,
+  id: string;
+  gameType: string;
+  rated: boolean;
+  public: boolean;
+  tournamentQueenRule: boolean;
+  colorChoice: string;
+  createdAt: Date;
+  challenger: UserData;
 }
 
 export class GameChallenge {
@@ -55,38 +55,46 @@ export async function createGameChallenge(
   visibility: VisibilityChoice,
   colorChoice: ColorChoice,
   expansions: ExpansionsChoice,
-  authToken: string,
+  authToken: string
 ): Promise<GameChallenge> {
   const isPublic = visibility === 'Public';
-  const gameType = gameOptionsToString(newGameOptions(
-    expansions.ladybug,
-    expansions.mosquito,
-    expansions.pillbug
-  ));
+  const gameType = gameOptionsToString(
+    newGameOptions(expansions.ladybug, expansions.mosquito, expansions.pillbug)
+  );
   const reqBody = {
     public: isPublic,
     rated: false, // not implemented yet
     tournamentQueenRule: true, // always on for now
     gameType,
-    colorChoice,
+    colorChoice
   };
-  let res = await postJSON<GameChallengeResponse>('/api/game/challenge', reqBody, authToken);
+  let res = await postJSON<GameChallengeResponse>(
+    '/api/game/challenge',
+    reqBody,
+    authToken
+  );
   return new GameChallenge(res);
 }
 
 export async function getGameChallenge(id: string): Promise<GameChallenge> {
   let res = await getJSON<GameChallengeResponse>(`/api/game/challenge/${id}`);
   if (!res) {
-      throw new Error(`No such challenge found`);
+    throw new Error(`No such challenge found`);
   }
   return new GameChallenge(res);
 }
 
-export async function acceptGameChallenge(id: string, authToken: string): Promise<Game> {
+export async function acceptGameChallenge(
+  id: string,
+  authToken: string
+): Promise<Game> {
   return postJSON(`/api/game/challenge/${id}/accept`, {}, authToken);
 }
 
-export async function deleteGameChallenge(id: string, authToken: string): Promise<void> {
+export async function deleteGameChallenge(
+  id: string,
+  authToken: string
+): Promise<void> {
   await deleteReq(`/api/game/challenge/${id}`, authToken);
 }
 
@@ -108,7 +116,9 @@ function gameOptionsFromString(gameType: string): GameOptions {
   return newGameOptions(l, m, p);
 }
 
-async function gameChallengesFetcher([uri, authToken]): Promise<GameChallenge[] | null> {
+async function gameChallengesFetcher([uri, authToken]): Promise<
+  GameChallenge[] | null
+> {
   if (!uri) {
     return null;
   }
@@ -127,7 +137,12 @@ export function useLobbyChallenges() {
 export function usePlayerChallenges() {
   const { user, authToken } = usePlayer();
   const uri = user ? `/api/user/${user.uid}/challenges` : null;
-  let { data: challenges, error, isLoading, mutate } = useSWR<GameChallenge[] | null>([uri, authToken], gameChallengesFetcher);
+  let {
+    data: challenges,
+    error,
+    isLoading,
+    mutate
+  } = useSWR<GameChallenge[] | null>([uri, authToken], gameChallengesFetcher);
   if (!error && !isLoading && !challenges) {
     error = new Error(`No challenges found for user ${user}`);
   }
@@ -136,6 +151,6 @@ export function usePlayerChallenges() {
     challenges,
     error,
     isLoading,
-    mutate,
+    mutate
   };
 }

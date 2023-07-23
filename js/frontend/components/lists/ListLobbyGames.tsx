@@ -3,7 +3,7 @@ import {
   acceptGameChallenge,
   GameChallenge,
   useLobbyChallenges,
-  usePlayer,
+  usePlayer
 } from 'hive-db';
 import { Button } from '@chakra-ui/react';
 import { Header, HeaderItem } from './Header';
@@ -26,15 +26,15 @@ const LobbyChallengeRow = ({ challenge }: LobbyChallengeRowProps) => {
   return (
     <Row>
       <RowItem>{challenge.challenger.username}</RowItem>
-      <RowItem>{isRated ? 'Rated' : 'Unrated'}</RowItem>
+      <RowItem>{isRated ? 'Rated' : 'Not rated'}</RowItem>
       <RowItem>{tournament ? 'Tournament' : 'Normal'}</RowItem>
       <ExpansionsItem ladybug={ladybug} mosquito={mosquito} pillbug={pillbug} />
       <RowItem>{challenge.createdAt.toDateString()}</RowItem>
       <RowItem>
         <Button
-          colorScheme="green"
+          colorScheme='green'
           disabled={!canAccept}
-          size="sm"
+          size='sm'
           onClick={() => {
             acceptGameChallenge(challenge.id, authToken)
               .then((game) => console.log(game)) // TODO: navigate to the newly created game
@@ -55,7 +55,7 @@ const ListLobbyGames = (props: ListLobbyGamesProps) => {
   const { data: challenges, isLoading, error } = useLobbyChallenges();
 
   if (isLoading || error) {
-    return <Spinner />
+    return <Spinner />;
   }
 
   return (

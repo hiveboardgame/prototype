@@ -18,6 +18,9 @@ const slice = createSlice({
   name: 'game',
   initialState,
   reducers: {
+    authTokenAdded(state, action: PayloadAction<string>) {
+      state.authToken = action.payload;
+    },
     boardCentered(state) {
       state.boardCentered = new Date().toJSON();
     },
@@ -36,6 +39,15 @@ const slice = createSlice({
         if (oldNotation !== newNotation && state.upTo !== -1) {
           state.newMovesToView = true;
         }
+        // TODO: Neel: populate this from game.validMoves and game.validSpawns
+        let validNextMoves = [];
+        for (const move of game.validMoves) {
+          validNextMoves.push(move);
+        }
+        for (const spawn of game.validSpawns) {
+          validNextMoves.push(spawn);
+        }
+        state.validNextMoves = validNextMoves;
       }
       state.game = game;
       state.proposedMove = null;
@@ -51,6 +63,20 @@ const slice = createSlice({
         state.proposedMove = buildMove(board, selectedTileId, coordinate);
         state.proposedMoveCoordinate = coordinate;
         state.upTo = -1;
+      }
+
+      // TODO: Neel: this should probably be a separate dispatch action, and probably shouldn't be spawned by a ghost click
+      if (game.state.moveCount === 0) {
+        // The first move is being played
+        state.selectedTileId = null;
+        playGameMove(game, state.proposedMove, state.authToken)
+          .then(({ game, validNextMoves }) => {
+            state.game = game;
+            state.validNextMoves = validNextMoves;
+          })
+          .catch((error) => {
+            console.error(error);
+          });
       }
     },
     firstMoveClicked(state) {
@@ -144,6 +170,7 @@ const slice = createSlice({
 });
 
 export const {
+  authTokenAdded,
   boardCentered,
   firstMoveClicked,
   gameChanged,

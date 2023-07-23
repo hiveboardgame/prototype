@@ -39,7 +39,8 @@ export const selectGame = (state: GameState): Game | null => state.game;
 /**
  * Get the set of valid next moves
  */
-export const selectValidMoves = (state: GameState): Move[] | null => state.validNextMoves;
+export const selectValidMoves = (state: GameState): PossibleMove[] | null =>
+  state.validNextMoves;
 
 /**
  * Get the id of the currently selected tile.
@@ -142,7 +143,9 @@ export const selectGameBoard = createSelector(
  */
 export const selectDisplayGameBoard = createSelector(
   [selectDisplayMoves, selectDisplayUpTo],
-  (moves, upTo): GameBoard => buildBoard(moves, upTo)
+  (moves, upTo): GameBoard => {
+    return buildBoard(moves, upTo);
+  }
 );
 
 /**
@@ -206,23 +209,23 @@ export const selectValidMovesForTile = createSelector(
     selectGameBoard,
     selectIsViewingHistory,
     selectColorTurn,
-    selectSelectedTileId,
+    selectSelectedTileId
   ],
-  (
-    moves,
-    game,
-    board,
-    isHistory,
-    player,
-    selected,
-  ): HexCoordinate[] => {
+  (moves, game, board, isHistory, player, selected): HexCoordinate[] => {
     if (!game || isHistory || !selected || !player) return [];
-    return moves.filter(move => move.tileId === selected)
-      .map(move => {
+    if (game.state.moveCount === 0 && player === 'w') {
+      return [{ r: 0, q: 0 }];
+    }
+    return moves
+      .filter((move) => move.tileId === selected)
+      .map((move) => {
         if (move.refId === 'x') {
           return { r: 0, q: 0 };
         } else {
-          return relativeHexCoordinate(findTileCoordinate(board, move.refId), move.dir)
+          return relativeHexCoordinate(
+            findTileCoordinate(board, move.refId),
+            move.dir
+          );
         }
       });
   }

@@ -3,8 +3,8 @@ import { Move } from 'hive-lib';
 import { postJSON } from '../api';
 
 interface GameMoveResponse {
-  game: Game,
-  validNextMoves: Move[],
+  game: Game;
+  validNextMoves: Move[];
 }
 
 /**
@@ -19,7 +19,12 @@ interface GameMoveResponse {
  * @param game The game to update.
  * @param moves An ordered list of moves to play.
  */
-export function playGameMove(game: Game, move: Move, authToken: string): Promise<GameMoveResponse> {
-  const uri = `/api/board/${game.gid}/move/${move.notation}`;
-  return postJSON(uri, {}, authToken);
+export function playGameMove(
+  game: Game,
+  move: Move,
+  authToken: string
+): Promise<GameMoveResponse> {
+  const uri = `/api/game/${game.gid}/play`;
+  // TODO: Neel: need to play around with this more and figure out any conversion
+  return postJSON(uri, { Turn: [move.notation, '.'] }, authToken);
 }

@@ -1,4 +1,4 @@
-import type { ColorKey, GameOptions } from 'hive-lib';
+import type { ColorKey, GameOptions, HexCoordinate } from 'hive-lib';
 import type { GameMeta } from './meta';
 import type { GamePlayers } from './players';
 import type { GameState } from './state';
@@ -11,13 +11,34 @@ import { newGameMeta, newGameMetaWithFieldValues } from './meta';
 import { newGameState } from './state';
 import { getJSON } from '../api';
 
-export interface Game {
+// TODO: move this to the right place
+export interface BackendGame {
+  black_uid: string;
+  white_uid: string;
+  game_control_history: string;
+  game_status: string;
+  game_type: string;
+  history: string;
+  id: string;
+  rated: boolean;
+  tournament_queen_rule: boolean;
+  turn: number;
+  moves: string;
+  spawns: HexCoordinate[];
+}
+
+export interface GameOverview {
   gid: string;
   meta: GameMeta;
   options: GameOptions;
   players: GamePlayers;
   state: GameState;
 }
+
+export type Game = GameOverview & {
+  validMoves: string[];
+  validSpawns: string[];
+};
 
 /**
  * Create a new game object.
@@ -32,13 +53,171 @@ export function newGame(
   players: GamePlayers,
   options: GameOptions,
   isPublic: boolean
-): Game {
+): OverviewGame {
   return {
     gid: '',
     options,
     players,
     meta: newGameMeta(creatorUid, isPublic),
     state: newGameState()
+  };
+}
+
+function getOptionsFromBackendGame(backendGame: BackendGame): GameOptions {
+  let pillbug = false;
+  let ladybug = false;
+  let mosquito = false;
+  switch (backendGame.game_type) {
+    case 'Base+M':
+      mosquito = true;
+      break;
+    case 'Base+L':
+      ladybug = true;
+      break;
+    case 'Base+P':
+      pillbug = true;
+      break;
+    case 'Base+ML':
+      mosquito = true;
+      ladybug = true;
+      break;
+    case 'Base+MP':
+      mosquito = true;
+      pillbug = true;
+      break;
+    case 'Base+LP':
+      ladybug = true;
+      pillbug = true;
+      break;
+    case 'Base+MLP':
+      mosquito = true;
+      ladybug = true;
+      pillbug = true;
+      break;
+  }
+
+  return {
+    tournament: backendGame.tournament_queen_rule,
+    pillbug,
+    ladybug,
+    mosquito
+  };
+}
+
+function getPlayersFromBackendGame(backendGame: BackendGame): GamePlayers {
+  return {
+    uids: [backendGame.black_uid, backendGame.white_uid],
+    // TODO: Neel: fix this
+    black: {
+      uid: backendGame.black_uid,
+      username: "black player's username",
+      is_guest: false
+    },
+    white: {
+      uid: backendGame.white_uid,
+      username: "white player's username",
+      is_guest: false
+    }
+  };
+}
+
+function getMetaFromBackendGame(backendGame: BackendGame): GameMeta {
+  let isStarted = false;
+  let isEnded = false;
+  let result = '';
+  switch (backendGame.game_status) {
+    case 'NotStarted':
+      // TODO: Neel: make consistent with backend
+      isStarted = true;
+      break;
+    case 'InProgress':
+      isStarted = true;
+      break;
+    case 'Finished(Winner(b))':
+      result = backendGame.black_uid;
+    case 'Finished(Winner(w))':
+      result = backendGame.white_uid;
+    case 'Finished(Draw)':
+      result = 'draw';
+    case 'Finished(Unknown)':
+      // TODO: Neel: what is this? should it (or something else) map to tie?
+      isEnded = true;
+      break;
+    default:
+      throw new Error(`unknown game status: ${backendGame.game_status}`);
+  }
+
+  // TODO: Neel: fix this
+  return {
+    public: true,
+    creator: backendGame.black_uid,
+    isStarted,
+    isEnded,
+    result,
+    createdDate: '',
+    acceptedDate: '',
+    playedDate: '',
+    endedDate: ''
+  };
+}
+
+function getStateFromBackendGame(backendGame: BackendGame): GameState {
+  return newGameState(backendGame.history);
+}
+
+function getValidMovesFromBackendGame(
+  backendGame: BackendGame
+): PossibleMove[] {
+  console.log(backendGame.moves);
+  return backendGame.moves;
+}
+
+function getValidSpawnsFromBackendGame(
+  backendGame: BackendGame
+): PossibleMove[] {
+  console.log(backendGame);
+  const reserve =
+    backendGame.turn % 2 == 0
+      ? backendGame.reserve_white
+      : backendGame.reserve_black;
+  const colorSymbol = backendGame.turn % 2 == 0 ? 'w' : 'b';
+  const spawnablePieces = [];
+  for (let [key, value] of reserve) {
+    if (value === 0) continue;
+    spawnablePieces.push(value);
+    console.log(key + ' = ' + value);
+  }
+  for (const spawn of backendGame.spawns) {
+    console.log(spawn);
+  }
+  return backendGame.spawns;
+}
+
+/**
+ * Create a new game object from the backend's representation of a game.
+ *
+ * @param creatorUid The UID of the player creating the game.
+ * @param players A GamePlayers object.
+ * @param options A GameOptions object.
+ * @param isPublic A boolean indicating game visibility.
+ */
+export function newGameFromBackendGame(backendGame: BackendGame): Game {
+  console.log(backendGame);
+  const options = getOptionsFromBackendGame(backendGame);
+  const players = getPlayersFromBackendGame(backendGame);
+  const meta = getMetaFromBackendGame(backendGame);
+  const state = getStateFromBackendGame(backendGame);
+  const validMoves = getValidMovesFromBackendGame(backendGame);
+  const validSpawns = getValidSpawnsFromBackendGame(backendGame);
+
+  return {
+    gid: backendGame.id,
+    options,
+    players,
+    meta,
+    state,
+    validMoves,
+    validSpawns
   };
 }
 
@@ -68,13 +247,16 @@ export function newGameWithFieldValues(
 }
 
 export function getUserGames(user: UserData): Promise<Game[]> {
-  return getJSON<Game[]>(`/api/user/${user.uid}/games`)
-    .then(maybeGames => {
-      if (!maybeGames) {
-        throw new Error(`no games found for that user`)
-      }
-      return maybeGames;
-    });
+  return getJSON<Game[]>(`/api/user/${user.uid}/games`).then((maybeGames) => {
+    if (!maybeGames) {
+      throw new Error(`no games found for that user`);
+    }
+    return maybeGames;
+  });
+}
+
+export function getGame(uid: string): Promise<Game[]> {
+  return getJSON<Game[]>(`/api/game/${uid}`);
 }
 
 /**

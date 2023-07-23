@@ -1,4 +1,8 @@
-import { getAuth, User as FirebaseUser, onAuthStateChanged } from '@firebase/auth';
+import {
+  getAuth,
+  User as FirebaseUser,
+  onAuthStateChanged
+} from '@firebase/auth';
 import app from './db/app';
 import {
   createContext,
@@ -14,7 +18,14 @@ import {
   signInAnonymously,
   signOut
 } from 'firebase/auth';
-import { Game, getGameIsEnded, getGameIsStarted, getUserGames } from './game/game';
+import {
+  BackendGame,
+  Game,
+  getGameIsEnded,
+  getGameIsStarted,
+  getUserGames,
+  newGameFromBackendGame
+} from './game/game';
 import { createGuestUser, createUser, getUser } from '..';
 
 export interface PlayerContextProps {
@@ -63,15 +74,18 @@ function usePlayerState(): PlayerContextProps {
    */
   useEffect(() => {
     if (user === null) return;
-    getUserGames(user)
-      .then((games: Game[]) => {
-        const activeGames = games.filter(
-          (game) => getGameIsStarted(game) && !getGameIsEnded(game)
-        );
-        const completedGames = games.filter((game) => getGameIsEnded(game));
-        setActiveGames(activeGames);
-        setCompletedGames(completedGames);
-      });
+    getUserGames(user).then((backendGames: BackendGame[]) => {
+      const games = backendGames.map((backendGame) =>
+        newGameFromBackendGame(backendGame)
+      );
+
+      const activeGames = games.filter(
+        (game) => getGameIsStarted(game) && !getGameIsEnded(game)
+      );
+      const completedGames = games.filter((game) => getGameIsEnded(game));
+      setActiveGames(activeGames);
+      setCompletedGames(completedGames);
+    });
   }, [user]);
 
   async function usernameChanged(username: string) {
@@ -110,11 +124,11 @@ function usePlayerState(): PlayerContextProps {
 
   useEffect(() => {
     return onAuthStateChanged(auth, setFirebaseUser);
-  }, [])
+  }, []);
 
   useEffect(() => {
     handleFirebaseUserChanged();
-  }, [firebaseUser])
+  }, [firebaseUser]);
 
   /**
    * Sign in using Google.
@@ -132,7 +146,7 @@ function usePlayerState(): PlayerContextProps {
    */
   const signInAsGuest = async () => {
     await signInAnonymously(auth);
-  }
+  };
 
   /**
    * Sign out the current user and optionally redirect to a page.
@@ -146,7 +160,9 @@ function usePlayerState(): PlayerContextProps {
         setIncompleteProfile(false);
         setActiveGames([]);
         setCompletedGames([]);
-        if (redirect) { /* router.push(redirect) */ }
+        if (redirect) {
+          /* router.push(redirect) */
+        }
       })
       .catch((error) => {
         console.error(error);

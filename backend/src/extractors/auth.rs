@@ -57,7 +57,7 @@ impl FromRequest for AuthenticatedUser {
                 .expect("couldn't retrieve server config");
             let auth_token = req_clone
                 .headers()
-                .get("x-authentication")
+                .get("x-authorization")
                 .ok_or(AuthenticationError::MissingToken)?
                 .to_str()
                 .map_err(|err| {

@@ -1,10 +1,22 @@
-import { Button, Input, Popover, PopoverArrow, PopoverBody, PopoverCloseButton, PopoverContent, PopoverHeader, PopoverTrigger, Spinner, useClipboard } from '@chakra-ui/react';
+import {
+  Button,
+  Input,
+  Popover,
+  PopoverArrow,
+  PopoverBody,
+  PopoverCloseButton,
+  PopoverContent,
+  PopoverHeader,
+  PopoverTrigger,
+  Spinner,
+  useClipboard
+} from '@chakra-ui/react';
 import {
   deleteGameChallenge,
   GameChallenge,
   usePlayerChallenges,
   usePlayer,
-  useLobbyChallenges,
+  useLobbyChallenges
 } from 'hive-db';
 import { HTMLAttributes, useState } from 'react';
 import { Header, HeaderItem } from './Header';
@@ -16,9 +28,7 @@ const ShareLinkButton = ({ text }: { text: string }) => {
   return (
     <Popover>
       <PopoverTrigger>
-        <Button size='xs'>
-          Share link
-        </Button>
+        <Button size='xs'>Share link</Button>
       </PopoverTrigger>
       <PopoverContent>
         <PopoverArrow />
@@ -28,7 +38,7 @@ const ShareLinkButton = ({ text }: { text: string }) => {
             Send this link to a friend to invite them!
           </PopoverHeader>
           <Input
-            type="text"
+            type='text'
             size='sm'
             isReadOnly={true}
             onFocus={handleInputFocus}
@@ -37,10 +47,16 @@ const ShareLinkButton = ({ text }: { text: string }) => {
         </PopoverBody>
       </PopoverContent>
     </Popover>
-  )
-}
+  );
+};
 
-const DeleteButton = ({ id, onDelete }: { id: string, onDelete: () => void }) => {
+const DeleteButton = ({
+  id,
+  onDelete
+}: {
+  id: string;
+  onDelete: () => void;
+}) => {
   const { authToken } = usePlayer();
   return (
     <Button
@@ -73,7 +89,7 @@ const PlayerChallengeRow = ({ challenge }: PlayerChallengeRowProps) => {
   const pillbug = challenge.gameType.pillbug;
   return (
     <Row>
-      <RowItem>{isRated ? 'Rated' : 'Unrated'}</RowItem>
+      <RowItem>{isRated ? 'Rated' : 'Not rated'}</RowItem>
       <RowItem>{isPublic ? 'Public' : 'Private'}</RowItem>
       <RowItem>{tournament ? 'Tournament' : 'Normal'}</RowItem>
       <ExpansionsItem ladybug={ladybug} mosquito={mosquito} pillbug={pillbug} />
@@ -82,15 +98,19 @@ const PlayerChallengeRow = ({ challenge }: PlayerChallengeRowProps) => {
         <ShareLinkButton text={challenge.getChallengeUrl()} />
       </RowItem>
       <RowItem>
-        <DeleteButton id={id} onDelete={() => {
-          const removeChallenge = (challenges) => challenges.filter((other) => {
-            return other.id == challenge.id;
-          });
-          mutatePlayerChallenges(removeChallenge);
-          if (challenge.public) {
-            mutateLobbyChallenges(removeChallenge);
-          }
-        }} />
+        <DeleteButton
+          id={id}
+          onDelete={() => {
+            const removeChallenge = (challenges) =>
+              challenges.filter((other) => {
+                return other.id == challenge.id;
+              });
+            mutatePlayerChallenges(removeChallenge);
+            if (challenge.public) {
+              mutateLobbyChallenges(removeChallenge);
+            }
+          }}
+        />
       </RowItem>
     </Row>
   );
@@ -101,7 +121,7 @@ const ListPlayerChallenges = (props: HTMLAttributes<HTMLDivElement>) => {
   const { challenges, error, isLoading } = usePlayerChallenges();
 
   if (isLoading || error) {
-    return <Spinner />
+    return <Spinner />;
   }
 
   return (

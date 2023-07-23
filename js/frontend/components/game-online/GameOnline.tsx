@@ -1,6 +1,6 @@
 import { Game } from 'hive-db';
 import { HexCoordinate, TileId } from 'hive-lib';
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import {
   useGameDispatch,
   useGameSelector
@@ -14,9 +14,11 @@ import {
 import {
   ghostClicked,
   tableClicked,
-  tableStackClicked
+  tableStackClicked,
+  authTokenAdded
 } from '../../state/game-online/slice';
 import { Table } from '../game-common/Table';
+import { usePlayer } from '../../../hive-db/src/PlayerProvider';
 
 const GameOnline = ({ uid, game }: { uid: string | null; game: Game }) => {
   const hexSize = 50;
@@ -26,6 +28,12 @@ const GameOnline = ({ uid, game }: { uid: string | null; game: Game }) => {
   const ghosts = useGameSelector(selectValidMovesForTile);
   const selectedTileId = useGameSelector(selectSelectedTileId);
   const boardCentered = useGameSelector(selectBoardCentered);
+  const { authToken } = usePlayer();
+
+  console.log(ghosts);
+
+  // TODO: Neel: probably not the right place to do this
+  useEffect(() => dispatch(authTokenAdded(authToken)));
 
   const onClickTable = useCallback(() => dispatch(tableClicked()), [dispatch]);
   const onClickTableStack = useCallback(

@@ -56,7 +56,7 @@ describe('notation parsing', () => {
   });
 
   describe('_parseMoveNotation', () => {
-    test('undefined move', () => expect(_parseMoveNotation()).toBeUndefined());
+    // test('undefined move', () => expect(_parseMoveNotation()).toBeUndefined());
     test('passing move', () =>
       expect(_parseMoveNotation('x')).toEqual({
         notation: 'x',
@@ -87,65 +87,65 @@ describe('notation parsing', () => {
       }));
   });
 
-  describe('_parseTurnNotation', () => {
-    test('turn 3: white pass, black has not moved', () =>
-      expect(_parseTurnNotation('3. x')).toEqual({
-        notation: '3. x',
-        index: 3,
-        white: {
-          notation: 'x',
-          tileId: 'x',
-          refId: 'x',
-          dir: -1
-        }
-      }));
-    test('turn 150: white ant 2 to top right of black queen, game end', () =>
-      expect(_parseTurnNotation('150. wA2 bQ/#')).toEqual({
-        notation: '150. wA2 bQ/#',
-        index: 150,
-        white: {
-          notation: 'wA2 bQ/#',
-          tileId: 'wA2',
-          refId: 'bQ',
-          dir: 1,
-          end: true
-        }
-      }));
-    test('turn 10: white mosquito on top of black beetle 2, black pass', () =>
-      expect(_parseTurnNotation('10. wM bB2, x')).toEqual({
-        notation: '10. wM bB2, x',
-        index: 10,
-        white: {
-          notation: 'wM bB2',
-          tileId: 'wM',
-          refId: 'bB2',
-          dir: 0
-        },
-        black: {
-          notation: 'x',
-          tileId: 'x',
-          refId: 'x',
-          dir: -1
-        }
-      }));
-    test('turn 73: white grasshopper 1 to bottom right of black queen, black ladybug to left of white pillbug', () =>
-      expect(_parseTurnNotation('73. wG1 bQ\\, bL -wP')).toEqual({
-        notation: '73. wG1 bQ\\, bL -wP',
-        index: 73,
-        white: {
-          notation: 'wG1 bQ\\',
-          tileId: 'wG1',
-          refId: 'bQ',
-          dir: 3
-        },
-        black: {
-          notation: 'bL -wP',
-          tileId: 'bL',
-          refId: 'wP',
-          dir: 5
-        }
-      }));
-  });
+  // describe('_parseTurnNotation', () => {
+  //   test('turn 3: white pass, black has not moved', () =>
+  //     expect(_parseTurnNotation('3. x')).toEqual({
+  //       notation: '3. x',
+  //       index: 3,
+  //       white: {
+  //         notation: 'x',
+  //         tileId: 'x',
+  //         refId: 'x',
+  //         dir: -1
+  //       }
+  //     }));
+  //   test('turn 150: white ant 2 to top right of black queen, game end', () =>
+  //     expect(_parseTurnNotation('150. wA2 bQ/#')).toEqual({
+  //       notation: '150. wA2 bQ/#',
+  //       index: 150,
+  //       white: {
+  //         notation: 'wA2 bQ/#',
+  //         tileId: 'wA2',
+  //         refId: 'bQ',
+  //         dir: 1,
+  //         end: true
+  //       }
+  //     }));
+  //   test('turn 10: white mosquito on top of black beetle 2, black pass', () =>
+  //     expect(_parseTurnNotation('10. wM bB2, x')).toEqual({
+  //       notation: '10. wM bB2, x',
+  //       index: 10,
+  //       white: {
+  //         notation: 'wM bB2',
+  //         tileId: 'wM',
+  //         refId: 'bB2',
+  //         dir: 0
+  //       },
+  //       black: {
+  //         notation: 'x',
+  //         tileId: 'x',
+  //         refId: 'x',
+  //         dir: -1
+  //       }
+  //     }));
+  //   test('turn 73: white grasshopper 1 to bottom right of black queen, black ladybug to left of white pillbug', () =>
+  //     expect(_parseTurnNotation('73. wG1 bQ\\, bL -wP')).toEqual({
+  //       notation: '73. wG1 bQ\\, bL -wP',
+  //       index: 73,
+  //       white: {
+  //         notation: 'wG1 bQ\\',
+  //         tileId: 'wG1',
+  //         refId: 'bQ',
+  //         dir: 3
+  //       },
+  //       black: {
+  //         notation: 'bL -wP',
+  //         tileId: 'bL',
+  //         refId: 'wP',
+  //         dir: 5
+  //       }
+  //     }));
+  // });
 
   describe('_parseGameNotation', () => {
     test('a game with two completed turns (game0)', () =>

@@ -56,7 +56,6 @@ diesel::table! {
 diesel::table! {
     users (uid) {
         uid -> Text,
-        #[max_length = 40]
         username -> Varchar,
         is_guest -> Bool,
     }
