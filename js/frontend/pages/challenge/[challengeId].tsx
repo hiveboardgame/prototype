@@ -1,16 +1,31 @@
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import { acceptGameChallenge, ExpansionsChoice, GameChallenge, getGameChallenge, usePlayer, UserData } from 'hive-db';
+import {
+  acceptGameChallenge,
+  ExpansionsChoice,
+  GameChallenge,
+  getGameChallenge,
+  usePlayer,
+  UserData
+} from 'hive-db';
 import { NavBar } from '../../components/nav/NavBar';
 import { useTitle } from '../../hooks/useTitle';
 import { useEffect, useState } from 'react';
 import { Body } from '../../components/common/Body';
 import { Footer } from '../../components/common/Footer';
 import { Button, List, ListIcon, ListItem } from '@chakra-ui/react';
-import { MdCalendarToday, MdCircle, MdOutlineContrast, MdLooksOne, MdOutlineBugReport, MdOutlineCircle, MdOutlineEmojiEvents } from 'react-icons/md';
+import {
+  MdCalendarToday,
+  MdCircle,
+  MdOutlineContrast,
+  MdLooksOne,
+  MdOutlineBugReport,
+  MdOutlineCircle,
+  MdOutlineEmojiEvents
+} from 'react-icons/md';
 
 function getExpansionDescription(gameType: ExpansionsChoice): string {
-  const expansionPieces = []
+  const expansionPieces = [];
   if (gameType.mosquito) {
     expansionPieces.push('Mosquito');
   }
@@ -27,53 +42,69 @@ function getExpansionDescription(gameType: ExpansionsChoice): string {
   }
 }
 
-const ColorChoiceItem = ({colorChoice}: {colorChoice: string}) => {
+const ColorChoiceItem = ({ colorChoice }: { colorChoice: string }) => {
   switch (colorChoice) {
     case 'White':
-      return <><ListIcon as={MdOutlineCircle} />{'Challenger is white'}</>;
+      return (
+        <>
+          <ListIcon as={MdOutlineCircle} />
+          {'Challenger is white'}
+        </>
+      );
     case 'Black':
-      return <><ListIcon as={MdCircle} />{'Challenger is black'}</>;
+      return (
+        <>
+          <ListIcon as={MdCircle} />
+          {'Challenger is black'}
+        </>
+      );
     case 'Random':
-      return <><ListIcon as={MdOutlineContrast} />{'Random color choice'}</>;
+      return (
+        <>
+          <ListIcon as={MdOutlineContrast} />
+          {'Random color choice'}
+        </>
+      );
   }
-}
+};
 
 interface ChallengeInfoBoxProps {
-  challenge: GameChallenge,
+  challenge: GameChallenge;
 }
 
 const ChallengeInfoBox = ({ challenge }: ChallengeInfoBoxProps) => {
-  const { rated, tournamentQueenRule, gameType, colorChoice, createdAt } = challenge;
+  const { rated, tournamentQueenRule, gameType, colorChoice, createdAt } =
+    challenge;
   return (
     <>
       <List>
         <ListItem>
           <ListIcon as={MdOutlineEmojiEvents} />
-          { rated ? 'Rated' : 'Unrated' }
+          {rated ? 'Rated' : 'Not rated'}
         </ListItem>
         <ListItem>
-          <ListIcon as={MdLooksOne}/>
-          { tournamentQueenRule ? 'Tournament opening' : 'Unrestricted opening' }
+          <ListIcon as={MdLooksOne} />
+          {tournamentQueenRule ? 'Tournament opening' : 'Unrestricted opening'}
         </ListItem>
         <ListItem>
           <ListIcon as={MdOutlineBugReport} />
-          { getExpansionDescription(gameType) }
+          {getExpansionDescription(gameType)}
         </ListItem>
         <ListItem>
           <ListIcon as={MdCalendarToday} />
-          { `Created ${createdAt.toLocaleDateString()}` }
+          {`Created ${createdAt.toLocaleDateString()}`}
         </ListItem>
         <ListItem>
           <ColorChoiceItem colorChoice={colorChoice}></ColorChoiceItem>
         </ListItem>
       </List>
     </>
-  )
-}
+  );
+};
 
 interface AcceptChallengeProps {
-  challenge: GameChallenge,
-  user?: UserData,
+  challenge: GameChallenge;
+  user?: UserData;
 }
 
 const AcceptChallenge = (props: AcceptChallengeProps) => {
@@ -87,10 +118,12 @@ const AcceptChallenge = (props: AcceptChallengeProps) => {
           {`${challenge.challenger.username} has challenged you to a game`}
         </div>
         <ChallengeInfoBox challenge={challenge}></ChallengeInfoBox>
-        { !user ? 'In order to accept this invite, please log in first.' :
+        {!user ? (
+          'In order to accept this invite, please log in first.'
+        ) : (
           <Button
-            colorScheme="green"
-            size="lg"
+            colorScheme='green'
+            size='lg'
             onClick={() => {
               acceptGameChallenge(challenge.id, authToken)
                 .then((game) => console.log(game)) // TODO: navigate to the newly created game
@@ -99,11 +132,11 @@ const AcceptChallenge = (props: AcceptChallengeProps) => {
           >
             Accept Challenge
           </Button>
-        }
+        )}
       </div>
     </>
   );
-}
+};
 
 const Challenge = () => {
   const router = useRouter();
@@ -115,8 +148,9 @@ const Challenge = () => {
   useEffect(() => {
     if (!challengeId) return;
 
-    getGameChallenge(challengeId as string)
-      .then((challenge) => setChallenge(challenge));
+    getGameChallenge(challengeId as string).then((challenge) =>
+      setChallenge(challenge)
+    );
   }, [challengeId]);
 
   return (
@@ -128,7 +162,14 @@ const Challenge = () => {
       <Body className='my-12'>
         <div className='grid grid-cols-12 gap-4'>
           <div className='col-span-8 flex flex-col space-y-4'>
-            { !challenge ? 'Loading...' : <AcceptChallenge challenge={challenge} user={user}></AcceptChallenge>}
+            {!challenge ? (
+              'Loading...'
+            ) : (
+              <AcceptChallenge
+                challenge={challenge}
+                user={user}
+              ></AcceptChallenge>
+            )}
           </div>
         </div>
       </Body>

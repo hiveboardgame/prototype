@@ -20,7 +20,7 @@ export interface BackendGame {
   game_type: string;
   history: string;
   id: string;
-  ranked: boolean;
+  rated: boolean;
   tournament_queen_rule: boolean;
   turn: number;
   moves: string;
@@ -170,22 +170,21 @@ function getValidMovesFromBackendGame(
 ): PossibleMove[] {
   console.log(backendGame.moves);
   return backendGame.moves;
-}wekj
-
-function convertReserveToPieceSymbol(colorSymbol: string, pieceName: string, reserveSize: number): string {
-  const pieceNumber = reserveSize 
-  return colorSymbol + pieceName[0].toUpperCase() + ;
+}
 
 function getValidSpawnsFromBackendGame(
   backendGame: BackendGame
 ): PossibleMove[] {
-  const reserve = backendGame.turn % 2 == 0 ? backendGame.reserve_white : backendGame.reserve_black;
+  console.log(backendGame);
+  const reserve =
+    backendGame.turn % 2 == 0
+      ? backendGame.reserve_white
+      : backendGame.reserve_black;
   const colorSymbol = backendGame.turn % 2 == 0 ? 'w' : 'b';
   const spawnablePieces = [];
   for (let [key, value] of reserve) {
-    if (value === 0)
-      continue;
-    spawnablePieces.push(convertReserveToPieceSymbol(colorSymbol, key, value))
+    if (value === 0) continue;
+    spawnablePieces.push(value);
     console.log(key + ' = ' + value);
   }
   for (const spawn of backendGame.spawns) {
